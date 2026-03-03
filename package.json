@@ -1,0 +1,23 @@
+{
+  "name": "vbt-cotizador",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "db:generate": "pnpm --filter @vbt/db generate",
+    "db:migrate": "pnpm --filter @vbt/db migrate:dev",
+    "db:push": "pnpm --filter @vbt/db db:push",
+    "db:seed": "pnpm --filter @vbt/db seed",
+    "db:studio": "pnpm --filter @vbt/db studio",
+    "test": "pnpm --filter @vbt/core test",
+    "lint": "pnpm --recursive lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

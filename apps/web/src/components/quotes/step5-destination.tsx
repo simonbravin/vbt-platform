@@ -1,0 +1,267 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+
+interface Props {
+  state: QuoteWizardState;
+  update: (patch: Partial<QuoteWizardState>) => void;
+}
+
+export function Step5Destination({ state, update }: Props) {
+  const [countries, setCountries] = useState<any[]>([]);
+  const [freightProfiles, setFreightProfiles] = useState<any[]>([]);
+  const [taxRuleSets, setTaxRuleSets] = useState<any[]>([]);
+  const [selectedTaxRules, setSelectedTaxRules] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/countries")
+      .then((r) => r.json())
+      .then((data) => setCountries(Array.isArray(data) ? data : []));
+  }, []);
+
+  useEffect(() => {
+    if (!state.countryId) return;
+    Promise.all([
+      fetch(`/api/freight?countryId=${state.countryId}`).then((r) => r.json()),
+      fetch(`/api/tax-rules?countryId=${state.countryId}`).then((r) => r.json()),
+    ]).then(([freight, taxes]) => {
+      const fp = Array.isArray(freight) ? freight : [];
+      const ts = Array.isArray(taxes) ? taxes : [];
+      setFreightProfiles(fp);
+      setTaxRuleSets(ts);
+      // Auto-select default
+      const def = fp.find((p: any) => p.isDefault);
+      if (def && !state.freightProfileId) {
+        update({
+          freightProfileId: def.id,
+          freightCostUsd: def.freightPerContainer * (state.numContainers || 1),
+        });
+      }
+      // Auto-select first active rule set
+      if (ts.length > 0 && !state.taxRuleSetId) {
+        update({ taxRuleSetId: ts[0].id });
+        setSelectedTaxRules(ts[0].rules ?? []);
+      }
+    });
+  }, [state.countryId]);
+
+  useEffect(() => {
+    if (state.taxRuleSetId) {
+      const set = taxRuleSets.find((s: any) => s.id === state.taxRuleSetId);
+      if (set) setSelectedTaxRules(set.rules ?? []);
+    }
+  }, [state.taxRuleSetId, taxRuleSets]);
+
+  const factoryCost = state.factoryCostUsd ?? 0;
+  const commissionAmount = factoryCost * (state.commissionPct / 100) + state.commissionFixed;
+  const fob = factoryCost + commissionAmount;
+  const cif = fob + state.freightCostUsd;
+
+  // Compute tax preview
+  const taxPreview = computeTaxPreview(selectedTaxRules, cif, fob, state.numContainers);
+  const totalTaxes = taxPreview.reduce((a, t) => a + t.amount, 0);
+  const landedDdp = cif + totalTaxes;
+
+  const fmt = (n: number) =>
+    n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-800">Step 5: Destination & Costs</h2>
+        <p className="text-sm text-gray-500 mt-1">Select destination country, freight, and tax rules.</p>
+      </div>
+
+      {/* Country */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Destination Country</label>
+        <select
+          value={state.countryId ?? ""}
+          onChange={(e) => {
+            update({ countryId: e.target.value, freightProfileId: undefined, taxRuleSetId: undefined });
+            setFreightProfiles([]);
+            setTaxRuleSets([]);
+            setSelectedTaxRules([]);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+        >
+          <option value="">Select country...</option>
+          {countries.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.code})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Freight */}
+      {state.countryId && (
+        <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+          <h3 className="font-medium text-gray-700">Freight</h3>
+
+          {freightProfiles.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Freight Profile</label>
+              <select
+                value={state.freightProfileId ?? ""}
+                onChange={(e) => {
+                  const fp = freightProfiles.find((p: any) => p.id === e.target.value);
+                  update({
+                    freightProfileId: e.target.value,
+                    freightCostUsd: fp ? fp.freightPerContainer * (state.numContainers || 1) : 0,
+                  });
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+              >
+                <option value="">Manual entry</option>
+                {freightProfiles.map((p: any) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} – {fmt(p.freightPerContainer)}/container
+                    {p.isDefault ? " (default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Total Freight (USD){" "}
+              {state.numContainers > 0 && (
+                <span className="text-gray-400 font-normal">for {state.numContainers} container(s)</span>
+              )}
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={state.freightCostUsd}
+                onChange={(e) =>
+                  update({ freightCostUsd: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full px-3 py-2 pl-6 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-2 border-t text-sm">
+            <span className="text-gray-500">CIF = FOB + Freight</span>
+            <span className="font-semibold">{fmt(cif)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Tax Rules */}
+      {state.countryId && taxRuleSets.length > 0 && (
+        <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+          <h3 className="font-medium text-gray-700">Tax Rules</h3>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rule Set</label>
+            <select
+              value={state.taxRuleSetId ?? ""}
+              onChange={(e) => update({ taxRuleSetId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+            >
+              <option value="">No tax rules</option>
+              {taxRuleSets.map((s: any) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tax preview */}
+          {taxPreview.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-400 uppercase font-medium">Tax Preview</p>
+              {taxPreview.map((t, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t.label}</span>
+                  <span className="font-medium">{fmt(t.amount)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm font-semibold pt-2 border-t">
+                <span className="text-gray-700">Total Taxes & Fees</span>
+                <span>{fmt(totalTaxes)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* DDP Total */}
+      {state.countryId && (
+        <div className="bg-vbt-blue rounded-xl p-5">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-white/70 text-sm">Landed / DDP Total</p>
+              <p className="text-white/50 text-xs mt-0.5">
+                CIF + all taxes & fees
+              </p>
+            </div>
+            <p className="text-3xl font-bold text-white">{fmt(landedDdp)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+        <textarea
+          rows={3}
+          value={state.notes ?? ""}
+          onChange={(e) => update({ notes: e.target.value })}
+          placeholder="Additional notes for this quote..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue resize-none"
+        />
+      </div>
+    </div>
+  );
+}
+
+function computeTaxPreview(
+  rules: any[],
+  cifUsd: number,
+  fobUsd: number,
+  numContainers: number
+): { label: string; amount: number }[] {
+  if (!rules?.length) return [];
+
+  const sorted = [...rules].sort((a, b) => a.order - b.order);
+  let dutyTotal = 0;
+  let statisticTotal = 0;
+  const results: { label: string; amount: number }[] = [];
+
+  for (const rule of sorted) {
+    let amount = 0;
+    switch (rule.base) {
+      case "CIF":
+        amount = cifUsd * ((rule.ratePct ?? 0) / 100);
+        if (rule.label.toLowerCase().includes("duty")) dutyTotal = amount;
+        if (rule.label.toLowerCase().includes("statistic")) statisticTotal = amount;
+        break;
+      case "FOB":
+        amount = fobUsd * ((rule.ratePct ?? 0) / 100);
+        break;
+      case "BASE_IMPONIBLE": {
+        const baseImp = cifUsd + dutyTotal + statisticTotal;
+        amount = baseImp * ((rule.ratePct ?? 0) / 100);
+        break;
+      }
+      case "FIXED_PER_CONTAINER":
+        amount = (rule.fixedAmount ?? 0) * numContainers;
+        break;
+      case "FIXED_TOTAL":
+        amount = rule.fixedAmount ?? 0;
+        break;
+    }
+    results.push({ label: rule.label, amount });
+  }
+
+  return results;
+}

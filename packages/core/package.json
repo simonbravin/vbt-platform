@@ -1,0 +1,25 @@
+{
+  "name": "@vbt/core",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./csv": "./src/csv-parser.ts",
+    "./calc": "./src/calculations.ts",
+    "./normalize": "./src/normalizer.ts",
+    "./quote-engine": "./src/quote-engine.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.14",
+    "typescript": "^5.3.3",
+    "vitest": "^1.3.1"
+  }
+}
