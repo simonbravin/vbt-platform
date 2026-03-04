@@ -49,7 +49,9 @@ export const translations = {
     // Nav
     "nav.dashboard": "Dashboard",
     "nav.projects": "Projects",
+    "nav.clients": "Clients",
     "nav.quotes": "Quotes",
+    "nav.reports": "Reports",
     "nav.inventory": "Inventory",
     "nav.admin": "Admin",
     "nav.users": "Users",
@@ -108,6 +110,14 @@ export const translations = {
     "projects.noQuotesYet": "No quotes yet for this project",
     "projects.createQuote": "Create Quote",
     "projects.projectQuotes": "Project Quotes",
+
+    // Clients
+    "clients.title": "Clients",
+    "clients.clientsCount": "clients",
+    "clients.newClient": "New client",
+    "clients.kpiTopByProjects": "Top clients by projects",
+    "clients.kpiTopBySold": "Top clients by total sold",
+    "clients.searchPlaceholder": "Search by name, legal name, email...",
 
     // Quotes
     "quotes.title": "Quotes",
@@ -296,7 +306,9 @@ export const translations = {
     // Nav
     "nav.dashboard": "Inicio",
     "nav.projects": "Proyectos",
+    "nav.clients": "Clientes",
     "nav.quotes": "Cotizaciones",
+    "nav.reports": "Reportes",
     "nav.inventory": "Inventario",
     "nav.admin": "Administración",
     "nav.users": "Usuarios",
@@ -355,6 +367,14 @@ export const translations = {
     "projects.noQuotesYet": "Sin cotizaciones para este proyecto",
     "projects.createQuote": "Crear Cotización",
     "projects.projectQuotes": "Cotizaciones del Proyecto",
+
+    // Clients
+    "clients.title": "Clientes",
+    "clients.clientsCount": "clientes",
+    "clients.newClient": "Nuevo cliente",
+    "clients.kpiTopByProjects": "Principales clientes por proyectos",
+    "clients.kpiTopBySold": "Principales clientes por ventas",
+    "clients.searchPlaceholder": "Buscar por nombre, razón social, email...",
 
     // Quotes
     "quotes.title": "Cotizaciones",

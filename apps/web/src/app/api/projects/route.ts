@@ -8,6 +8,7 @@ import { createAuditLog } from "@/lib/audit";
 const createSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   client: z.string().optional(),
+  clientId: z.string().optional(),
   location: z.string().optional(),
   countryId: z.string().optional(),
   totalKits: z.number().min(1).optional().default(1),
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
           OR: [
             { name: { contains: search.trim(), mode: "insensitive" as const } },
             { client: { contains: search.trim(), mode: "insensitive" as const } },
+            { clientRecord: { name: { contains: search.trim(), mode: "insensitive" as const } } },
             { location: { contains: search.trim(), mode: "insensitive" as const } },
             { country: { name: { contains: search.trim(), mode: "insensitive" as const } } },
             { country: { code: { contains: search.trim(), mode: "insensitive" as const } } },
@@ -49,7 +51,9 @@ export async function GET(req: Request) {
     prisma.project.findMany({
       where,
       include: {
+        clientRecord: { select: { id: true, name: true } },
         country: { select: { id: true, name: true, code: true } },
+        baselineQuote: { select: { id: true, quoteNumber: true, fobUsd: true } },
         _count: { select: { quotes: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -76,10 +80,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  if (parsed.data.clientId) {
+    const client = await prisma.client.findFirst({
+      where: { id: parsed.data.clientId, orgId: user.orgId },
+    });
+    if (!client) {
+      return NextResponse.json({ error: "Client not found" }, { status: 400 });
+    }
+  }
+
   const project = await prisma.project.create({
     data: {
       name: parsed.data.name,
       client: parsed.data.client ?? null,
+      clientId: parsed.data.clientId ?? null,
       location: parsed.data.location ?? null,
       countryId: parsed.data.countryId ?? null,
       totalKits: parsed.data.totalKits ?? 1,

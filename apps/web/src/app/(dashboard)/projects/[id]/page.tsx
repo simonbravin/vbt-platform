@@ -4,12 +4,15 @@ import { notFound } from "next/navigation";
 import { ProjectDetailClient } from "./ProjectDetailClient";
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
-  await requireAuth();
+  const user = await requireAuth();
+  const orgId = (user as { orgId?: string }).orgId;
 
-  const project = await prisma.project.findUnique({
-    where: { id: params.id },
+  const project = await prisma.project.findFirst({
+    where: { id: params.id, ...(orgId ? { orgId } : {}) },
     include: {
+      clientRecord: { select: { id: true, name: true } },
       country: { select: { id: true, name: true, code: true } },
+      baselineQuote: { select: { id: true, quoteNumber: true, fobUsd: true } },
       quotes: {
         include: { country: true },
         orderBy: { createdAt: "desc" },
@@ -22,6 +25,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
   const serialized = {
     ...project,
     plannedStartDate: project.plannedStartDate?.toISOString?.() ?? null,
+    soldAt: project.soldAt?.toISOString?.() ?? null,
   };
 
   return <ProjectDetailClient initialProject={serialized as any} />;

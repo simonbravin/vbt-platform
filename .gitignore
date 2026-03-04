@@ -15,8 +15,8 @@ prisma/migrations/dev
 .DS_Store
 Thumbs.db
 
-# Logs
-logs
+# Logs (root-level only; app routes like projects/logs are not ignored)
+/logs
 *.log
 npm-debug.log*
 pnpm-debug.log*

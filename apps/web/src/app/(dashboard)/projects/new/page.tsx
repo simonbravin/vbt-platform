@@ -3,18 +3,31 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, Plus } from "lucide-react";
 
 type Country = { id: string; name: string; code: string };
+type Client = { id: string; name: string; legalName?: string | null };
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    name: "",
+    legalName: "",
+    countryId: "",
+    email: "",
+    phone: "",
+  });
+  const [savingClient, setSavingClient] = useState(false);
   const [form, setForm] = useState({
     name: "",
     client: "",
+    clientId: "" as string,
     location: "",
     countryId: "" as string,
     totalKits: 1,
@@ -31,7 +44,41 @@ export default function NewProjectPage() {
       .catch(() => setCountries([]));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/clients?limit=500")
+      .then((r) => r.json())
+      .then((data) => setClients(data.clients ?? []))
+      .catch(() => setClients([]));
+  }, []);
+
   const update = (key: string, val: any) => setForm((p) => ({ ...p, [key]: val }));
+
+  async function saveNewClient() {
+    if (!newClientForm.name.trim()) return;
+    setSavingClient(true);
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newClientForm.name.trim(),
+          legalName: newClientForm.legalName.trim() || undefined,
+          countryId: newClientForm.countryId || undefined,
+          email: newClientForm.email.trim() || undefined,
+          phone: newClientForm.phone.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setClients((prev) => [...prev, data]);
+        setForm((p) => ({ ...p, clientId: data.id }));
+        setNewClientOpen(false);
+        setNewClientForm({ name: "", legalName: "", countryId: "", email: "", phone: "" });
+      }
+    } finally {
+      setSavingClient(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,7 +88,8 @@ export default function NewProjectPage() {
     try {
       const payload = {
         name: form.name,
-        client: form.client || undefined,
+        client: form.clientId ? undefined : (form.client || undefined),
+        clientId: form.clientId || undefined,
         location: form.location || undefined,
         countryId: form.countryId || undefined,
         totalKits: form.totalKits,
@@ -76,22 +124,63 @@ export default function NewProjectPage() {
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
         )}
 
-        {[
-          { key: "name", label: "Project Name *", type: "text", placeholder: "e.g., Residencial Las Palmas" },
-          { key: "client", label: "Client", type: "text", placeholder: "Client name" },
-          { key: "location", label: "Location", type: "text", placeholder: "City, region" },
-        ].map(({ key, label, type, placeholder }) => (
-          <div key={key}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-            <input
-              type={type}
-              value={(form as any)[key]}
-              onChange={(e) => update(key, e.target.value)}
-              placeholder={placeholder}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-            />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            placeholder="e.g., Residencial Las Palmas"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+          <div className="flex gap-2">
+            <select
+              value={form.clientId}
+              onChange={(e) => update("clientId", e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue bg-white"
+            >
+              <option value="">— None —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setNewClientOpen(true)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" /> New client
+            </button>
           </div>
-        ))}
+          <p className="text-xs text-gray-500 mt-0.5">Or leave empty and enter client name manually below (legacy).</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Client (free text, if not selected above)</label>
+          <input
+            type="text"
+            value={form.client}
+            onChange={(e) => update("client", e.target.value)}
+            placeholder="Client name (optional if client selected)"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+            disabled={!!form.clientId}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <input
+            type="text"
+            value={form.location}
+            onChange={(e) => update("location", e.target.value)}
+            placeholder="City, region"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+          />
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
@@ -179,6 +268,86 @@ export default function NewProjectPage() {
           </button>
         </div>
       </form>
+
+      {newClientOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
+            onClick={() => setNewClientOpen(false)}
+          >
+            <div
+              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-semibold text-gray-900">New client</h2>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Name *</label>
+                <input
+                  value={newClientForm.name}
+                  onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                  placeholder="Company name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Legal name</label>
+                <input
+                  value={newClientForm.legalName}
+                  onChange={(e) => setNewClientForm((f) => ({ ...f, legalName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Country</label>
+                <select
+                  value={newClientForm.countryId}
+                  onChange={(e) => setNewClientForm((f) => ({ ...f, countryId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                >
+                  <option value="">— None —</option>
+                  {countries.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newClientForm.email}
+                  onChange={(e) => setNewClientForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Phone</label>
+                <input
+                  value={newClientForm.phone}
+                  onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div className="flex gap-2 pt-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNewClientOpen(false)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveNewClient}
+                  disabled={savingClient || !newClientForm.name.trim()}
+                  className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
+                >
+                  {savingClient ? "Saving..." : "Create client"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

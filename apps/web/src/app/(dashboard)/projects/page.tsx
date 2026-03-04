@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/utils";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { Plus, FolderOpen } from "lucide-react";
+import { Plus, FolderOpen, History } from "lucide-react";
 import { ProjectsClient } from "./ProjectsClient";
 
 export default async function ProjectsPage() {
@@ -12,7 +12,9 @@ export default async function ProjectsPage() {
     prisma.project.findMany({
       where: { orgId, isArchived: false },
       include: {
+        clientRecord: { select: { id: true, name: true } },
         country: { select: { id: true, name: true, code: true } },
+        baselineQuote: { select: { id: true, quoteNumber: true, fobUsd: true } },
         _count: { select: { quotes: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -28,12 +30,20 @@ export default async function ProjectsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
           <p className="text-gray-500 text-sm mt-0.5">{total} active projects</p>
         </div>
-        <Link
-          href="/projects/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
-        >
-          <Plus className="w-4 h-4" /> New Project
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/projects/logs"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+          >
+            <History className="w-4 h-4" /> Logs
+          </Link>
+          <Link
+            href="/projects/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+          >
+            <Plus className="w-4 h-4" /> New Project
+          </Link>
+        </div>
       </div>
 
       {projects.length === 0 ? (

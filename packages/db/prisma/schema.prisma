@@ -48,6 +48,13 @@ enum QuoteStatus {
   CANCELLED
 }
 
+enum ProjectStatus {
+  QUOTED
+  IN_CONVERSATION
+  SOLD
+  ARCHIVED
+}
+
 enum InvMoveType {
   IN
   OUT
@@ -71,6 +78,7 @@ enum AuditAction {
   CATALOG_IMPORTED
   PROJECT_CREATED
   PROJECT_UPDATED
+  PROJECT_DELETED
 }
 
 enum SystemCode {
@@ -115,6 +123,7 @@ model Org {
   commissionFixed Float   @default(0)
 
   members        OrgMember[]
+  clients        Client[]
   projects       Project[]
   quotes         Quote[]
   warehouses     Warehouse[]
@@ -175,6 +184,34 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@map("audit_logs")
+}
+
+// ─── Clients (directory) ─────────────────────────────────────────────────────
+
+model Client {
+  id         String   @id @default(cuid())
+  orgId      String
+  name       String   // display name
+  legalName  String?
+  taxId      String?
+  address    String?
+  city       String?
+  countryId  String?
+  phone      String?
+  email      String?
+  website    String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  org      Org             @relation(fields: [orgId], references: [id])
+  country  CountryProfile? @relation(fields: [countryId], references: [id])
+  projects Project[]
+
+  @@index([orgId])
+  @@index([countryId])
+  @@index([name])
+  @@map("clients")
 }
 
 // ─── System & Catalog ────────────────────────────────────────────────────────
@@ -263,7 +300,8 @@ model Project {
   id          String   @id @default(cuid())
   orgId       String
   name        String
-  client      String?
+  client      String?  // legacy free-text; use clientId when set
+  clientId   String?
   location    String?
   countryId   String?  // Project location country (for filtering/reports)
   description String?
@@ -278,17 +316,27 @@ model Project {
   totalKits        Int       @default(1)
   plannedStartDate DateTime?
   durationWeeks    Int?
-  isArchived  Boolean  @default(false)
+  isArchived       Boolean   @default(false)
+  // Pipeline & reporting
+  status           ProjectStatus @default(QUOTED)
+  baselineQuoteId  String?   @unique
+  soldAt           DateTime?
+  finalAmountUsd   Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  org         Org             @relation(fields: [orgId], references: [id])
-  country     CountryProfile? @relation(fields: [countryId], references: [id])
-  revitImports RevitImport[]
-  quotes      Quote[]
+  org            Org             @relation(fields: [orgId], references: [id])
+  clientRecord   Client?         @relation(fields: [clientId], references: [id])
+  country        CountryProfile? @relation(fields: [countryId], references: [id])
+  baselineQuote  Quote?          @relation("ProjectBaselineQuote", fields: [baselineQuoteId], references: [id])
+  revitImports   RevitImport[]
+  quotes         Quote[]
 
   @@index([orgId])
+  @@index([clientId])
   @@index([countryId])
+  @@index([status])
+  @@index([soldAt])
   @@map("projects")
 }
 
@@ -425,6 +473,7 @@ model CountryProfile {
   updatedAt DateTime @updatedAt
 
   org             Org                  @relation(fields: [orgId], references: [id])
+  clients         Client[]
   freightProfiles FreightRateProfile[]
   taxRuleSets     TaxRuleSet[]
   projects        Project[]
@@ -519,13 +568,14 @@ model Quote {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  org            Org             @relation(fields: [orgId], references: [id])
-  project        Project         @relation(fields: [projectId], references: [id])
-  country        CountryProfile? @relation(fields: [countryId], references: [id])
-  createdByUser  User?           @relation(fields: [createdBy], references: [id])
-  lines          QuoteLine[]
-  taxLines       QuoteTaxLine[]
-  docs           QuoteDoc[]
+  org               Org             @relation(fields: [orgId], references: [id])
+  project           Project         @relation(fields: [projectId], references: [id])
+  projectAsBaseline Project?        @relation("ProjectBaselineQuote")
+  country           CountryProfile? @relation(fields: [countryId], references: [id])
+  createdByUser     User?           @relation(fields: [createdBy], references: [id])
+  lines             QuoteLine[]
+  taxLines          QuoteTaxLine[]
+  docs              QuoteDoc[]
 
   @@index([orgId])
   @@index([projectId])

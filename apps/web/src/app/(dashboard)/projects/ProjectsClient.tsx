@@ -3,17 +3,28 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { FolderOpen, MapPin, User, LayoutGrid, List, Search } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 type Project = {
   id: string;
   name: string;
   client: string | null;
+  clientRecord?: { id: string; name: string } | null;
   location: string | null;
   country?: { id: string; name: string; code: string } | null;
+  status?: string;
+  baselineQuote?: { id: string; quoteNumber: string | null; fobUsd: number } | null;
   wallAreaM2S80: number;
   wallAreaM2S150: number;
   wallAreaM2S200: number;
   _count: { quotes: number };
+};
+
+const statusLabel: Record<string, string> = {
+  QUOTED: "Quoted",
+  IN_CONVERSATION: "In conversation",
+  SOLD: "Sold",
+  ARCHIVED: "Archived",
 };
 
 export function ProjectsClient({ projects: initialProjects, total: initialTotal }: { projects: Project[]; total: number }) {
@@ -92,15 +103,28 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                   <FolderOpen className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                  {p._count.quotes} quote{p._count.quotes !== 1 ? "s" : ""}
-                </span>
+                <div className="flex items-center gap-2">
+                  {p.status && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      p.status === "SOLD" ? "bg-green-100 text-green-700" :
+                      p.status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
+                      p.status === "IN_CONVERSATION" ? "bg-blue-100 text-blue-700" :
+                      "bg-amber-100 text-amber-700"
+                    }`}>{statusLabel[p.status] ?? p.status}</span>
+                  )}
+                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                    {p._count.quotes} quote{p._count.quotes !== 1 ? "s" : ""}
+                  </span>
+                </div>
               </div>
               <h3 className="font-semibold text-gray-800">{p.name}</h3>
-              {p.client && (
+              {p.baselineQuote && (
+                <p className="text-sm text-gray-600 mt-0.5">Project FOB: {formatCurrency(p.baselineQuote.fobUsd)}</p>
+              )}
+              {(p.clientRecord?.name ?? p.client) && (
                 <div className="flex items-center gap-1.5 text-gray-500 text-sm mt-1">
                   <User className="w-3.5 h-3.5" />
-                  {p.client}
+                  {p.clientRecord?.name ?? p.client}
                 </div>
               )}
               {p.location && (
@@ -129,6 +153,8 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Client</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Location</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Country</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Status</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">FOB</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">VBT 80mm</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">VBT 150mm</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">VBT 200mm</th>
@@ -141,9 +167,22 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                   <td className="px-4 py-3">
                     <Link href={`/projects/${p.id}`} className="font-medium text-vbt-blue hover:underline">{p.name}</Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{p.client ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-gray-600">{(p.clientRecord?.name ?? p.client) ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-gray-600">{p.location ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-gray-600">{p.country?.name ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3">
+                    {p.status ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        p.status === "SOLD" ? "bg-green-100 text-green-700" :
+                        p.status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
+                        p.status === "IN_CONVERSATION" ? "bg-blue-100 text-blue-700" :
+                        "bg-amber-100 text-amber-700"
+                      }`}>{statusLabel[p.status] ?? p.status}</span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-700 font-medium">{p.baselineQuote ? formatCurrency(p.baselineQuote.fobUsd) : "—"}</td>
                   <td className="px-4 py-3 text-center text-gray-700">{p.wallAreaM2S80.toFixed(0)} m²</td>
                   <td className="px-4 py-3 text-center text-gray-700">{p.wallAreaM2S150.toFixed(0)} m²</td>
                   <td className="px-4 py-3 text-center text-gray-700">{p.wallAreaM2S200.toFixed(0)} m²</td>

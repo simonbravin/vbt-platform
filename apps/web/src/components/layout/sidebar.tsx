@@ -9,6 +9,7 @@ import {
   FolderOpen,
   FileText,
   Package,
+  Building2,
   Users,
   Settings,
   Globe,
@@ -16,6 +17,7 @@ import {
   BookOpen,
   Warehouse,
   TrendingUp,
+  BarChart3,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -33,7 +35,9 @@ interface NavItem {
 const navigation: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
+  { labelKey: "nav.clients", href: "/clients", icon: Building2 },
   { labelKey: "nav.quotes", href: "/quotes", icon: FileText },
+  { labelKey: "nav.reports", href: "/reports", icon: BarChart3 },
   {
     labelKey: "nav.inventory",
     href: "/admin/inventory",
