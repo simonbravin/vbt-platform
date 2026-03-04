@@ -63,7 +63,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           </Link>
         </div>
       ) : (
-        <QuotesClient quotes={quotes as any} />
+        <QuotesClient quotes={quotes as any} initialStatus={searchParams.status} />
       )}
     </div>
   );

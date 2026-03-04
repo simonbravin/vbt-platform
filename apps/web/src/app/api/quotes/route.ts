@@ -39,19 +39,34 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const status = url.searchParams.get("status") ?? "";
   const projectId = url.searchParams.get("projectId") ?? "";
+  const search = (url.searchParams.get("search") ?? "").trim();
+
+  const where: any = {
+    orgId: user.orgId,
+    ...(status ? { status: status as any } : {}),
+    ...(projectId ? { projectId } : {}),
+  };
+
+  if (search) {
+    where.OR = [
+      { quoteNumber: { contains: search, mode: "insensitive" } },
+      { project: { name: { contains: search, mode: "insensitive" } } },
+      { project: { client: { contains: search, mode: "insensitive" } } },
+      { project: { location: { contains: search, mode: "insensitive" } } },
+      { country: { name: { contains: search, mode: "insensitive" } } },
+      { country: { code: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
   const quotes = await prisma.quote.findMany({
-    where: {
-      orgId: user.orgId,
-      ...(status ? { status: status as any } : {}),
-      ...(projectId ? { projectId } : {}),
-    },
+    where,
     include: {
       project: { select: { name: true, client: true, location: true } },
       country: { select: { name: true, code: true } },
       _count: { select: { lines: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 200,
   });
 
   return NextResponse.json(quotes);

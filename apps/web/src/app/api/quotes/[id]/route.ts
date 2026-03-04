@@ -27,6 +27,47 @@ export async function GET(
   return NextResponse.json(quote);
 }
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user as any;
+  if (["VIEWER"].includes(user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const quote = await prisma.quote.findFirst({
+    where: { id: params.id, orgId: user.orgId },
+  });
+  if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
+
+  const body = await req.json().catch(() => ({}));
+  const status = body.status;
+  if (status && ["DRAFT", "SENT", "ARCHIVED", "CANCELLED"].includes(status)) {
+    await prisma.quote.update({
+      where: { id: params.id },
+      data: { status: status as any },
+    });
+    if (status === "ARCHIVED") {
+      await createAuditLog({
+        orgId: user.orgId,
+        userId: user.id,
+        action: "QUOTE_ARCHIVED",
+        entityType: "Quote",
+        entityId: params.id,
+      });
+    }
+    const updated = await prisma.quote.findFirst({
+      where: { id: params.id },
+      include: { project: true, country: true, lines: true, taxLines: true },
+    });
+    return NextResponse.json(updated);
+  }
+  return NextResponse.json(quote);
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
@@ -71,17 +112,8 @@ export async function DELETE(
     }
   }
 
-  await prisma.quote.update({
+  await prisma.quote.delete({
     where: { id: params.id },
-    data: { status: "ARCHIVED" },
-  });
-
-  await createAuditLog({
-    orgId: user.orgId,
-    userId: user.id,
-    action: "QUOTE_ARCHIVED",
-    entityType: "Quote",
-    entityId: params.id,
   });
 
   return NextResponse.json({ success: true });

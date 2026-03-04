@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Mail, Archive, ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -24,6 +24,8 @@ export default function QuoteDetailPage() {
   const [pdfOptions, setPdfOptions] = useState({ includeAlerts: false, includeMaterialLines: true, showUnitPrice: true });
   const [archiveDialog, setArchiveDialog] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/quotes/${params.id}`)
@@ -54,9 +56,23 @@ export default function QuoteDetailPage() {
 
   const archive = async () => {
     setArchiving(true);
-    const res = await fetch(`/api/quotes/${params.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/quotes/${params.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "ARCHIVED" }),
+    });
     setArchiving(false);
     setArchiveDialog(false);
+    if (res.ok) {
+      setQuote((prev: any) => ({ ...prev, status: "ARCHIVED" }));
+    }
+  };
+
+  const deletePermanently = async () => {
+    setDeleting(true);
+    const res = await fetch(`/api/quotes/${params.id}`, { method: "DELETE" });
+    setDeleting(false);
+    setDeleteDialog(false);
     if (res.ok) router.push("/quotes");
   };
 
@@ -107,9 +123,17 @@ export default function QuoteDetailPage() {
           </button>
           <button
             onClick={() => setArchiveDialog(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+            title="Archivar"
           >
             <Archive className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setDeleteDialog(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+            title="Eliminar definitivamente"
+          >
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -331,8 +355,24 @@ export default function QuoteDetailPage() {
             <p className="text-gray-600 text-sm mb-6">¿Archivar esta cotización? Podrás verla en el listado con estado Archivada.</p>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setArchiveDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
-              <button type="button" onClick={archive} disabled={archiving} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50">
+              <button type="button" onClick={archive} disabled={archiving} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
                 {archiving ? "Archivando..." : "Archivar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete permanently dialog */}
+      {deleteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
+            <h3 className="font-semibold text-lg mb-2 text-red-700">Eliminar cotización</h3>
+            <p className="text-gray-600 text-sm mb-6">¿Eliminar esta cotización de forma permanente? Esta acción no se puede deshacer.</p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setDeleteDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+              <button type="button" onClick={deletePermanently} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50">
+                {deleting ? "Eliminando..." : "Eliminar definitivamente"}
               </button>
             </div>
           </div>
