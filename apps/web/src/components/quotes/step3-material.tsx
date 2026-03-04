@@ -35,11 +35,25 @@ export function Step3MaterialCost({ state, update }: Props) {
               else if (sys === "S200") s200 += line.m2Line;
             }
           }
-          update({ m2S80: +s80.toFixed(2), m2S150: +s150.toFixed(2), m2S200: +s200.toFixed(2) });
+          const csvCost = (data.lines ?? []).reduce((acc: number, l: any) => {
+            if (!l.isIgnored && l.pricePerM) return acc + (l.linearM ?? 0) * l.pricePerM;
+            return acc;
+          }, 0);
+          update({ m2S80: +s80.toFixed(2), m2S150: +s150.toFixed(2), m2S200: +s200.toFixed(2), factoryCostUsd: csvCost });
         })
         .finally(() => setLoading(false));
     }
   }, [state.revitImportId, state.costMethod]);
+
+  // Sync factoryCostUsd for M2_BY_SYSTEM whenever inputs or settings change
+  useEffect(() => {
+    if (state.costMethod !== "M2_BY_SYSTEM" || !settings) return;
+    const cost =
+      state.m2S80 * (settings.rateS80 ?? 37) +
+      state.m2S150 * (settings.rateS150 ?? 67) +
+      state.m2S200 * (settings.rateS200 ?? 85);
+    update({ factoryCostUsd: cost });
+  }, [state.m2S80, state.m2S150, state.m2S200, settings, state.costMethod]);
 
   const factoryCost =
     state.costMethod === "M2_BY_SYSTEM"

@@ -39,6 +39,7 @@ export interface QuoteWizardState {
   // Step 4
   commissionPct: number;
   commissionFixed: number;
+  commissionFixedPerKit: number;
   kitsPerContainer: number;
   totalKits: number;
   numContainers: number;
@@ -67,6 +68,7 @@ const initialState: QuoteWizardState = {
   m2Total: 0,
   commissionPct: 0,
   commissionFixed: 0,
+  commissionFixedPerKit: 0,
   kitsPerContainer: 0,
   totalKits: 0,
   numContainers: 1,

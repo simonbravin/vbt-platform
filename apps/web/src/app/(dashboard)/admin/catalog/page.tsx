@@ -59,6 +59,11 @@ export default function CatalogPage() {
     S150: "bg-green-100 text-green-700",
     S200: "bg-purple-100 text-purple-700",
   };
+  const SYS_LABELS: Record<string, string> = {
+    S80: "VBT 80mm",
+    S150: "VBT 150mm",
+    S200: "VBT 200mm",
+  };
 
   return (
     <div className="space-y-6">
@@ -93,7 +98,9 @@ export default function CatalogPage() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
         >
           <option value="">All Systems</option>
-          {["S80", "S150", "S200"].map((s) => <option key={s} value={s}>{s}</option>)}
+          {[["S80", "VBT 80mm"], ["S150", "VBT 150mm"], ["S200", "VBT 200mm"]].map(([val, label]) => (
+            <option key={val} value={val}>{label}</option>
+          ))}
         </select>
       </div>
 
@@ -103,7 +110,7 @@ export default function CatalogPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {["Die #", "Canonical Name", "System", "Width (mm)", "lbs/m Cored", "$/m Cored", "Active", "Actions"].map((h) => (
+                {["Die #", "Canonical Name", "System", "Useful Width (mm)", "lbs/m Cored", "$/m Cored", "Active", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -118,7 +125,7 @@ export default function CatalogPage() {
                   <td className="px-3 py-2.5">
                     {p.systemCode ? (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SYS_COLORS[p.systemCode] ?? "bg-gray-100"}`}>
-                        {p.systemCode}
+                        {SYS_LABELS[p.systemCode] ?? p.systemCode}
                       </span>
                     ) : "—"}
                   </td>

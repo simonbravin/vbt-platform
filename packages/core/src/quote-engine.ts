@@ -74,6 +74,7 @@ export interface QuoteInput {
   // Commission
   commissionPct?: number;
   commissionFixed?: number;
+  commissionFixedPerKit?: number;
   // Freight
   freightCostUsd?: number;
   numContainers?: number;
@@ -120,6 +121,7 @@ export interface QuoteSnapshot {
   factoryCostUsd: number;
   commissionPct: number;
   commissionFixed: number;
+  commissionFixedPerKit: number;
   commissionAmount: number;
   fobUsd: number;
   freightCostUsd: number;
@@ -273,10 +275,13 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
   // ── Commission & FOB ──────────────────────────────────────────────────────
   const commissionPct = input.commissionPct ?? 0;
   const commissionFixed = input.commissionFixed ?? 0;
+  const commissionFixedPerKit = input.commissionFixedPerKit ?? 0;
+  const totalKitsForCommission = input.totalKits ?? 0;
+  const effectiveCommissionFixed = commissionFixed + commissionFixedPerKit * totalKitsForCommission;
   const { commissionAmount, fobUsd } = computeFob({
     factoryCost: factoryCostUsd,
     commissionPct,
-    commissionFixed,
+    commissionFixed: effectiveCommissionFixed,
   });
 
   // ── CIF ───────────────────────────────────────────────────────────────────
@@ -319,6 +324,7 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
     factoryCostUsd,
     commissionPct,
     commissionFixed,
+    commissionFixedPerKit,
     commissionAmount,
     fobUsd,
     freightCostUsd,
