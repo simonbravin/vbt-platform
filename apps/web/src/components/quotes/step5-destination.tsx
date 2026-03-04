@@ -63,6 +63,11 @@ export function Step5Destination({ state, update }: Props) {
   const totalTaxes = taxPreview.reduce((a, t) => a + t.amount, 0);
   const landedDdp = cif + totalTaxes;
 
+  // Sync computed financial values to wizard state so step 6 preview is accurate
+  useEffect(() => {
+    update({ fobUsd: fob, cifUsd: cif, taxesFeesUsd: totalTaxes, landedDdpUsd: landedDdp });
+  }, [fob, cif, totalTaxes, landedDdp]);
+
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 

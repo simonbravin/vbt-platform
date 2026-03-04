@@ -80,6 +80,8 @@ function findHeader(headers: string[], synonyms: string[]): string | null {
  *  - First cell ends with ": <number>" AND the qty cell is empty
  */
 function isRevitMetaRow(row: string[]): boolean {
+  // Completely empty rows (blank lines between sections)
+  if (row.every(c => !c.trim())) return true;
   const first = (row[0] ?? "").trim();
   if (!first) return false;
   if (first.toLowerCase().startsWith("grand total")) return true;

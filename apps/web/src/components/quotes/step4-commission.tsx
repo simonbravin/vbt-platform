@@ -1,6 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+
+// Packing capacity: m² of wall panels per 40ft HC container
+const CAP_S80 = 650;
+const CAP_S150 = 420;
+const CAP_S200 = 300;
 
 interface Props {
   state: QuoteWizardState;
@@ -13,6 +19,18 @@ export function Step4Commission({ state, update }: Props) {
     state.kitsPerContainer > 0 && state.totalKits > 0
       ? Math.ceil(state.totalKits / state.kitsPerContainer)
       : state.numContainers;
+
+  // Auto-set numContainers from m² packing capacity when kits are not configured
+  useEffect(() => {
+    const raw = (state.m2S80 / CAP_S80) + (state.m2S150 / CAP_S150) + (state.m2S200 / CAP_S200);
+    if (raw > 0 && !(state.totalKits > 0 && state.kitsPerContainer > 0)) {
+      update({ numContainers: Math.ceil(raw) });
+    }
+  }, [state.m2S80, state.m2S150, state.m2S200]);
+
+  // m² packing suggestion for display
+  const rawContainersFromM2 =
+    (state.m2S80 / CAP_S80) + (state.m2S150 / CAP_S150) + (state.m2S200 / CAP_S200);
 
   const commissionPctAmount = factoryCost * (state.commissionPct / 100);
   // commissionFixed is the per-order total; commissionFixedPerKit is a linked display field
@@ -85,6 +103,13 @@ export function Step4Commission({ state, update }: Props) {
             {state.kitsPerContainer > 0 && state.totalKits > 0 && (
               <p className="text-xs text-gray-400 mt-1">
                 ⌈{state.totalKits} / {state.kitsPerContainer}⌉ = {numContainers}
+              </p>
+            )}
+            {rawContainersFromM2 > 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                m²: ≈{rawContainersFromM2.toFixed(2)} →{" "}
+                {Math.ceil(rawContainersFromM2)} · uses{" "}
+                {((rawContainersFromM2 / Math.ceil(rawContainersFromM2)) * 100).toFixed(0)}% of capacity
               </p>
             )}
           </div>
