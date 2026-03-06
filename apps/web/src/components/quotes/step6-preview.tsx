@@ -10,8 +10,8 @@ interface Props {
 
 export function Step6Preview({ state, update }: Props) {
   const factoryCost = state.factoryCostUsd ?? 0;
-  const commissionAmount = factoryCost * (state.commissionPct / 100) + state.commissionFixed;
-  const fob = factoryCost; // FOB = factory only; commission is in taxes & fees
+  const commissionPctAmount = factoryCost * (state.commissionPct / 100);
+  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed in taxes & fees
   const cif = fob + state.freightCostUsd;
 
   const fmt = (n: number) =>
@@ -69,13 +69,13 @@ export function Step6Preview({ state, update }: Props) {
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
           <div className="flex justify-between font-semibold border-t pt-2">
-            <span>FOB (factory only)</span>
+            <span>FOB (factory + % commission)</span>
             <span>{fmt(fob)}</span>
           </div>
-          {commissionAmount > 0 && (
+          {state.commissionFixed > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-500">Commission (in taxes & fees)</span>
-              <span className="font-medium">{fmt(commissionAmount)}</span>
+              <span className="text-gray-500">Commission (fixed, in taxes & fees)</span>
+              <span className="font-medium">{fmt(state.commissionFixed)}</span>
             </div>
           )}
           <div className="flex justify-between">

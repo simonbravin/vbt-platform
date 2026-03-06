@@ -294,12 +294,17 @@ export default function QuoteDetailPage() {
           <h2 className="font-semibold text-gray-800">Taxes & Fees {quote.country && `(${quote.country.name})`}</h2>
           {quote.taxLines?.length > 0 ? (
             <div className="space-y-2 text-sm">
-              {quote.taxLines.map((tl: any) => (
-                <div key={tl.id} className="flex justify-between">
-                  <span className="text-gray-500">{tl.label}</span>
-                  <span className="font-medium">{fmt(Number(tl.computedAmount) || 0)}</span>
-                </div>
-              ))}
+              {quote.taxLines.map((tl: any) => {
+                const label = (tl.perContainer || /per container/i.test(tl.label || ""))
+                  ? (tl.label || "").replace(/\s*\(per container\)/gi, " (per order)")
+                  : (tl.label || "");
+                return (
+                  <div key={tl.id} className="flex justify-between">
+                    <span className="text-gray-500">{label}</span>
+                    <span className="font-medium">{fmt(Number(tl.computedAmount) || 0)}</span>
+                  </div>
+                );
+              })}
               <div className="flex justify-between font-semibold border-t pt-2">
                 <span>Total Taxes</span>
                 <span>{fmt(Number(quote.taxesFeesUsd) || 0)}</span>

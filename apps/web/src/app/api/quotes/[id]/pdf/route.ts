@@ -88,10 +88,17 @@ export async function GET(
       kitsPerContainer: Number(quote.kitsPerContainer) || 0,
       totalKits: Number(quote.totalKits) || 0,
       cifUsd: Number(quote.cifUsd) || 0,
-      taxLines: quote.taxLines.map((tl) => ({
-        label: tl.label,
-        computedAmount: Number(tl.computedAmount) || 0,
-      })),
+      taxLines: quote.taxLines.map((tl) => {
+        const rawLabel = tl.label ?? "";
+        const label =
+          tl.perContainer || /per container/i.test(rawLabel)
+            ? rawLabel.replace(/\s*\(per container\)/gi, " (per order)")
+            : rawLabel;
+        return {
+          label,
+          computedAmount: Number(tl.computedAmount) || 0,
+        };
+      }),
       taxesFeesUsd: Number(quote.taxesFeesUsd) || 0,
       landedDdpUsd: Number(quote.landedDdpUsd) || 0,
       concreteM3: Number(quote.concreteM3) || 0,

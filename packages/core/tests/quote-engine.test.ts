@@ -12,7 +12,7 @@ const defaultOrgDefaults = {
 };
 
 describe("buildQuoteSnapshot - FOB and commission", () => {
-  it("FOB equals factory cost only; commission is a tax line and included in taxes & fees", () => {
+  it("FOB = factory + % commission; only fixed commission as tax line", () => {
     const snapshot = buildQuoteSnapshot({
       method: "M2_TOTAL",
       baseUom: "M",
@@ -28,25 +28,25 @@ describe("buildQuoteSnapshot - FOB and commission", () => {
     const factoryCostUsd = 100 * 60; // M2_TOTAL: 100 * rateGlobal 60
     expect(snapshot.factoryCostUsd).toBeCloseTo(factoryCostUsd);
 
-    // FOB = factory only (no commission added)
-    expect(snapshot.fobUsd).toBeCloseTo(factoryCostUsd);
-    expect(snapshot.fobUsd).not.toBe(snapshot.factoryCostUsd + snapshot.commissionAmount);
+    // FOB = factory + % commission (not fixed)
+    const commissionPctAmount = factoryCostUsd * 0.1;
+    expect(snapshot.fobUsd).toBeCloseTo(factoryCostUsd + commissionPctAmount);
 
-    // Commission amount is correct (10% of factory + 5000 fixed)
-    expect(snapshot.commissionAmount).toBeCloseTo(factoryCostUsd * 0.1 + 5000);
+    // Full commission (for display) = % + fixed
+    expect(snapshot.commissionAmount).toBeCloseTo(commissionPctAmount + 5000);
 
-    // Tax lines include a Commission line
+    // Tax lines: one "Commission (fixed)" with only the fixed amount
     const commissionLine = snapshot.taxLines.find((l) =>
       l.label.toLowerCase().includes("commission")
     );
     expect(commissionLine).toBeDefined();
-    expect(commissionLine!.computedAmount).toBeCloseTo(snapshot.commissionAmount);
+    expect(commissionLine!.computedAmount).toBeCloseTo(5000);
 
-    // Total taxes & fees = sum of tax lines (only the commission line here)
+    // Total taxes & fees = sum of tax lines (only the fixed commission line here)
     expect(sumTaxLines(snapshot.taxLines)).toBeCloseTo(snapshot.taxesFeesUsd);
-    expect(snapshot.taxesFeesUsd).toBeCloseTo(snapshot.commissionAmount);
+    expect(snapshot.taxesFeesUsd).toBeCloseTo(5000);
 
-    // Landed DDP = CIF + taxes (includes commission)
+    // Landed DDP = CIF + taxes
     const cif = snapshot.fobUsd + (snapshot.freightCostUsd ?? 0);
     expect(snapshot.landedDdpUsd).toBeCloseTo(cif + snapshot.taxesFeesUsd);
   });

@@ -54,14 +54,16 @@ export function Step5Destination({ state, update }: Props) {
   }, [state.taxRuleSetId, taxRuleSets]);
 
   const factoryCost = state.factoryCostUsd ?? 0;
-  const commissionAmount = factoryCost * (state.commissionPct / 100) + state.commissionFixed;
-  const fob = factoryCost; // FOB = factory only; commission is in taxes & fees
+  const commissionPctAmount = factoryCost * (state.commissionPct / 100);
+  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed in taxes & fees
   const cif = fob + state.freightCostUsd;
 
-  // Compute tax preview (destination rules + commission line)
-  const taxPreview = computeTaxPreview(selectedTaxRules, cif, fob, state.numContainers);
-  const totalTaxes =
-    taxPreview.reduce((a, t) => a + t.amount, 0) + commissionAmount;
+  // Tax preview: exclude "Local Margin" (we add single "Commission (fixed)" line); match server Option A
+  const rulesForPreview = (selectedTaxRules ?? []).filter(
+    (r: any) => !r.label?.toLowerCase().includes("local margin")
+  );
+  const taxPreview = computeTaxPreview(rulesForPreview, cif, fob, state.numContainers);
+  const totalTaxes = taxPreview.reduce((a, t) => a + t.amount, 0) + state.commissionFixed;
   const landedDdp = cif + totalTaxes;
 
   // Sync computed financial values to wizard state so step 6 preview is accurate
@@ -181,20 +183,23 @@ export function Step5Destination({ state, update }: Props) {
             </select>
           </div>
 
-          {/* Tax preview (includes commission as a line so total matches saved quote) */}
-          {(taxPreview.length > 0 || commissionAmount > 0) && (
+          {/* Tax preview (excludes Local Margin; we add Commission (fixed); labels "per order" for totals) */}
+          {(taxPreview.length > 0 || state.commissionFixed > 0) && (
             <div className="space-y-2">
               <p className="text-xs text-gray-400 uppercase font-medium">Tax & Fees Preview</p>
-              {taxPreview.map((t, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t.label}</span>
-                  <span className="font-medium">{fmt(t.amount)}</span>
-                </div>
-              ))}
-              {commissionAmount > 0 && (
+              {taxPreview.map((t, i) => {
+                const displayLabel = (t.label ?? "").replace(/\s*\(per container\)/gi, " (per order)");
+                return (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-gray-600">{displayLabel}</span>
+                    <span className="font-medium">{fmt(t.amount)}</span>
+                  </div>
+                );
+              })}
+              {state.commissionFixed > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Commission (in taxes & fees)</span>
-                  <span className="font-medium">{fmt(commissionAmount)}</span>
+                  <span className="text-gray-600">Commission (fixed, in taxes & fees)</span>
+                  <span className="font-medium">{fmt(state.commissionFixed)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-semibold pt-2 border-t">

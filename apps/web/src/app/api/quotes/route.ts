@@ -115,14 +115,17 @@ export async function POST(req: Request) {
     if (importData) {
       csvImportLines = importData.lines
         .filter((l) => !l.isIgnored)
-        .map((l) => ({
-          description: removeVersionPrefix(l.rawPieceName),
-          pieceId: l.pieceId ?? undefined,
-          qty: l.rawQty,
-          heightMm: l.rawHeightMm,
-          isIgnored: l.isIgnored,
-          manualPricePerM: l.pricePerM ?? undefined,
-        }));
+        .map((l) => {
+          const pieceCost = (l as any).piece?.costs?.[0]?.pricePerMCored;
+          return {
+            description: removeVersionPrefix(l.rawPieceName),
+            pieceId: l.pieceId ?? undefined,
+            qty: l.rawQty,
+            heightMm: l.rawHeightMm,
+            isIgnored: l.isIgnored,
+            manualPricePerM: l.pricePerM ?? pieceCost ?? undefined,
+          };
+        });
 
       // Build pieceMeta
       for (const line of importData.lines) {
@@ -148,14 +151,15 @@ export async function POST(req: Request) {
     }
   }
 
-  // Get tax rules if provided
+  // Get tax rules if provided; exclude "Local Margin" so we add a single "Commission (fixed)" line in the engine (Option A)
   let taxRules: TaxRule[] = [];
   if (data.taxRuleSetId) {
     const ruleSet = await prisma.taxRuleSet.findUnique({
       where: { id: data.taxRuleSetId },
     });
     if (ruleSet) {
-      taxRules = ruleSet.rules as unknown as TaxRule[];
+      const raw = (ruleSet.rules as unknown as TaxRule[]) ?? [];
+      taxRules = raw.filter((r) => !r.label?.toLowerCase().includes("local margin"));
     }
   }
 

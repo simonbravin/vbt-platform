@@ -59,7 +59,7 @@ export function Step4Commission({ state, update }: Props) {
 
   const commissionPctAmount = factoryCost * (state.commissionPct / 100);
   const commissionAmount = commissionPctAmount + state.commissionFixed;
-  const fob = factoryCost; // FOB = factory only; commission is applied in taxes & fees (step 5)
+  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed is in taxes & fees (step 5)
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -224,10 +224,10 @@ export function Step4Commission({ state, update }: Props) {
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
           <div className="flex justify-between text-base font-semibold pt-2 border-t">
-            <span className="text-vbt-blue">FOB (factory only)</span>
+            <span className="text-vbt-blue">FOB (factory + % commission)</span>
             <span className="text-vbt-blue">{fmt(fob)}</span>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Commission is applied in taxes & fees in the next step.</p>
+          <p className="text-xs text-gray-500 mt-1">Fixed commission is applied in taxes & fees in the next step.</p>
           {commissionAmount > 0 && (
             <>
               {commissionPctAmount > 0 && (

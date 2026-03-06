@@ -8,7 +8,6 @@ import {
   checkMinRun,
   computeFactoryCostBySystem,
   computeFactoryCostTotal,
-  computeFob,
   computeCif,
   computeTaxLines,
   sumTaxLines,
@@ -275,16 +274,13 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
   }
 
   // ── Commission & FOB ──────────────────────────────────────────────────────
-  // FOB = factory cost only; commission is added as a line in taxes & fees (not to FOB).
+  // FOB = factory cost + percentage commission only; fixed commission goes only in taxes & fees.
   const commissionPct = input.commissionPct ?? 0;
   const commissionFixed = input.commissionFixed ?? 0;
   const commissionFixedPerKit = input.commissionFixedPerKit ?? 0;
-  const { commissionAmount } = computeFob({
-    factoryCost: factoryCostUsd,
-    commissionPct,
-    commissionFixed,
-  });
-  const fobUsd = factoryCostUsd;
+  const commissionPctAmount = factoryCostUsd * (commissionPct / 100);
+  const commissionAmount = commissionPctAmount + commissionFixed; // full amount for snapshot/display
+  const fobUsd = factoryCostUsd + commissionPctAmount;
 
   // ── CIF ───────────────────────────────────────────────────────────────────
   const freightCostUsd = input.freightCostUsd ?? 0;
@@ -294,23 +290,18 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
   const cifUsd = computeCif(fobUsd, freightCostUsd);
 
   // ── Taxes ─────────────────────────────────────────────────────────────────
+  // Only fixed commission as a tax line (percentage is already in FOB). Option A: rule set excludes "Local Margin"; we add one "Commission (fixed)" line.
   const taxRules = input.taxRules ?? [];
   const ruleTaxLines = computeTaxLines({ cifUsd, fobUsd, numContainers, rules: taxRules });
-  const commissionLabel =
-    commissionPct > 0 && commissionFixed > 0
-      ? `Commission (${commissionPct}% + ${commissionFixed.toLocaleString("en-US", { maximumFractionDigits: 0 })} fixed)`
-      : commissionPct > 0
-        ? `Commission (${commissionPct}%)`
-        : `Commission (fixed)`;
-  const commissionTaxLine: TaxLineResult = {
+  const commissionFixedTaxLine: TaxLineResult = {
     order: 9999,
-    label: commissionLabel,
+    label: "Commission (fixed)",
     base: "FIXED_TOTAL",
     baseAmount: 1,
-    computedAmount: commissionAmount,
+    computedAmount: commissionFixed,
     perContainer: false,
   };
-  const taxLines = [...ruleTaxLines, commissionTaxLine];
+  const taxLines = [...ruleTaxLines, commissionFixedTaxLine];
   const taxesFeesUsd = sumTaxLines(taxLines);
   const landedDdpUsd = cifUsd + taxesFeesUsd;
 
