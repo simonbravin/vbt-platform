@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Package, ArrowDown, ArrowUp, RefreshCw, Plus, LayoutGrid, List, Search } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Package, ArrowDown, ArrowUp, RefreshCw, Plus, LayoutGrid, List, Search, ChevronDown, ChevronRight, Download } from "lucide-react";
 
 type MoveType = "IN" | "OUT" | "ADJUST";
 
@@ -31,6 +31,8 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"table" | "cards">("table");
   const [filterText, setFilterText] = useState("");
+  const [showInStockOnly, setShowInStockOnly] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Move dialog
   const [moveDialog, setMoveDialog] = useState<any>(null);
@@ -67,26 +69,29 @@ export default function InventoryPage() {
     reloadItems(warehouseId);
   }, [warehouseId]);
 
-  // Catalog search in add dialog
+  // Catalog search in add dialog (API expects "search" param; also supports "q")
   useEffect(() => {
     if (!addDialog || catalogSearch.trim().length < 2) { setCatalogResults([]); return; }
     const ctrl = new AbortController();
-    fetch("/api/catalog?q=" + encodeURIComponent(catalogSearch), { signal: ctrl.signal })
+    fetch("/api/catalog?search=" + encodeURIComponent(catalogSearch.trim()), { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => setCatalogResults(Array.isArray(d) ? d : d.items ?? []))
       .catch(() => {});
     return () => ctrl.abort();
   }, [catalogSearch, addDialog]);
 
-  // Group and filter items by piece
+  // Group and filter items by piece; optionally filter to in-stock only (available > 0)
   const grouped = useMemo(() => {
     const lower = filterText.toLowerCase();
-    const filtered = items.filter(i =>
+    let filtered = items.filter(i =>
       !filterText ||
       i.piece?.canonicalName?.toLowerCase().includes(lower) ||
       i.piece?.systemCode?.toLowerCase().includes(lower) ||
       SYSTEM_LABELS[i.piece?.systemCode]?.toLowerCase().includes(lower)
     );
+    if (showInStockOnly) {
+      filtered = filtered.filter(i => (i.qtyOnHand - (i.qtyReserved ?? 0)) > 0);
+    }
 
     // Sort by piece name then height
     const sorted = [...filtered].sort((a, b) => {
@@ -104,7 +109,33 @@ export default function InventoryPage() {
       map.get(key)!.push(item);
     }
     return map;
-  }, [items, filterText]);
+  }, [items, filterText, showInStockOnly]);
+
+  const totalDisplayLinearM = useMemo(() => {
+    let sum = 0;
+    for (const pieceItems of grouped.values()) {
+      for (const item of pieceItems) sum += linearM(item);
+    }
+    return sum;
+  }, [grouped]);
+
+  const toggleGroup = (pieceKey: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(pieceKey)) next.delete(pieceKey);
+      else next.add(pieceKey);
+      return next;
+    });
+  };
+  const expandCollapseAll = (expand: boolean) => {
+    if (expand) setCollapsedGroups(new Set());
+    else setCollapsedGroups(new Set(grouped.keys()));
+  };
+  const isGroupExpanded = (pieceKey: string, hasMultiple: boolean) => {
+    if (!hasMultiple) return true;
+    return !collapsedGroups.has(pieceKey);
+  };
+  const currentWarehouseName = warehouses.find(w => w.id === warehouseId)?.name ?? "";
 
   const openMove = (item: any, type: MoveType) => {
     setMoveDialog(item);
@@ -154,7 +185,37 @@ export default function InventoryPage() {
     ? (addForm.units * addForm.heightM).toFixed(2)
     : null;
 
-  const totalAllLinearM = items.reduce((acc, i) => acc + linearM(i), 0);
+  const exportCsv = () => {
+    const headers = ["Piece", "Matrix", "System", "Height (m)", "Units", "Linear m", "Reserved", "Available", "Warehouse"];
+    const rows: string[][] = [headers];
+    for (const [_pieceKey, pieceItems] of grouped.entries()) {
+      const piece = pieceItems[0].piece;
+      const sysLabel = piece?.systemCode ? (SYSTEM_LABELS[piece.systemCode] ?? piece.systemCode) : "";
+      const matrixVal = piece?.dieNumber ? (piece.dieNumber.startsWith("#") ? piece.dieNumber : "#" + piece.dieNumber) : "";
+      for (const item of pieceItems) {
+        const lm = linearM(item);
+        const avail = item.qtyOnHand - (item.qtyReserved ?? 0);
+        rows.push([
+          piece?.canonicalName ?? "",
+          matrixVal,
+          sysLabel,
+          item.heightMm ? (item.heightMm / 1000).toFixed(2) : "",
+          String(item.qtyOnHand),
+          lm.toFixed(2),
+          String(item.qtyReserved ?? 0),
+          avail.toFixed(1),
+          currentWarehouseName,
+        ]);
+      }
+    }
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `inventory-${currentWarehouseName.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   return (
     <div className="space-y-6">
@@ -163,7 +224,7 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            {grouped.size} piece{grouped.size !== 1 ? "s" : ""} · {totalAllLinearM.toFixed(1)} linear m total
+            {grouped.size} piece{grouped.size !== 1 ? "s" : ""} · {totalDisplayLinearM.toFixed(1)} linear m total
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -174,10 +235,18 @@ export default function InventoryPage() {
           >
             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+            <span className="px-2.5 py-1.5 text-gray-500">View:</span>
             <button onClick={() => setView("table")} title="Table view" className={`p-2 ${view === "table" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><List className="w-4 h-4" /></button>
             <button onClick={() => setView("cards")} title="Card view" className={`p-2 ${view === "cards" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><LayoutGrid className="w-4 h-4" /></button>
           </div>
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+            <input type="checkbox" checked={showInStockOnly} onChange={e => setShowInStockOnly(e.target.checked)} className="rounded border-gray-300 text-vbt-blue focus:ring-vbt-blue" />
+            In stock only
+          </label>
+          <button onClick={exportCsv} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Download className="w-4 h-4" /> Export
+          </button>
           <button onClick={openAddDialog} className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900">
             <Plus className="w-4 h-4" /> Add Item
           </button>
@@ -203,90 +272,106 @@ export default function InventoryPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["Piece", "System", "Height", "Units", "Linear m", "Reserved", "Available", "Actions"].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <span>Piece</span>
+                      {grouped.size > 0 && (
+                        <div className="flex items-center rounded border border-gray-200 overflow-hidden">
+                          <button type="button" onClick={() => expandCollapseAll(true)} title="Expand all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronDown className="w-3.5 h-3.5 rotate-[-90deg]" /></button>
+                          <button type="button" onClick={() => expandCollapseAll(false)} title="Collapse all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronRight className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </div>
+                  </th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Matrix</th>
+                  {["System", "Height", "Units", "Linear m", "Reserved", "Available", "Actions"].map(h => (
+                    <th key={h} className="text-center px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
                 ) : grouped.size === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No inventory items. Use "Add Item" to create stock.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No inventory items. Use "Add Item" to create stock.</td></tr>
                 ) : (
                   Array.from(grouped.entries()).map(([pieceKey, pieceItems]) => {
                     const piece = pieceItems[0].piece;
                     const totalLm = pieceItems.reduce((acc, i) => acc + linearM(i), 0);
                     const sysCode = piece?.systemCode;
                     const hasMultiple = pieceItems.length > 1;
+                    const expanded = isGroupExpanded(pieceKey, hasMultiple);
+                    const matrixVal = piece?.dieNumber ? (piece.dieNumber.startsWith("#") ? piece.dieNumber : "#" + piece.dieNumber) : "—";
 
                     return (
-                      <>
-                        {/* Piece group header (only if multiple heights) */}
+                      <React.Fragment key={pieceKey}>
+                        {/* Parent row (when multiple heights: summary row; when single: the only row) */}
                         {hasMultiple && (
-                          <tr key={`hdr-${pieceKey}`} className="bg-gray-50 border-t border-gray-200">
-                            <td className="px-4 py-2 font-semibold text-gray-800" colSpan={2}>
-                              <div className="flex items-center gap-2">
-                                <Package className="w-4 h-4 text-gray-400" />
+                          <tr className="bg-gray-50 border-t border-gray-200">
+                            <td className="px-4 py-2 font-semibold text-gray-800">
+                              <div className="flex items-center gap-1.5">
+                                <button type="button" onClick={() => toggleGroup(pieceKey)} className="p-0.5 rounded hover:bg-gray-200 text-gray-500" aria-label={expanded ? "Collapse" : "Expand"}>
+                                  {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                </button>
+                                <Package className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                 {piece?.canonicalName}
                               </div>
                             </td>
-                            <td className="px-4 py-2 text-xs text-gray-400">—</td>
-                            <td className="px-4 py-2 text-xs text-gray-400 text-right">
-                              {pieceItems.reduce((a, i) => a + i.qtyOnHand, 0)} units
+                            <td className="px-4 py-2 text-gray-600 text-sm">{matrixVal}</td>
+                            <td className="px-4 py-2 text-center">
+                              {sysCode ? (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SYSTEM_COLORS[sysCode] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {SYSTEM_LABELS[sysCode] ?? sysCode}
+                                </span>
+                              ) : "—"}
                             </td>
-                            <td className="px-4 py-2 font-semibold text-gray-700 text-right">
-                              {totalLm.toFixed(1)} m
-                            </td>
-                            <td colSpan={3} />
+                            <td className="px-4 py-2 text-center text-xs text-gray-400">—</td>
+                            <td className="px-4 py-2 text-center text-gray-600">{pieceItems.reduce((a, i) => a + i.qtyOnHand, 0)} u</td>
+                            <td className="px-4 py-2 text-center font-semibold text-gray-700">{totalLm.toFixed(1)} m</td>
+                            <td className="px-4 py-2 text-center text-amber-600">—</td>
+                            <td className="px-4 py-2 text-center">—</td>
+                            <td className="px-4 py-2" />
                           </tr>
                         )}
 
-                        {/* Height rows */}
-                        {pieceItems.map((item, idx) => {
+                        {/* Height rows (or single row when !hasMultiple) */}
+                        {expanded && pieceItems.map((item) => {
                           const lm = linearM(item);
-                          const avail = item.qtyOnHand - item.qtyReserved;
+                          const avail = item.qtyOnHand - (item.qtyReserved ?? 0);
                           return (
                             <tr key={item.id} className={`hover:bg-gray-50 border-t border-gray-50 ${hasMultiple ? "bg-white" : ""}`}>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-2">
                                 {!hasMultiple ? (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <button type="button" className="invisible w-4 p-0.5 cursor-default" aria-hidden><ChevronRight className="w-4 h-4" /></button>
                                     <Package className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    <div>
-                                      <p className="font-medium text-gray-800 text-xs max-w-xs truncate">{piece?.canonicalName}</p>
-                                      <p className="text-gray-400 text-xs">{piece?.dieNumber ?? "—"}</p>
-                                    </div>
+                                    <span className="font-medium text-gray-800 text-xs max-w-xs truncate">{piece?.canonicalName}</span>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 text-xs pl-6">↳ {item.heightMm ? `${(item.heightMm / 1000).toFixed(2)} m` : "—"}</span>
+                                  <span className="text-gray-400 text-xs pl-8">↳ {item.heightMm ? `${(item.heightMm / 1000).toFixed(2)} m` : "—"}</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3">
-                                {!hasMultiple && sysCode ? (
+                              <td className="px-4 py-2 text-gray-500 text-xs">{!hasMultiple ? matrixVal : ""}</td>
+                              <td className="px-4 py-2 text-center">
+                                {sysCode ? (
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SYSTEM_COLORS[sysCode] ?? "bg-gray-100 text-gray-600"}`}>
                                     {SYSTEM_LABELS[sysCode] ?? sysCode}
                                   </span>
-                                ) : !hasMultiple ? "—" : null}
+                                ) : "—"}
                               </td>
-                              <td className="px-4 py-3 text-gray-600 text-right">
-                                {!hasMultiple
-                                  ? item.heightMm ? `${(item.heightMm / 1000).toFixed(2)} m` : "—"
-                                  : null}
+                              <td className="px-4 py-2 text-center text-gray-600">
+                                {item.heightMm ? `${(item.heightMm / 1000).toFixed(2)} m` : "—"}
                               </td>
-                              <td className="px-4 py-3 text-right font-medium text-gray-800">
-                                {item.qtyOnHand} u
-                              </td>
-                              <td className="px-4 py-3 text-right font-semibold text-gray-700">
-                                {lm.toFixed(1)} m
-                              </td>
-                              <td className="px-4 py-3 text-right text-amber-600">{item.qtyReserved.toFixed(1)}</td>
-                              <td className="px-4 py-3 text-right">
+                              <td className="px-4 py-2 text-center font-medium text-gray-800">{item.qtyOnHand} u</td>
+                              <td className="px-4 py-2 text-center font-semibold text-gray-700">{lm.toFixed(1)} m</td>
+                              <td className="px-4 py-2 text-center text-amber-600">{(item.qtyReserved ?? 0).toFixed(1)}</td>
+                              <td className="px-4 py-2 text-center">
                                 <span className={avail < 0 ? "text-red-600 font-semibold" : "text-green-700 font-medium"}>
                                   {avail.toFixed(1)}
                                 </span>
                               </td>
-                              <td className="px-4 py-3">
-                                <div className="flex gap-1">
+                              <td className="px-4 py-2">
+                                <div className="flex gap-1 justify-center">
                                   <button onClick={() => openMove(item, "IN")} title="Receive" className="p-1.5 text-green-600 hover:bg-green-50 rounded"><ArrowDown className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => openMove(item, "OUT")} title="Dispatch" className="p-1.5 text-red-500 hover:bg-red-50 rounded"><ArrowUp className="w-3.5 h-3.5" /></button>
                                   <button onClick={() => openMove(item, "ADJUST")} title="Adjust" className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"><RefreshCw className="w-3.5 h-3.5" /></button>
@@ -295,7 +380,7 @@ export default function InventoryPage() {
                             </tr>
                           );
                         })}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}

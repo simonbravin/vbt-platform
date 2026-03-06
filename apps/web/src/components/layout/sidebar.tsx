@@ -84,14 +84,14 @@ export function Sidebar({ role }: SidebarProps) {
 
   return (
     <div className="w-64 bg-vbt-blue flex flex-col h-full shadow-xl flex-shrink-0">
-      {/* Logo */}
-      <div className="px-4 py-5 border-b border-white/10">
+      {/* Logo (horizontal) */}
+      <div className="px-3 py-4 border-b border-white/10 flex items-center">
         <Image
           src="/logo-vbt-white.png"
           alt="Vision Building Technologies"
-          width={200}
-          height={44}
-          className="h-11 w-auto object-contain object-left"
+          width={220}
+          height={48}
+          className="w-full h-10 object-contain object-left"
         />
       </div>
 

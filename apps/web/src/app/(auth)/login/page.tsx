@@ -58,7 +58,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl p-8">
+    <div className="bg-white/98 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 ring-1 ring-black/5">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">{t("auth.signIn")}</h2>
 
       {searchParams.get("error") === "INACTIVE" && (
@@ -147,17 +147,31 @@ export default function LoginPage() {
   const { locale, setLocale } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background: gradient + subtle grid */}
+      <div className="absolute inset-0 bg-gradient-to-br from-vbt-blue via-blue-900 to-slate-900" />
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+        }}
+      />
+      {/* Soft glow accent */}
+      <div className="absolute top-1/4 -left-32 w-64 h-64 bg-vbt-orange/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-blue-400/15 rounded-full blur-3xl" />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Language toggle */}
         <div className="flex justify-end mb-4">
-          <div className="flex items-center rounded-lg border border-white/20 overflow-hidden text-xs font-medium">
+          <div className="flex items-center rounded-xl border border-white/25 bg-white/5 backdrop-blur-sm overflow-hidden text-xs font-medium shadow-lg">
             {(["en", "es"] as Locale[]).map((l) => (
               <button
                 key={l}
                 onClick={() => setLocale(l)}
-                className={`px-3 py-1.5 transition-colors ${
-                  locale === l ? "bg-white text-vbt-blue" : "text-white/70 hover:text-white"
+                className={`px-3 py-2 transition-colors ${
+                  locale === l ? "bg-white text-vbt-blue" : "text-white/80 hover:text-white hover:bg-white/10"
                 }`}
               >
                 {l === "en" ? "ENG" : "ESP"}
@@ -168,20 +182,20 @@ export default function LoginPage() {
 
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-4 drop-shadow-lg">
             <Image
               src="/logo-vbt-white.png"
               alt="Vision Building Technologies"
-              width={240}
+              width={260}
               height={56}
-              className="h-14 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white">VBT Cotizador</h1>
-          <p className="text-slate-300 mt-1 text-sm">Vision Building Technologies</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">VBT Cost Calculator</h1>
+          <p className="text-white/70 mt-1.5 text-sm">Vision Building Technologies</p>
         </div>
 
-        <Suspense fallback={<div className="bg-white rounded-2xl shadow-2xl p-8 text-center text-gray-400 text-sm">Loading...</div>}>
+        <Suspense fallback={<div className="bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8 text-center text-gray-400 text-sm">Loading...</div>}>
           <LoginForm />
         </Suspense>
       </div>

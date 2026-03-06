@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
-  const search = url.searchParams.get("search") ?? "";
+  const search = (url.searchParams.get("search") ?? url.searchParams.get("q") ?? "").trim();
   const systemCode = url.searchParams.get("system") ?? "";
 
   const pieces = await prisma.pieceCatalog.findMany({
@@ -18,8 +18,9 @@ export async function GET(req: Request) {
       ...(search
         ? {
             OR: [
-              { canonicalName: { contains: search, mode: "insensitive" } },
-              { canonicalNameNormalized: { contains: search, mode: "insensitive" } },
+              { canonicalName: { contains: search, mode: "insensitive" as const } },
+              { canonicalNameNormalized: { contains: search, mode: "insensitive" as const } },
+              ...(search.length > 0 ? [{ dieNumber: { contains: search, mode: "insensitive" as const } }] : []),
             ],
           }
         : {}),
