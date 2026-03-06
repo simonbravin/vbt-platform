@@ -84,8 +84,9 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
           notes: payNotes || undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to add payment");
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Failed to add payment");
       setPaymentOpen(false);
       setPayAmountUsd("");
       setPayAmountLocal("");

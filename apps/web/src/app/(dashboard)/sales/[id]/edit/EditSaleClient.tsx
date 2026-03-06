@@ -39,15 +39,16 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
       .then((d) => {
         setSale(d);
         if (d) {
+          const round2 = (n: number) => Math.round(n * 100) / 100;
           setStatus(d.status ?? "DRAFT");
-          setExwUsd(d.exwUsd ?? 0);
-          setCommissionPct(d.commissionPct ?? 0);
-          setCommissionAmountUsd(d.commissionAmountUsd ?? 0);
-          setFobUsd(d.fobUsd ?? 0);
-          setFreightUsd(d.freightUsd ?? 0);
-          setCifUsd(d.cifUsd ?? 0);
-          setTaxesFeesUsd(d.taxesFeesUsd ?? 0);
-          setLandedDdpUsd(d.landedDdpUsd ?? 0);
+          setExwUsd(round2(d.exwUsd ?? 0));
+          setCommissionPct(round2(d.commissionPct ?? 0));
+          setCommissionAmountUsd(round2(d.commissionAmountUsd ?? 0));
+          setFobUsd(round2(d.fobUsd ?? 0));
+          setFreightUsd(round2(d.freightUsd ?? 0));
+          setCifUsd(round2(d.cifUsd ?? 0));
+          setTaxesFeesUsd(round2(d.taxesFeesUsd ?? 0));
+          setLandedDdpUsd(round2(d.landedDdpUsd ?? 0));
           setNotes(d.notes ?? "");
         }
         setLoading(false);
@@ -70,19 +71,20 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
-          exwUsd,
-          commissionPct,
-          commissionAmountUsd,
-          fobUsd,
-          freightUsd,
-          cifUsd,
-          taxesFeesUsd,
-          landedDdpUsd,
+          exwUsd: Number(exwUsd.toFixed(2)),
+          commissionPct: Number(commissionPct.toFixed(2)),
+          commissionAmountUsd: Number(commissionAmountUsd.toFixed(2)),
+          fobUsd: Number(fobUsd.toFixed(2)),
+          freightUsd: Number(freightUsd.toFixed(2)),
+          cifUsd: Number(cifUsd.toFixed(2)),
+          taxesFeesUsd: Number(taxesFeesUsd.toFixed(2)),
+          landedDdpUsd: Number(landedDdpUsd.toFixed(2)),
           notes: notes || undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to update");
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Failed to update");
       router.push(`/sales/${saleId}`);
     } catch (err: any) {
       setError(err.message ?? "Failed to save");
@@ -128,26 +130,40 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
             [
-              ["EXW", exwUsd, setExwUsd],
-              ["Commission %", commissionPct, setCommissionPct],
-              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd],
-              ["FOB", fobUsd, setFobUsd],
-              ["Freight", freightUsd, setFreightUsd],
-              ["CIF", cifUsd, setCifUsd],
-              ["Taxes & fees", taxesFeesUsd, setTaxesFeesUsd],
-              ["Landed DDP", landedDdpUsd, setLandedDdpUsd],
-            ] as [string, number, (n: number) => void][]
-          ).map(([label, val, setter]) => (
+              ["EXW", exwUsd, setExwUsd, true],
+              ["Commission %", commissionPct, setCommissionPct, false],
+              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd, true],
+              ["FOB", fobUsd, setFobUsd, true],
+              ["Freight", freightUsd, setFreightUsd, true],
+              ["CIF", cifUsd, setCifUsd, true],
+              ["Taxes & fees", taxesFeesUsd, setTaxesFeesUsd, true],
+              ["Landed DDP", landedDdpUsd, setLandedDdpUsd, true],
+            ] as [string, number, (n: number) => void, boolean][]
+          ).map(([label, val, setter, isCurrency]) => (
             <div key={label}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type="number"
-                min={0}
-                step={label === "Commission %" ? 0.1 : 0.01}
-                value={typeof val === "number" ? val : ""}
-                onChange={(e) => (setter as any)(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              />
+              {isCurrency ? (
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <span className="inline-flex items-center pl-3 bg-gray-100 text-gray-600 text-sm border-r border-gray-300">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
+                    onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
+                    className="flex-1 min-w-0 px-3 py-2 border-0 rounded-none text-sm"
+                  />
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
+                  onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              )}
             </div>
           ))}
         </div>

@@ -112,133 +112,139 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
-  }
-  const data = parsed.data;
-
-  const project = await prisma.project.findFirst({
-    where: { id: data.projectId, orgId: user.orgId },
-    select: { id: true, clientId: true, status: true },
-  });
-  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 400 });
-  if (project.clientId && project.clientId !== data.clientId) {
-    return NextResponse.json({ error: "Project client does not match selected client" }, { status: 400 });
-  }
-
-  const client = await prisma.client.findFirst({
-    where: { id: data.clientId, orgId: user.orgId },
-  });
-  if (!client) return NextResponse.json({ error: "Client not found" }, { status: 400 });
-
-  let quote: { id: string; projectId: string; orgId: string; factoryCostUsd: number; commissionPct: number; commissionFixed: number; fobUsd: number; freightCostUsd: number; cifUsd: number; taxesFeesUsd: number; landedDdpUsd: number } | null = null;
-  if (data.quoteId) {
-    quote = await prisma.quote.findFirst({
-      where: { id: data.quoteId, orgId: user.orgId },
-      select: {
-        id: true,
-        projectId: true,
-        orgId: true,
-        factoryCostUsd: true,
-        commissionPct: true,
-        commissionFixed: true,
-        fobUsd: true,
-        freightCostUsd: true,
-        cifUsd: true,
-        taxesFeesUsd: true,
-        landedDdpUsd: true,
-      },
-    });
-    if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 400 });
-    if (quote.projectId !== data.projectId) {
-      return NextResponse.json({ error: "Quote does not belong to the selected project" }, { status: 400 });
+  try {
+    const body = await req.json();
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
-  }
+    const data = parsed.data;
 
-  const sale = await prisma.$transaction(async (tx) => {
-    const saleNumber = await getNextSaleNumber(tx, user.orgId);
-    const exw = data.exwUsd;
-    const commPct = data.commissionPct;
-    const commAmt = data.commissionAmountUsd;
-    const fob = data.fobUsd;
-    const freight = data.freightUsd;
-    const cif = data.cifUsd;
-    const taxes = data.taxesFeesUsd;
-    const ddp = data.landedDdpUsd;
-
-    const saleRow = await tx.sale.create({
-      data: {
-        orgId: user.orgId,
-        clientId: data.clientId,
-        projectId: data.projectId,
-        quoteId: data.quoteId ?? null,
-        saleNumber,
-        quantity: data.quantity,
-        status: data.status as any,
-        exwUsd: exw,
-        commissionPct: commPct,
-        commissionAmountUsd: commAmt,
-        fobUsd: fob,
-        freightUsd: freight,
-        cifUsd: cif,
-        taxesFeesUsd: taxes,
-        landedDdpUsd: ddp,
-        taxBreakdownJson: data.taxBreakdownJson ?? undefined,
-        notes: data.notes ?? null,
-        createdBy: user.id,
-      },
+    const project = await prisma.project.findFirst({
+      where: { id: data.projectId, orgId: user.orgId },
+      select: { id: true, clientId: true, status: true },
     });
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 400 });
+    if (project.clientId && project.clientId !== data.clientId) {
+      return NextResponse.json({ error: "Project client does not match selected client" }, { status: 400 });
+    }
 
-    for (const inv of data.invoices) {
-      const entity = await tx.billingEntity.findFirst({
-        where: { id: inv.entityId, orgId: user.orgId },
+    const client = await prisma.client.findFirst({
+      where: { id: data.clientId, orgId: user.orgId },
+    });
+    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 400 });
+
+    let quote: { id: string; projectId: string; orgId: string; factoryCostUsd: number; commissionPct: number; commissionFixed: number; fobUsd: number; freightCostUsd: number; cifUsd: number; taxesFeesUsd: number; landedDdpUsd: number } | null = null;
+    if (data.quoteId) {
+      quote = await prisma.quote.findFirst({
+        where: { id: data.quoteId, orgId: user.orgId },
+        select: {
+          id: true,
+          projectId: true,
+          orgId: true,
+          factoryCostUsd: true,
+          commissionPct: true,
+          commissionFixed: true,
+          fobUsd: true,
+          freightCostUsd: true,
+          cifUsd: true,
+          taxesFeesUsd: true,
+          landedDdpUsd: true,
+        },
       });
-      if (entity) {
-        await tx.saleInvoice.create({
-          data: {
-            saleId: saleRow.id,
-            entityId: inv.entityId,
-            amountUsd: inv.amountUsd,
-            dueDate: inv.dueDate ? new Date(inv.dueDate) : null,
-            sequence: inv.sequence ?? 1,
-            notes: inv.notes ?? null,
-          },
-        });
+      if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 400 });
+      if (quote.projectId !== data.projectId) {
+        return NextResponse.json({ error: "Quote does not belong to the selected project" }, { status: 400 });
       }
     }
 
-    if (data.status === "CONFIRMED") {
-      await tx.project.update({
-        where: { id: data.projectId },
+    const sale = await prisma.$transaction(async (tx) => {
+      const saleNumber = await getNextSaleNumber(tx, user.orgId);
+      const exw = data.exwUsd;
+      const commPct = data.commissionPct;
+      const commAmt = data.commissionAmountUsd;
+      const fob = data.fobUsd;
+      const freight = data.freightUsd;
+      const cif = data.cifUsd;
+      const taxes = data.taxesFeesUsd;
+      const ddp = data.landedDdpUsd;
+
+      const saleRow = await tx.sale.create({
         data: {
-          status: "SOLD",
-          soldAt: new Date(),
-          finalAmountUsd: ddp,
+          orgId: user.orgId,
+          clientId: data.clientId,
+          projectId: data.projectId,
+          quoteId: data.quoteId ?? null,
+          saleNumber,
+          quantity: data.quantity,
+          status: data.status as any,
+          exwUsd: exw,
+          commissionPct: commPct,
+          commissionAmountUsd: commAmt,
+          fobUsd: fob,
+          freightUsd: freight,
+          cifUsd: cif,
+          taxesFeesUsd: taxes,
+          landedDdpUsd: ddp,
+          taxBreakdownJson: data.taxBreakdownJson ?? undefined,
+          notes: data.notes ?? null,
+          createdBy: user.id,
         },
       });
-    }
 
-    return tx.sale.findUnique({
-      where: { id: saleRow.id },
-      include: {
-        client: { select: { id: true, name: true } },
-        project: { select: { id: true, name: true } },
-        quote: { select: { id: true, quoteNumber: true } },
-        invoices: { include: { entity: { select: { id: true, name: true, slug: true } } } },
-      },
+      for (const inv of data.invoices) {
+        const entity = await tx.billingEntity.findFirst({
+          where: { id: inv.entityId, orgId: user.orgId },
+        });
+        if (entity) {
+          await tx.saleInvoice.create({
+            data: {
+              saleId: saleRow.id,
+              entityId: inv.entityId,
+              amountUsd: inv.amountUsd,
+              dueDate: inv.dueDate ? new Date(inv.dueDate) : null,
+              sequence: inv.sequence ?? 1,
+              notes: inv.notes ?? null,
+            },
+          });
+        }
+      }
+
+      if (data.status === "CONFIRMED") {
+        await tx.project.update({
+          where: { id: data.projectId },
+          data: {
+            status: "SOLD",
+            soldAt: new Date(),
+            finalAmountUsd: ddp,
+          },
+        });
+      }
+
+      return tx.sale.findUnique({
+        where: { id: saleRow.id },
+        include: {
+          client: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true } },
+          quote: { select: { id: true, quoteNumber: true } },
+          invoices: { include: { entity: { select: { id: true, name: true, slug: true } } } },
+        },
+      });
     });
-  });
 
-  await createAuditLog({
-    orgId: user.orgId,
-    userId: user.id,
-    action: "SALE_CREATED" as any,
-    entityType: "Sale",
-    entityId: sale!.id,
-    meta: { saleNumber: sale!.saleNumber },
-  });
+    await createAuditLog({
+      orgId: user.orgId,
+      userId: user.id,
+      action: "SALE_CREATED" as any,
+      entityType: "Sale",
+      entityId: sale!.id,
+      meta: { saleNumber: sale!.saleNumber },
+    });
 
-  return NextResponse.json(sale);
+    return NextResponse.json(sale);
+  } catch (e) {
+    console.error("POST /api/sales error:", e);
+    const message = e instanceof Error ? e.message : "Failed to create sale";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

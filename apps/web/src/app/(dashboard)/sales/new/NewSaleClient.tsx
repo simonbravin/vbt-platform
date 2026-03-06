@@ -77,14 +77,15 @@ export function NewSaleClient() {
     const q = quotes.find((x) => x.id === quoteId);
     if (!q) return;
     const mult = quantity;
-    setExwUsd(q.factoryCostUsd * mult);
-    setCommissionPct(q.commissionPct);
-    setCommissionAmountUsd((q.fobUsd - q.factoryCostUsd) * mult);
-    setFobUsd(q.fobUsd * mult);
-    setFreightUsd(q.freightCostUsd * mult);
-    setCifUsd(q.cifUsd * mult);
-    setTaxesFeesUsd(q.taxesFeesUsd * mult);
-    setLandedDdpUsd(q.landedDdpUsd * mult);
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    setExwUsd(round2(q.factoryCostUsd * mult));
+    setCommissionPct(round2(q.commissionPct));
+    setCommissionAmountUsd(round2((q.fobUsd - q.factoryCostUsd) * mult));
+    setFobUsd(round2(q.fobUsd * mult));
+    setFreightUsd(round2(q.freightCostUsd * mult));
+    setCifUsd(round2(q.cifUsd * mult));
+    setTaxesFeesUsd(round2(q.taxesFeesUsd * mult));
+    setLandedDdpUsd(round2(q.landedDdpUsd * mult));
   }, [quoteId, quantity, quotes]);
 
   const validateFinancials = () => {
@@ -118,21 +119,22 @@ export function NewSaleClient() {
           quoteId: quoteId || undefined,
           quantity,
           status,
-          exwUsd,
-          commissionPct,
-          commissionAmountUsd,
-          fobUsd,
-          freightUsd,
-          cifUsd,
-          taxesFeesUsd,
-          landedDdpUsd,
+          exwUsd: Number(exwUsd.toFixed(2)),
+          commissionPct: Number(commissionPct.toFixed(2)),
+          commissionAmountUsd: Number(commissionAmountUsd.toFixed(2)),
+          fobUsd: Number(fobUsd.toFixed(2)),
+          freightUsd: Number(freightUsd.toFixed(2)),
+          cifUsd: Number(cifUsd.toFixed(2)),
+          taxesFeesUsd: Number(taxesFeesUsd.toFixed(2)),
+          landedDdpUsd: Number(landedDdpUsd.toFixed(2)),
           notes: notes || undefined,
           invoices: [],
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to create sale");
-      router.push(`/sales/${data.id}`);
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error al crear la venta");
+      router.push(`/sales/${(data as { id: string }).id}`);
     } catch (err: any) {
       setError(err.message ?? "Failed to save");
     } finally {
@@ -227,26 +229,40 @@ export function NewSaleClient() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
             [
-              ["EXW", exwUsd, setExwUsd],
-              ["Commission %", commissionPct, setCommissionPct],
-              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd],
-              ["FOB", fobUsd, setFobUsd],
-              ["Freight", freightUsd, setFreightUsd],
-              ["CIF", cifUsd, setCifUsd],
-              ["Taxes & fees", taxesFeesUsd, setTaxesFeesUsd],
-              ["Landed DDP", landedDdpUsd, setLandedDdpUsd],
-            ] as [string, number, (n: number) => void][]
-          ).map(([label, val, setter]) => (
+              ["EXW", exwUsd, setExwUsd, true],
+              ["Commission %", commissionPct, setCommissionPct, false],
+              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd, true],
+              ["FOB", fobUsd, setFobUsd, true],
+              ["Freight", freightUsd, setFreightUsd, true],
+              ["CIF", cifUsd, setCifUsd, true],
+              ["Taxes & fees", taxesFeesUsd, setTaxesFeesUsd, true],
+              ["Landed DDP", landedDdpUsd, setLandedDdpUsd, true],
+            ] as [string, number, (n: number) => void, boolean][]
+          ).map(([label, val, setter, isCurrency]) => (
             <div key={label}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type="number"
-                min={0}
-                step={label === "Commission %" ? 0.1 : 0.01}
-                value={typeof val === "number" ? val : ""}
-                onChange={(e) => (setter as any)(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              />
+              {isCurrency ? (
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <span className="inline-flex items-center pl-3 bg-gray-100 text-gray-600 text-sm border-r border-gray-300">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
+                    onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
+                    className="flex-1 min-w-0 px-3 py-2 border-0 rounded-none text-sm"
+                  />
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
+                  onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              )}
             </div>
           ))}
         </div>
