@@ -11,7 +11,7 @@ interface Props {
 export function Step6Preview({ state, update }: Props) {
   const factoryCost = state.factoryCostUsd ?? 0;
   const commissionAmount = factoryCost * (state.commissionPct / 100) + state.commissionFixed;
-  const fob = factoryCost + commissionAmount;
+  const fob = factoryCost; // FOB = factory only; commission is in taxes & fees
   const cif = fob + state.freightCostUsd;
 
   const fmt = (n: number) =>
@@ -68,16 +68,16 @@ export function Step6Preview({ state, update }: Props) {
             <span className="text-gray-500">Factory Cost ({state.costMethod})</span>
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">
-              Commission ({state.commissionPct}% + {fmt(state.commissionFixed)})
-            </span>
-            <span className="font-medium">{fmt(commissionAmount)}</span>
-          </div>
           <div className="flex justify-between font-semibold border-t pt-2">
-            <span>FOB</span>
+            <span>FOB (factory only)</span>
             <span>{fmt(fob)}</span>
           </div>
+          {commissionAmount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">Commission (in taxes & fees)</span>
+              <span className="font-medium">{fmt(commissionAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-500">
               Freight ({state.numContainers} container{state.numContainers !== 1 ? "s" : ""})
@@ -106,7 +106,7 @@ export function Step6Preview({ state, update }: Props) {
             <p className="text-white/70 text-sm">Estimated Landed / DDP</p>
             <p className="text-white/40 text-xs mt-0.5">After taxes & fees</p>
           </div>
-          <p className="text-3xl font-bold text-white">{fmt(state.landedDdpUsd ?? cif)}</p>
+          <p className="text-3xl font-bold text-white">{fmt(state.landedDdpUsd ?? cif + (state.taxesFeesUsd ?? 0))}</p>
         </div>
         {state.totalKits > 0 && (
           <div className="mt-3 pt-3 border-t border-white/20 flex justify-between text-white/70 text-sm">

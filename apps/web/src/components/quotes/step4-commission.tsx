@@ -58,9 +58,8 @@ export function Step4Commission({ state, update }: Props) {
     (state.m2S80 / CAP_S80) + (state.m2S150 / CAP_S150) + (state.m2S200 / CAP_S200);
 
   const commissionPctAmount = factoryCost * (state.commissionPct / 100);
-  // commissionFixed is the per-order total; commissionFixedPerKit is a linked display field
   const commissionAmount = commissionPctAmount + state.commissionFixed;
-  const fob = factoryCost + commissionAmount;
+  const fob = factoryCost; // FOB = factory only; commission is applied in taxes & fees (step 5)
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -218,30 +217,39 @@ export function Step4Commission({ state, update }: Props) {
           </div>
         </div>
 
-        {/* FOB breakdown */}
+        {/* FOB and commission summary */}
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Factory Cost</span>
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
-          {commissionPctAmount > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Commission {state.commissionPct}%</span>
-              <span className="font-medium">{fmt(commissionPctAmount)}</span>
-            </div>
-          )}
-          {state.commissionFixed > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">
-                Fixed ({state.totalKits > 0 ? `${fmt(state.commissionFixedPerKit)}/kit × ${state.totalKits}` : "per order"})
-              </span>
-              <span className="font-medium">{fmt(state.commissionFixed)}</span>
-            </div>
-          )}
           <div className="flex justify-between text-base font-semibold pt-2 border-t">
-            <span className="text-vbt-blue">FOB Total</span>
+            <span className="text-vbt-blue">FOB (factory only)</span>
             <span className="text-vbt-blue">{fmt(fob)}</span>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Commission is applied in taxes & fees in the next step.</p>
+          {commissionAmount > 0 && (
+            <>
+              {commissionPctAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Commission {state.commissionPct}%</span>
+                  <span className="font-medium">{fmt(commissionPctAmount)}</span>
+                </div>
+              )}
+              {state.commissionFixed > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">
+                    Fixed ({state.totalKits > 0 ? `${fmt(state.commissionFixedPerKit)}/kit × ${state.totalKits}` : "per order"})
+                  </span>
+                  <span className="font-medium">{fmt(state.commissionFixed)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Total commission (in taxes & fees)</span>
+                <span className="font-medium">{fmt(commissionAmount)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -55,12 +55,13 @@ export function Step5Destination({ state, update }: Props) {
 
   const factoryCost = state.factoryCostUsd ?? 0;
   const commissionAmount = factoryCost * (state.commissionPct / 100) + state.commissionFixed;
-  const fob = factoryCost + commissionAmount;
+  const fob = factoryCost; // FOB = factory only; commission is in taxes & fees
   const cif = fob + state.freightCostUsd;
 
-  // Compute tax preview
+  // Compute tax preview (destination rules + commission line)
   const taxPreview = computeTaxPreview(selectedTaxRules, cif, fob, state.numContainers);
-  const totalTaxes = taxPreview.reduce((a, t) => a + t.amount, 0);
+  const totalTaxes =
+    taxPreview.reduce((a, t) => a + t.amount, 0) + commissionAmount;
   const landedDdp = cif + totalTaxes;
 
   // Sync computed financial values to wizard state so step 6 preview is accurate
@@ -180,16 +181,22 @@ export function Step5Destination({ state, update }: Props) {
             </select>
           </div>
 
-          {/* Tax preview */}
-          {taxPreview.length > 0 && (
+          {/* Tax preview (includes commission as a line so total matches saved quote) */}
+          {(taxPreview.length > 0 || commissionAmount > 0) && (
             <div className="space-y-2">
-              <p className="text-xs text-gray-400 uppercase font-medium">Tax Preview</p>
+              <p className="text-xs text-gray-400 uppercase font-medium">Tax & Fees Preview</p>
               {taxPreview.map((t, i) => (
                 <div key={i} className="flex justify-between text-sm">
                   <span className="text-gray-600">{t.label}</span>
                   <span className="font-medium">{fmt(t.amount)}</span>
                 </div>
               ))}
+              {commissionAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Commission (in taxes & fees)</span>
+                  <span className="font-medium">{fmt(commissionAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-semibold pt-2 border-t">
                 <span className="text-gray-700">Total Taxes & Fees</span>
                 <span>{fmt(totalTaxes)}</span>

@@ -275,15 +275,16 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
   }
 
   // ── Commission & FOB ──────────────────────────────────────────────────────
+  // FOB = factory cost only; commission is added as a line in taxes & fees (not to FOB).
   const commissionPct = input.commissionPct ?? 0;
-  // commissionFixed is always the per-order total (commissionFixedPerKit is a UI alias for it)
   const commissionFixed = input.commissionFixed ?? 0;
   const commissionFixedPerKit = input.commissionFixedPerKit ?? 0;
-  const { commissionAmount, fobUsd } = computeFob({
+  const { commissionAmount } = computeFob({
     factoryCost: factoryCostUsd,
     commissionPct,
     commissionFixed,
   });
+  const fobUsd = factoryCostUsd;
 
   // ── CIF ───────────────────────────────────────────────────────────────────
   const freightCostUsd = input.freightCostUsd ?? 0;
@@ -294,7 +295,22 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
 
   // ── Taxes ─────────────────────────────────────────────────────────────────
   const taxRules = input.taxRules ?? [];
-  const taxLines = computeTaxLines({ cifUsd, fobUsd, numContainers, rules: taxRules });
+  const ruleTaxLines = computeTaxLines({ cifUsd, fobUsd, numContainers, rules: taxRules });
+  const commissionLabel =
+    commissionPct > 0 && commissionFixed > 0
+      ? `Commission (${commissionPct}% + ${commissionFixed.toLocaleString("en-US", { maximumFractionDigits: 0 })} fixed)`
+      : commissionPct > 0
+        ? `Commission (${commissionPct}%)`
+        : `Commission (fixed)`;
+  const commissionTaxLine: TaxLineResult = {
+    order: 9999,
+    label: commissionLabel,
+    base: "FIXED_TOTAL",
+    baseAmount: 1,
+    computedAmount: commissionAmount,
+    perContainer: false,
+  };
+  const taxLines = [...ruleTaxLines, commissionTaxLine];
   const taxesFeesUsd = sumTaxLines(taxLines);
   const landedDdpUsd = cifUsd + taxesFeesUsd;
 
