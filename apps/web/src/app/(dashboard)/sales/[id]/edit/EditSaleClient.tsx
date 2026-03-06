@@ -143,15 +143,15 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
             <div key={label}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
               {isCurrency ? (
-                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                  <span className="inline-flex items-center pl-3 bg-gray-100 text-gray-600 text-sm border-r border-gray-300">$</span>
+                <div className="relative rounded-lg border border-gray-300">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">$</span>
                   <input
                     type="number"
                     min={0}
                     step={0.01}
                     value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
                     onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
-                    className="flex-1 min-w-0 px-3 py-2 border-0 rounded-none text-sm"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border-0 text-sm bg-transparent"
                   />
                 </div>
               ) : (

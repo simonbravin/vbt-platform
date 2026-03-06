@@ -50,6 +50,7 @@ enum QuoteStatus {
 
 enum ProjectStatus {
   DRAFT
+  IN_CONVERSATION
   QUOTED
   QUOTE_SENT
   SOLD

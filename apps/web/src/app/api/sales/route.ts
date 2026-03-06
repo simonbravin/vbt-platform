@@ -244,7 +244,10 @@ export async function POST(req: Request) {
     return NextResponse.json(sale);
   } catch (e) {
     console.error("POST /api/sales error:", e);
-    const message = e instanceof Error ? e.message : "Failed to create sale";
+    let message = e instanceof Error ? e.message : "Failed to create sale";
+    if (typeof message === "string" && /does not exist|relation.*does not exist/i.test(message)) {
+      message = "La tabla de ventas no existe en la base de datos. Ejecuta las migraciones (ej. prisma migrate deploy o db push) en el servidor.";
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
