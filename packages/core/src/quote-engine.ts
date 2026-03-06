@@ -81,6 +81,8 @@ export interface QuoteInput {
   totalKits?: number;
   // Taxes
   taxRules?: TaxRule[];
+  /** When server-computed factory cost is 0 but client had a value (e.g. M² fallback), use this to avoid persisting FOB 0. */
+  overrideFactoryCostUsd?: number;
 }
 
 export interface QuoteOutputLine {
@@ -271,6 +273,10 @@ export function buildQuoteSnapshot(input: QuoteInput): QuoteSnapshot {
         orgDefaults.rateGlobal
       );
       break;
+  }
+
+  if (input.overrideFactoryCostUsd != null && input.overrideFactoryCostUsd > 0) {
+    factoryCostUsd = input.overrideFactoryCostUsd;
   }
 
   // ── Commission & FOB ──────────────────────────────────────────────────────

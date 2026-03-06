@@ -29,6 +29,7 @@ const createSchema = z.object({
   countryId: z.string().optional(),
   taxRuleSetId: z.string().optional(),
   notes: z.string().optional(),
+  factoryCostUsd: z.number().min(0).optional(),
 });
 
 export async function GET(req: Request) {
@@ -116,14 +117,17 @@ export async function POST(req: Request) {
       csvImportLines = importData.lines
         .filter((l) => !l.isIgnored)
         .map((l) => {
-          const pieceCost = (l as any).piece?.costs?.[0]?.pricePerMCored;
+          const rawPieceCost = (l as any).piece?.costs?.[0]?.pricePerMCored;
+          const pieceCost = rawPieceCost != null ? Number(rawPieceCost) : undefined;
+          const rawPricePerM = l.pricePerM;
+          const pricePerM = rawPricePerM != null ? Number(rawPricePerM) : undefined;
           return {
             description: removeVersionPrefix(l.rawPieceName),
             pieceId: l.pieceId ?? undefined,
             qty: l.rawQty,
             heightMm: l.rawHeightMm,
             isIgnored: l.isIgnored,
-            manualPricePerM: l.pricePerM ?? pieceCost ?? undefined,
+            manualPricePerM: pricePerM ?? pieceCost ?? undefined,
           };
         });
 
@@ -163,8 +167,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // Build snapshot
-  const snapshot = buildQuoteSnapshot({
+  const snapshotInput = {
     method: data.costMethod,
     baseUom: data.baseUom,
     lines: data.costMethod === "CSV" ? csvImportLines : undefined,
@@ -189,7 +192,16 @@ export async function POST(req: Request) {
     kitsPerContainer: data.kitsPerContainer,
     totalKits: data.totalKits,
     taxRules,
-  });
+  };
+
+  let snapshot = buildQuoteSnapshot(snapshotInput);
+
+  if (snapshot.factoryCostUsd === 0 && (data.factoryCostUsd ?? 0) > 0) {
+    snapshot = buildQuoteSnapshot({
+      ...snapshotInput,
+      overrideFactoryCostUsd: data.factoryCostUsd,
+    });
+  }
 
   const quoteNumber = generateQuoteNumber();
 

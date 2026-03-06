@@ -50,4 +50,24 @@ describe("buildQuoteSnapshot - FOB and commission", () => {
     const cif = snapshot.fobUsd + (snapshot.freightCostUsd ?? 0);
     expect(snapshot.landedDdpUsd).toBeCloseTo(cif + snapshot.taxesFeesUsd);
   });
+
+  it("uses overrideFactoryCostUsd when provided so FOB is not 0", () => {
+    const snapshot = buildQuoteSnapshot({
+      method: "CSV",
+      baseUom: "M",
+      lines: [],
+      pieceMeta: {},
+      orgDefaults: defaultOrgDefaults,
+      commissionPct: 10,
+      commissionFixed: 5000,
+      freightCostUsd: 2000,
+      numContainers: 1,
+      taxRules: [],
+      overrideFactoryCostUsd: 100_000,
+    });
+
+    expect(snapshot.factoryCostUsd).toBe(100_000);
+    expect(snapshot.fobUsd).toBeCloseTo(100_000 + 100_000 * 0.1);
+    expect(snapshot.fobUsd).toBeGreaterThan(0);
+  });
 });
