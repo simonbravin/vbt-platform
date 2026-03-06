@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Package, ArrowDown, ArrowUp, RefreshCw, Plus, LayoutGrid, List, Search, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { Package, ArrowDown, ArrowUp, RefreshCw, Plus, LayoutGrid, List, Search, ChevronDown, ChevronRight, ChevronUp, Download, ScrollText } from "lucide-react";
 
 type MoveType = "IN" | "OUT" | "ADJUST";
 
@@ -43,9 +43,14 @@ export default function InventoryPage() {
   const [addDialog, setAddDialog] = useState(false);
   const [catalogResults, setCatalogResults] = useState<any[]>([]);
   const [catalogSearch, setCatalogSearch] = useState("");
+  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState("");
   const [selectedPiece, setSelectedPiece] = useState<any>(null);
   const [addForm, setAddForm] = useState({ heightM: 0, units: 0 });
   const [addSaving, setAddSaving] = useState(false);
+
+  const [logsModal, setLogsModal] = useState(false);
+  const [movementLogs, setMovementLogs] = useState<{ id: string; userName: string | null; createdAt: string; changeLabel: string; pieceName?: string | null; warehouseName?: string | null }[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const reloadItems = (wid: string) => {
     setLoading(true);
@@ -69,16 +74,27 @@ export default function InventoryPage() {
     reloadItems(warehouseId);
   }, [warehouseId]);
 
-  // Catalog search in add dialog (API expects "search" param; also supports "q")
+  // Debounce catalog search (300 ms) so we don't hit API on every keystroke
   useEffect(() => {
-    if (!addDialog || catalogSearch.trim().length < 2) { setCatalogResults([]); return; }
+    if (!addDialog) {
+      setDebouncedCatalogSearch("");
+      return;
+    }
+    const t = setTimeout(() => setDebouncedCatalogSearch(catalogSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [catalogSearch, addDialog]);
+
+  // Catalog search in add dialog: fetch when debounced value has length >= 2; use minimal=1 for lighter response
+  useEffect(() => {
+    if (!addDialog || debouncedCatalogSearch.length < 2) { setCatalogResults([]); return; }
     const ctrl = new AbortController();
-    fetch("/api/catalog?search=" + encodeURIComponent(catalogSearch.trim()), { signal: ctrl.signal })
+    const params = new URLSearchParams({ search: debouncedCatalogSearch, minimal: "1" });
+    fetch("/api/catalog?" + params.toString(), { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => setCatalogResults(Array.isArray(d) ? d : d.items ?? []))
       .catch(() => {});
     return () => ctrl.abort();
-  }, [catalogSearch, addDialog]);
+  }, [debouncedCatalogSearch, addDialog]);
 
   // Group and filter items by piece; optionally filter to in-stock only (available > 0)
   const grouped = useMemo(() => {
@@ -247,6 +263,9 @@ export default function InventoryPage() {
           <button onClick={exportCsv} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
             <Download className="w-4 h-4" /> Export
           </button>
+          <button onClick={() => { setLogsModal(true); setMovementLogs([]); setLogsLoading(true); fetch(`/api/inventory/logs?warehouseId=${warehouseId || ""}&limit=100`).then(r => r.json()).then(d => { setMovementLogs(d.logs ?? []); setLogsLoading(false); }).catch(() => setLogsLoading(false)); }} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <ScrollText className="w-4 h-4" /> Logs
+          </button>
           <button onClick={openAddDialog} className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900">
             <Plus className="w-4 h-4" /> Add Item
           </button>
@@ -277,8 +296,8 @@ export default function InventoryPage() {
                       <span>Piece</span>
                       {grouped.size > 0 && (
                         <div className="flex items-center rounded border border-gray-200 overflow-hidden">
-                          <button type="button" onClick={() => expandCollapseAll(true)} title="Expand all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronDown className="w-3.5 h-3.5 rotate-[-90deg]" /></button>
-                          <button type="button" onClick={() => expandCollapseAll(false)} title="Collapse all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronRight className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => expandCollapseAll(true)} title="Expand all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronDown className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => expandCollapseAll(false)} title="Collapse all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronUp className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </div>
@@ -490,6 +509,50 @@ export default function InventoryPage() {
               <button onClick={submitMove} disabled={saving || moveForm.qty <= 0} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50">
                 {saving ? "Saving..." : "Confirm"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOGS MODAL */}
+      {logsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col m-4">
+            <h3 className="font-semibold text-lg mb-4">Inventory movement logs</h3>
+            {logsLoading ? (
+              <p className="text-gray-500 text-sm py-8 text-center">Loading...</p>
+            ) : (
+              <div className="overflow-y-auto flex-1 border border-gray-100 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">User</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Date / time</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Piece</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Warehouse</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {movementLogs.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No movement logs.</td></tr>
+                    ) : (
+                      movementLogs.map((log) => (
+                        <tr key={log.id} className="border-t border-gray-50 hover:bg-gray-50/50">
+                          <td className="px-4 py-2 text-gray-800">{log.userName ?? "—"}</td>
+                          <td className="px-4 py-2 text-gray-600">{new Date(log.createdAt).toLocaleString()}</td>
+                          <td className="px-4 py-2 text-gray-600">{log.pieceName ?? "—"}</td>
+                          <td className="px-4 py-2 text-gray-600">{log.warehouseName ?? "—"}</td>
+                          <td className="px-4 py-2 font-medium text-gray-800">{log.changeLabel}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="mt-4 flex justify-end">
+              <button onClick={() => setLogsModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
             </div>
           </div>
         </div>

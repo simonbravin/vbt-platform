@@ -11,28 +11,37 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const search = (url.searchParams.get("search") ?? url.searchParams.get("q") ?? "").trim();
   const systemCode = url.searchParams.get("system") ?? "";
+  const minimal = url.searchParams.get("minimal") === "1";
 
-  const pieces = await prisma.pieceCatalog.findMany({
-    where: {
-      isActive: true,
-      ...(search
-        ? {
-            OR: [
-              { canonicalName: { contains: search, mode: "insensitive" as const } },
-              { canonicalNameNormalized: { contains: search, mode: "insensitive" as const } },
-              ...(search.length > 0 ? [{ dieNumber: { contains: search, mode: "insensitive" as const } }] : []),
-            ],
-          }
-        : {}),
-      ...(systemCode ? { systemCode: systemCode as any } : {}),
-    },
-    include: {
-      costs: { orderBy: { effectiveFrom: "desc" }, take: 1 },
-      system: true,
-      aliases: { take: 5 },
-    },
-    orderBy: [{ systemCode: "asc" }, { canonicalName: "asc" }],
-  });
+  const where = {
+    isActive: true,
+    ...(search
+      ? {
+          OR: [
+            { canonicalName: { contains: search, mode: "insensitive" as const } },
+            { canonicalNameNormalized: { contains: search, mode: "insensitive" as const } },
+            ...(search.length > 0 ? [{ dieNumber: { contains: search, mode: "insensitive" as const } }] : []),
+          ],
+        }
+      : {}),
+    ...(systemCode ? { systemCode: systemCode as any } : {}),
+  };
+
+  const pieces = minimal
+    ? await prisma.pieceCatalog.findMany({
+        where,
+        select: { id: true, canonicalName: true, systemCode: true, dieNumber: true },
+        orderBy: [{ systemCode: "asc" }, { canonicalName: "asc" }],
+      })
+    : await prisma.pieceCatalog.findMany({
+        where,
+        include: {
+          costs: { orderBy: { effectiveFrom: "desc" }, take: 1 },
+          system: true,
+          aliases: { take: 5 },
+        },
+        orderBy: [{ systemCode: "asc" }, { canonicalName: "asc" }],
+      });
 
   return NextResponse.json(pieces);
 }

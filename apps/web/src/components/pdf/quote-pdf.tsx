@@ -522,6 +522,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Financial Summary</Text>
           <View style={styles.summaryBox}>
+            <SumRow label="EXW (Factory cost)" value={safeFmt(data.factoryCostUsd)} />
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />
             <SumRow
               label={`Freight (${data.numContainers} container${data.numContainers !== 1 ? "s" : ""})`}

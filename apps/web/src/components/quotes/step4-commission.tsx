@@ -220,7 +220,7 @@ export function Step4Commission({ state, update }: Props) {
         {/* FOB and commission summary */}
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Factory Cost</span>
+            <span className="text-gray-500">Factory cost (EXW)</span>
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
           <div className="flex justify-between text-base font-semibold pt-2 border-t">

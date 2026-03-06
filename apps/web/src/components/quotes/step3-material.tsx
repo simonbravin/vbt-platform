@@ -151,7 +151,7 @@ export function Step3MaterialCost({ state, update }: Props) {
                 );
               })()}
 
-              {/* Factory Cost */}
+              {/* Factory cost (EXW) */}
               {usingM2Fallback && settings ? (
                 // No piece prices → show M² rate breakdown as fallback
                 <div className="space-y-3">
@@ -179,13 +179,13 @@ export function Step3MaterialCost({ state, update }: Props) {
                     ))}
                   </div>
                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-                    <p className="text-blue-800 font-medium">Estimated Factory Cost</p>
+                    <p className="text-blue-800 font-medium">Estimated Factory cost (EXW)</p>
                     <p className="text-2xl font-bold text-blue-700">{fmt(state.factoryCostUsd ?? 0)}</p>
                   </div>
                 </div>
               ) : (state.factoryCostUsd ?? 0) > 0 ? (
                 <div className="p-4 bg-green-50 border border-green-100 rounded-lg flex items-center justify-between">
-                  <p className="text-green-800 font-medium">Factory Cost (CSV piece prices)</p>
+                  <p className="text-green-800 font-medium">Factory cost (EXW) – CSV piece prices</p>
                   <p className="text-2xl font-bold text-green-700">{fmt(state.factoryCostUsd ?? 0)}</p>
                 </div>
               ) : (
@@ -232,7 +232,7 @@ export function Step3MaterialCost({ state, update }: Props) {
             ))}
           </div>
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-            <p className="text-blue-800 font-medium">Total Factory Cost</p>
+            <p className="text-blue-800 font-medium">Total Factory cost (EXW)</p>
             <p className="text-2xl font-bold text-blue-700">{fmt(state.factoryCostUsd ?? 0)}</p>
           </div>
         </div>

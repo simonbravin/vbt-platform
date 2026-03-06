@@ -36,7 +36,7 @@ export function Step6Preview({ state, update }: Props) {
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-800">Factory cost is $0</p>
+            <p className="font-medium text-amber-800">Factory cost (EXW) is $0</p>
             <p className="text-amber-600 text-sm mt-0.5">
               No piece costs are configured. The quote will be saved but all financial figures will be $0.
               You can update piece costs in the catalog and recalculate.
@@ -65,7 +65,7 @@ export function Step6Preview({ state, update }: Props) {
         <h3 className="font-medium text-gray-700">Financial Summary</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Factory Cost ({state.costMethod})</span>
+            <span className="text-gray-500">Factory cost (EXW)</span>
             <span className="font-medium">{fmt(factoryCost)}</span>
           </div>
           <div className="flex justify-between font-semibold border-t pt-2">

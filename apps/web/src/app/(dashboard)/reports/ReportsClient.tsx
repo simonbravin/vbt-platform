@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
-import { BarChart3, Download, Package } from "lucide-react";
+import { BarChart3, Download, Package, Mail } from "lucide-react";
 
 type Country = { id: string; name: string; code: string };
 type Project = {
@@ -56,6 +56,11 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
   const [soldTo, setSoldTo] = useState("");
   const [search, setSearch] = useState("");
   const [pieces, setPieces] = useState<PiecesData | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const limit = 20;
 
   const fetchReport = useCallback(async () => {
@@ -145,6 +150,41 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
         a.click();
         URL.revokeObjectURL(url);
       });
+  };
+
+  const handleEmailReport = async () => {
+    if (!emailTo.trim()) return;
+    setEmailSending(true);
+    setEmailMessage(null);
+    try {
+      const res = await fetch("/api/reports/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: emailTo.trim(),
+          subject: emailSubject.trim() || undefined,
+          status: status || undefined,
+          countryId: countryId || undefined,
+          clientId: clientId || undefined,
+          soldFrom: soldFrom || undefined,
+          soldTo: soldTo || undefined,
+          search: search.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmailMessage({ type: "success", text: data.message ?? `Report sent to ${emailTo}` });
+        setEmailTo("");
+        setEmailSubject("");
+        setTimeout(() => { setEmailOpen(false); setEmailMessage(null); }, 2000);
+      } else {
+        setEmailMessage({ type: "error", text: data.error ?? "Failed to send" });
+      }
+    } catch {
+      setEmailMessage({ type: "error", text: "Failed to send email" });
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   return (
@@ -349,13 +389,22 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">Projects</h2>
-          <button
-            type="button"
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEmailOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Mail className="w-4 h-4" /> Email report
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
@@ -441,6 +490,58 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
           </>
         )}
       </div>
+
+      {/* Email report modal */}
+      {emailOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
+            <h3 className="font-semibold text-lg mb-4">Email report</h3>
+            <p className="text-gray-500 text-sm mb-4">Send the current projects report (same filters) as a CSV attachment.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email address *</label>
+                <input
+                  type="email"
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  placeholder="recipient@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject (optional)</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="VBT Projects Report"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              {emailMessage && (
+                <p className={`text-sm ${emailMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>{emailMessage.text}</p>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => { setEmailOpen(false); setEmailMessage(null); }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleEmailReport}
+                disabled={emailSending || !emailTo.trim()}
+                className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                {emailSending ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

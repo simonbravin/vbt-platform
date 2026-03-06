@@ -275,6 +275,7 @@ export default function QuoteDetailPage() {
           <h2 className="font-semibold text-gray-800">Cost Breakdown</h2>
           <div className="space-y-2 text-sm">
             {[
+              { label: "EXW (Factory cost)", value: quote.factoryCostUsd },
               { label: "FOB", value: quote.fobUsd, bold: true },
               { label: `Freight (${quote.numContainers} containers)`, value: quote.freightCostUsd },
               { label: "CIF", value: quote.cifUsd, bold: true },
