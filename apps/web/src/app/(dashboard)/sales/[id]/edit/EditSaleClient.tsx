@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
 import { ArrowLeft } from "lucide-react";
 
-const statusOptions = ["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "CANCELLED"] as const;
+const statusOptions = ["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "DUE", "CANCELLED"] as const;
 
 function validateFinancials(data: { exwUsd: number; fobUsd: number; cifUsd: number; landedDdpUsd: number }): string | null {
   if (data.exwUsd < 0 || data.fobUsd < 0 || data.cifUsd < 0 || data.landedDdpUsd < 0) return "Amounts cannot be negative.";

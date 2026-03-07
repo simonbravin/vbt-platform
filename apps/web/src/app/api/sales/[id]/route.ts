@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
+import { getInvoicedAmount, computeSaleStatus } from "@/lib/sales";
 import { z } from "zod";
 
-const saleStatusEnum = z.enum(["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "CANCELLED"]);
+const saleStatusEnum = z.enum(["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "DUE", "CANCELLED"]);
 
 const invoiceSchema = z.object({
   id: z.string().optional(),
@@ -78,6 +79,18 @@ export async function GET(
 
   if (!sale) return NextResponse.json({ error: "Sale not found" }, { status: 404 });
 
+  // Recalc DUE when opening: if not PAID/DRAFT/CANCELLED and has overdue invoice, set DUE
+  if (sale.status !== "DRAFT" && sale.status !== "CANCELLED" && sale.status !== "PAID") {
+    const totalPaid = sale.payments.reduce((a, p) => a + p.amountUsd, 0);
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const hasOverdueInvoice = sale.invoices.some((i) => i.dueDate && new Date(i.dueDate) < todayStart);
+    const expectedStatus = computeSaleStatus(sale.status, sale, totalPaid, hasOverdueInvoice);
+    if (expectedStatus !== sale.status) {
+      await prisma.sale.update({ where: { id }, data: { status: expectedStatus } });
+      (sale as { status: string }).status = expectedStatus;
+    }
+  }
+
   const invoiceStatusByEntity = computeInvoiceStatus(
     sale.invoices.map((i) => ({ amountUsd: i.amountUsd, entityId: i.entityId })),
     sale.payments.map((p) => ({ amountUsd: p.amountUsd, entityId: p.entityId }))
@@ -128,7 +141,39 @@ export async function PATCH(
   if (data.taxBreakdownJson !== undefined) updatePayload.taxBreakdownJson = data.taxBreakdownJson;
   if (data.notes !== undefined) updatePayload.notes = data.notes;
 
+  // Block PAID unless fully paid (round to 2 decimals to avoid floating-point edge cases)
+  if (data.status === "PAID") {
+    const payments = await prisma.payment.findMany({ where: { saleId: id }, select: { amountUsd: true } });
+    const totalPaid = payments.reduce((a, p) => a + p.amountUsd, 0);
+    const merged = { ...existing, ...updatePayload } as typeof existing;
+    const invoiced = getInvoicedAmount(merged);
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    if (round2(totalPaid) < round2(invoiced)) {
+      return NextResponse.json(
+        { error: "Cannot set status to PAID: total payments are less than invoiced amount" },
+        { status: 400 }
+      );
+    }
+  }
+
+  const recalcStatus =
+    data.invoices != null ||
+    data.invoicedBasis !== undefined ||
+    data.exwUsd != null ||
+    data.fobUsd != null ||
+    data.cifUsd != null ||
+    data.landedDdpUsd != null;
+
   if (data.invoices != null) {
+    const mergedForInv = { ...existing, ...updatePayload } as typeof existing;
+    const invoicedTotal = getInvoicedAmount(mergedForInv);
+    const invoicesSum = data.invoices.reduce((a, inv) => a + inv.amountUsd, 0);
+    if (invoicesSum > invoicedTotal) {
+      return NextResponse.json(
+        { error: `Sum of invoice amounts (${invoicesSum.toFixed(2)}) cannot exceed invoiced amount for selected basis (${invoicedTotal.toFixed(2)})` },
+        { status: 400 }
+      );
+    }
     await prisma.$transaction(async (tx) => {
       await tx.saleInvoice.deleteMany({ where: { saleId: id } });
       for (const inv of data.invoices!) {
@@ -148,6 +193,53 @@ export async function PATCH(
           });
         }
       }
+    });
+  }
+
+  if (recalcStatus) {
+    const payments = await prisma.payment.findMany({ where: { saleId: id }, select: { amountUsd: true } });
+    const totalPaid = payments.reduce((a, p) => a + p.amountUsd, 0);
+    const overdueCount = await prisma.saleInvoice.count({
+      where: { saleId: id, dueDate: { lt: new Date(new Date().setHours(0, 0, 0, 0)) } },
+    });
+    const hasOverdueInvoice = overdueCount > 0;
+    const merged = { ...existing, ...updatePayload } as typeof existing;
+    const newStatus = computeSaleStatus(existing.status, merged, totalPaid, hasOverdueInvoice);
+    updatePayload.status = newStatus;
+
+    if (data.invoicedBasis !== undefined && existing.invoicedBasis !== data.invoicedBasis) {
+      await createAuditLog({
+        orgId: user.orgId,
+        userId: user.id,
+        action: "SALE_INVOICED_BASIS_CHANGED" as any,
+        entityType: "Sale",
+        entityId: id,
+        meta: {
+          oldBasis: existing.invoicedBasis,
+          newBasis: data.invoicedBasis,
+          previousStatus: existing.status,
+          newStatus,
+        },
+      });
+    }
+    if (data.invoices != null) {
+      await createAuditLog({
+        orgId: user.orgId,
+        userId: user.id,
+        action: "SALE_INVOICE_UPDATED" as any,
+        entityType: "Sale",
+        entityId: id,
+        meta: { invoiceCount: data.invoices.length },
+      });
+    }
+  } else if (data.status != null && existing.status !== data.status) {
+    await createAuditLog({
+      orgId: user.orgId,
+      userId: user.id,
+      action: "SALE_STATUS_CHANGED" as any,
+      entityType: "Sale",
+      entityId: id,
+      meta: { previousStatus: existing.status, newStatus: data.status },
     });
   }
 

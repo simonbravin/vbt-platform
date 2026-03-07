@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
+import { getInvoicedAmount } from "@/lib/sales";
 import { z } from "zod";
 
-const saleStatusEnum = z.enum(["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "CANCELLED"]);
+const saleStatusEnum = z.enum(["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "DUE", "CANCELLED"]);
 
 const invoiceSchema = z.object({
   entityId: z.string(),
@@ -134,6 +135,24 @@ export async function POST(req: Request) {
       where: { id: data.clientId, orgId: user.orgId },
     });
     if (!client) return NextResponse.json({ error: "Client not found" }, { status: 400 });
+
+    if (data.invoices && data.invoices.length > 0) {
+      const saleForBasis = {
+        exwUsd: data.exwUsd,
+        fobUsd: data.fobUsd,
+        cifUsd: data.cifUsd,
+        landedDdpUsd: data.landedDdpUsd,
+        invoicedBasis: data.invoicedBasis ?? "DDP",
+      };
+      const invoicedTotal = getInvoicedAmount(saleForBasis);
+      const invoicesSum = data.invoices.reduce((a, inv) => a + inv.amountUsd, 0);
+      if (invoicesSum > invoicedTotal) {
+        return NextResponse.json(
+          { error: `Sum of invoice amounts (${invoicesSum.toFixed(2)}) cannot exceed invoiced amount for selected basis (${invoicedTotal.toFixed(2)})` },
+          { status: 400 }
+        );
+      }
+    }
 
     let quote: { id: string; projectId: string; orgId: string; factoryCostUsd: number; commissionPct: number; commissionFixed: number; fobUsd: number; freightCostUsd: number; cifUsd: number; taxesFeesUsd: number; landedDdpUsd: number } | null = null;
     if (data.quoteId) {

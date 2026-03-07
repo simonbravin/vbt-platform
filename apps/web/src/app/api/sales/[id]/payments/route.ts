@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
-import { getInvoicedAmount } from "@/lib/sales";
+import { getInvoicedAmount, computeSaleStatus } from "@/lib/sales";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -74,13 +74,25 @@ export async function POST(
     select: { amountUsd: true, entityId: true },
   });
   const totalPaid = payments.reduce((a, p) => a + p.amountUsd, 0);
-  const invoicedAmount = getInvoicedAmount(sale!);
-  const allPaid = totalPaid >= invoicedAmount;
-  const newStatus = allPaid ? "PAID" : "PARTIALLY_PAID";
+  const overdueCount = await prisma.saleInvoice.count({
+    where: { saleId, dueDate: { lt: new Date(new Date().setHours(0, 0, 0, 0)) } },
+  });
+  const hasOverdueInvoice = overdueCount > 0;
+  const newStatus = computeSaleStatus(sale!.status, sale!, totalPaid, hasOverdueInvoice);
   await prisma.sale.update({
     where: { id: saleId },
-    data: { status: newStatus as any },
+    data: { status: newStatus },
   });
+  if (sale!.status !== newStatus) {
+    await createAuditLog({
+      orgId: user.orgId,
+      userId: user.id,
+      action: "SALE_STATUS_RECALCULATED" as any,
+      entityType: "Sale",
+      entityId: saleId,
+      meta: { previousStatus: sale!.status, newStatus },
+    });
+  }
 
   await createAuditLog({
     orgId: user.orgId,

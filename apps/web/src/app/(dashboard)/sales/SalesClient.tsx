@@ -33,6 +33,7 @@ const statusLabel: Record<string, string> = {
   CONFIRMED: "Confirmed",
   PARTIALLY_PAID: "Partial",
   PAID: "Paid",
+  DUE: "Due",
   CANCELLED: "Cancelled",
 };
 
@@ -229,6 +230,7 @@ export function SalesClient() {
                     <span
                       className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
                         s.status === "PAID" ? "bg-green-100 text-green-700" :
+                        s.status === "DUE" ? "bg-amber-100 text-amber-800" :
                         s.status === "CANCELLED" ? "bg-gray-100 text-gray-600" :
                         s.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" :
                         "bg-blue-100 text-blue-700"

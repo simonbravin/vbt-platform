@@ -235,6 +235,12 @@ interface TaxRule {
 - `FIXED_PER_CONTAINER` → `fixedAmount * numContainers`
 - `FIXED_TOTAL` → `fixedAmount`
 
+### Ventas: monto facturado, cuotas y pagos (trazabilidad)
+- **Monto total facturado (contractual)** = `getInvoicedAmount(sale)` según `invoicedBasis` (EXW/FOB/CIF/DDP) sobre los totales de la venta. Es la única fuente de verdad para "fully paid".
+- **SaleInvoice** = cuotas/ítems de facturación con vencimiento (por entidad, sequence). Sirven para "qué vence cuándo" y para el status DUE; no redefinen el total facturado.
+- **Payment** = cobros contra la venta (por entidad). No hay asignación a una SaleInvoice concreta; se compara suma total de pagos vs monto total facturado (basis) para PAID / PARTIALLY_PAID.
+- **Status DUE**: la venta tiene al menos una SaleInvoice con `dueDate` &lt; hoy y no está PAID.
+
 ### Modelo: `BillingEntity`
 Entidades de facturación por org (ej. Vision Latam SA, VBT Argentina SA). Se usan en SaleInvoice y Payment para indicar qué entidad emite la factura o recibe el pago.
 

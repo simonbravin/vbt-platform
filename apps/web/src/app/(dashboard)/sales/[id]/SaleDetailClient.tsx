@@ -36,6 +36,7 @@ const statusLabel: Record<string, string> = {
   CONFIRMED: "Confirmed",
   PARTIALLY_PAID: "Partial",
   PAID: "Paid",
+  DUE: "Due",
   CANCELLED: "Cancelled",
 };
 
@@ -149,6 +150,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         <span
           className={`inline-flex px-2 py-1 rounded text-sm font-medium ${
             sale.status === "PAID" ? "bg-green-100 text-green-700" :
+            sale.status === "DUE" ? "bg-amber-100 text-amber-800" :
             sale.status === "CANCELLED" ? "bg-gray-100 text-gray-600" :
             sale.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
           }`}
