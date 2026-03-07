@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
@@ -60,7 +61,10 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       .then((r) => r.json())
       .then((d) => { setSale(d); setLoading(false); })
       .catch(() => setLoading(false));
-    fetch("/api/sales/entities").then((r) => r.json()).then((d) => setEntities(Array.isArray(d) ? d : []));
+    fetch("/api/sales/entities")
+      .then((r) => r.json())
+      .then((d) => setEntities(Array.isArray(d) ? d : (d?.entities && Array.isArray(d.entities) ? d.entities : [])))
+      .catch(() => setEntities([]));
   }, [saleId]);
 
   const handleAddPayment = async (e: React.FormEvent) => {
@@ -254,9 +258,9 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         </div>
       </div>
 
-      {paymentOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      {paymentOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && setPaymentOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-gray-800 mb-4">Add payment</h3>
             <form onSubmit={handleAddPayment} className="space-y-4">
               {payError && <p className="text-sm text-red-600">{payError}</p>}
@@ -269,9 +273,13 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                   required
                 >
                   <option value="">Select entity</option>
-                  {entities.map((e) => (
-                    <option key={e.id} value={e.id}>{(e as any).name ?? e.name}</option>
-                  ))}
+                  {entities.length === 0 ? (
+                    <option value="" disabled>No entities—run db:seed or add in Admin</option>
+                  ) : (
+                    entities.map((e) => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))
+                  )}
                 </select>
               </div>
               <div>
@@ -336,12 +344,13 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {deletePaymentId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+      {deletePaymentId && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !deletingPayment && setDeletePaymentId(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-gray-800 mb-2">Remove payment?</h3>
             <p className="text-sm text-gray-600 mb-4">This will delete the payment and update the sale status. This cannot be undone.</p>
             {deletePaymentError && <p className="text-sm text-red-600 mb-3">{deletePaymentError}</p>}
@@ -363,7 +372,8 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
