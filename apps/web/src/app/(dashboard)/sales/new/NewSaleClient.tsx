@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientId: string | null };
 type Quote = { id: string; quoteNumber: string | null; factoryCostUsd: number; commissionPct: number; commissionFixed: number; fobUsd: number; freightCostUsd: number; cifUsd: number; taxesFeesUsd: number; landedDdpUsd: number };
 type Entity = { id: string; name: string; slug: string };
+
+type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; notes: string };
 
 export function NewSaleClient() {
   const router = useRouter();
@@ -34,6 +36,7 @@ export function NewSaleClient() {
   const [landedDdpUsd, setLandedDdpUsd] = useState(0);
   const [invoicedBasis, setInvoicedBasis] = useState<"EXW" | "FOB" | "CIF" | "DDP">("DDP");
   const [notes, setNotes] = useState("");
+  const [invoices, setInvoices] = useState<InvoiceLine[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,6 +101,14 @@ export function NewSaleClient() {
     return null;
   };
 
+  const getMaxInvoiced = () => {
+    const b = (invoicedBasis || "DDP").toUpperCase();
+    if (b === "EXW") return exwUsd;
+    if (b === "FOB") return fobUsd;
+    if (b === "CIF") return cifUsd;
+    return landedDdpUsd;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -108,6 +119,13 @@ export function NewSaleClient() {
     const validationErr = validateFinancials();
     if (validationErr) {
       setError(validationErr);
+      return;
+    }
+    const validInvoices = invoices.filter((inv) => inv.entityId && inv.amountUsd >= 0);
+    const invoicesSum = validInvoices.reduce((a, inv) => a + Number(inv.amountUsd), 0);
+    const maxInvoiced = getMaxInvoiced();
+    if (validInvoices.length > 0 && invoicesSum > maxInvoiced) {
+      setError(`Sum of invoice amounts (${invoicesSum.toFixed(2)}) cannot exceed invoiced amount for selected basis (${maxInvoiced.toFixed(2)}).`);
       return;
     }
     setSaving(true);
@@ -131,7 +149,15 @@ export function NewSaleClient() {
           landedDdpUsd: Number(landedDdpUsd.toFixed(2)),
           invoicedBasis,
           notes: notes || undefined,
-          invoices: [],
+          invoices: invoices
+            .filter((inv) => inv.entityId && inv.amountUsd >= 0)
+            .map((inv) => ({
+              entityId: inv.entityId,
+              amountUsd: Number(Number(inv.amountUsd).toFixed(2)),
+              dueDate: inv.dueDate || undefined,
+              sequence: inv.sequence || 1,
+              notes: inv.notes || undefined,
+            })),
         }),
       });
       const text = await res.text();
@@ -291,6 +317,96 @@ export function NewSaleClient() {
             rows={2}
           />
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800">Invoices / due dates</h2>
+          <button
+            type="button"
+            onClick={() => setInvoices((prev) => [...prev, { entityId: "", amountUsd: 0, dueDate: "", sequence: prev.length + 1, notes: "" }])}
+            className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium text-vbt-blue hover:bg-blue-50 rounded-lg"
+          >
+            <Plus className="w-4 h-4" /> Add line
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">Optional. Sum of amounts cannot exceed the invoiced amount for the selected sales condition.</p>
+        {invoices.filter((i) => i.entityId).length > 0 && (() => {
+          const sum = invoices.filter((i) => i.entityId).reduce((a, i) => a + Number(i.amountUsd), 0);
+          const max = getMaxInvoiced();
+          return sum > max ? <p className="text-sm text-amber-600">Sum (${sum.toFixed(2)}) exceeds max for {invoicedBasis} (${max.toFixed(2)}). Reduce amounts or change sales condition.</p> : null;
+        })()}
+        {invoices.length === 0 ? (
+          <p className="text-sm text-gray-500">No invoice lines. Click &quot;Add line&quot; to define due dates by entity.</p>
+        ) : (
+          <ul className="space-y-3">
+            {invoices.map((inv, idx) => (
+              <li key={idx} className="flex flex-wrap items-end gap-2 p-3 bg-gray-50 rounded-lg">
+                <div className="min-w-[140px] flex-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Entity</label>
+                  <select
+                    value={inv.entityId}
+                    onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, entityId: e.target.value } : p)))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                  >
+                    <option value="">Select entity</option>
+                    {entities.map((e) => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Amount $</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={inv.amountUsd === 0 ? "" : inv.amountUsd}
+                    onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, amountUsd: parseFloat(e.target.value) || 0 } : p)))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                  />
+                </div>
+                <div className="w-36">
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Due date</label>
+                  <input
+                    type="date"
+                    value={inv.dueDate}
+                    onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, dueDate: e.target.value } : p)))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                  />
+                </div>
+                <div className="w-16">
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Seq</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={inv.sequence}
+                    onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, sequence: parseInt(e.target.value, 10) || 1 } : p)))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                  />
+                </div>
+                <div className="flex-1 min-w-[100px]">
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Notes</label>
+                  <input
+                    type="text"
+                    value={inv.notes}
+                    onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, notes: e.target.value } : p)))}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    placeholder="Optional"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInvoices((prev) => prev.filter((_, i) => i !== idx))}
+                  className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                  title="Remove line"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="flex gap-3">

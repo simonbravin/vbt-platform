@@ -235,9 +235,9 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
               <p className="text-gray-500 text-sm">No invoices defined</p>
             ) : (
               <ul className="space-y-2 text-sm">
-                {sale.invoices.map((inv) => (
+                {[...sale.invoices].sort((a, b) => (a.sequence ?? 1) - (b.sequence ?? 1)).map((inv) => (
                   <li key={inv.id} className="flex justify-between items-center">
-                    <span>{inv.entity.name} – {formatCurrency(inv.amountUsd)}{inv.dueDate ? ` due ${new Date(inv.dueDate).toLocaleDateString()}` : ""}</span>
+                    <span>{inv.entity?.name ?? "—"} – {formatCurrency(inv.amountUsd)}{inv.dueDate ? ` due ${new Date(inv.dueDate).toLocaleDateString()}` : ""}</span>
                     {sale.invoiceStatusByEntity?.[inv.entityId] && (
                       <span className="text-xs text-gray-500">{sale.invoiceStatusByEntity[inv.entityId].status}</span>
                     )}
