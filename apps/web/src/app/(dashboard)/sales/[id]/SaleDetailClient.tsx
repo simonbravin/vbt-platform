@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 
@@ -56,6 +57,11 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [deletingPayment, setDeletingPayment] = useState(false);
   const [deletePaymentError, setDeletePaymentError] = useState<string | null>(null);
+  const [deleteSaleOpen, setDeleteSaleOpen] = useState(false);
+  const [deletingSale, setDeletingSale] = useState(false);
+  const [deleteSaleError, setDeleteSaleError] = useState<string | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`/api/sales/${saleId}`)
@@ -126,6 +132,26 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
     }
   };
 
+  const handleDeleteSale = async () => {
+    setDeletingSale(true);
+    setDeleteSaleError(null);
+    try {
+      const res = await fetch(`/api/sales/${saleId}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeleteSaleOpen(false);
+        router.push("/sales");
+        return;
+      }
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
+      setDeleteSaleError((data as { error?: string }).error ?? "Failed to delete sale");
+    } catch {
+      setDeleteSaleError("Failed to delete sale");
+    } finally {
+      setDeletingSale(false);
+    }
+  };
+
   if (loading || !sale) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -146,6 +172,13 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
               <Pencil className="w-4 h-4" /> Edit
             </Link>
           )}
+          <button
+            type="button"
+            onClick={() => setDeleteSaleOpen(true)}
+            className="inline-flex items-center gap-1 px-2 py-1 border border-red-200 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" /> Delete sale
+          </button>
         </div>
         <span
           className={`inline-flex px-2 py-1 rounded text-sm font-medium ${
@@ -373,6 +406,37 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
               >
                 {deletingPayment ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {deleteSaleOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !deletingSale && setDeleteSaleOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold text-gray-800 mb-2">Delete sale?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will permanently delete this sale ({sale.saleNumber ?? saleId}) and all its invoices and payments. This cannot be undone.
+            </p>
+            {deleteSaleError && <p className="text-sm text-red-600 mb-3">{deleteSaleError}</p>}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setDeleteSaleOpen(false); setDeleteSaleError(null); }}
+                disabled={deletingSale}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSale}
+                disabled={deletingSale}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingSale ? "Deleting..." : "Delete sale"}
               </button>
             </div>
           </div>

@@ -266,3 +266,48 @@ export async function PATCH(
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = session.user as { orgId: string; id: string; role: string };
+  if (["VIEWER"].includes(user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const { id } = await params;
+
+  const sale = await prisma.sale.findFirst({
+    where: { id, orgId: user.orgId },
+    select: {
+      id: true,
+      saleNumber: true,
+      status: true,
+      clientId: true,
+      projectId: true,
+      _count: { select: { invoices: true, payments: true } },
+    },
+  });
+  if (!sale) return NextResponse.json({ error: "Sale not found" }, { status: 404 });
+
+  await createAuditLog({
+    orgId: user.orgId,
+    userId: user.id,
+    action: "SALE_DELETED" as any,
+    entityType: "Sale",
+    entityId: id,
+    meta: {
+      saleNumber: sale.saleNumber,
+      status: sale.status,
+      clientId: sale.clientId,
+      projectId: sale.projectId,
+      invoiceCount: sale._count.invoices,
+      paymentCount: sale._count.payments,
+    },
+  });
+
+  await prisma.sale.delete({ where: { id } });
+  return new NextResponse(null, { status: 204 });
+}
