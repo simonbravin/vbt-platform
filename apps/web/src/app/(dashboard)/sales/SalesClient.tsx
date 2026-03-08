@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
+import { getInvoicedAmount } from "@/lib/sales";
 import { Plus, ShoppingCart, Bell, Download } from "lucide-react";
 
 type Sale = {
@@ -191,13 +192,7 @@ export function SalesClient() {
                 <th className="text-left px-4 py-2 font-medium text-gray-700">Client</th>
                 <th className="text-left px-4 py-2 font-medium text-gray-700">Project</th>
                 <th className="text-center px-2 py-2 font-medium text-gray-700">Qty</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">EXW</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">Comm %</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">FOB</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">Freight</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">CIF</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">Taxes</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">DDP</th>
+                <th className="text-right px-2 py-2 font-medium text-gray-700">Price</th>
                 <th className="text-center px-2 py-2 font-medium text-gray-700">Sales condition</th>
                 <th className="text-left px-2 py-2 font-medium text-gray-700">Status</th>
                 <th className="text-left px-4 py-2 font-medium text-gray-700">Actions</th>
@@ -218,13 +213,7 @@ export function SalesClient() {
                     </Link>
                   </td>
                   <td className="px-2 py-2 text-center text-gray-700">{s.quantity}</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{formatCurrency(s.exwUsd)}</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{s.commissionPct}%</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{formatCurrency(s.fobUsd)}</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{formatCurrency(s.freightUsd)}</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{formatCurrency(s.cifUsd)}</td>
-                  <td className="px-2 py-2 text-right text-gray-700">{formatCurrency(s.taxesFeesUsd)}</td>
-                  <td className="px-2 py-2 text-right font-medium text-gray-900">{formatCurrency(s.landedDdpUsd)}</td>
+                  <td className="px-2 py-2 text-right font-medium text-gray-900">{formatCurrency(getInvoicedAmount(s))}</td>
                   <td className="px-2 py-2 text-center text-gray-700 font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
                   <td className="px-2 py-2">
                     <span

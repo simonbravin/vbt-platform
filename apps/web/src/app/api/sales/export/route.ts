@@ -49,22 +49,18 @@ export async function GET(req: Request) {
   });
 
   const rows: string[][] = [
-    ["Sale #", "Client", "Project", "Date", "Sales condition", "EXW", "FOB", "CIF", "DDP", "Invoiced (basis)", "Status"],
+    ["Sale #", "Client", "Project", "Date", "Sales condition", "Price", "Status"],
   ];
   for (const s of sales) {
     const basis = (s.invoicedBasis || "DDP").toUpperCase();
-    const invoiced = getInvoicedAmount(s);
+    const price = getInvoicedAmount(s);
     rows.push([
       s.saleNumber ?? "",
       s.client.name,
       s.project.name,
       s.createdAt.toISOString().slice(0, 10),
       basis,
-      String(s.exwUsd),
-      String(s.fobUsd),
-      String(s.cifUsd),
-      String(s.landedDdpUsd),
-      String(invoiced),
+      String(price),
       s.status,
     ]);
   }

@@ -7,7 +7,8 @@ import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
-const statusOptions = ["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "DUE", "CANCELLED"] as const;
+/** Only these statuses are editable; Paid / Partially paid / Due are set automatically by payments and due dates. */
+const statusOptions = ["DRAFT", "CONFIRMED", "CANCELLED"] as const;
 
 type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; notes: string };
 type Entity = { id: string; name: string; slug?: string };
@@ -59,7 +60,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         setSale(d);
         if (d) {
           const round2 = (n: number) => Math.round(n * 100) / 100;
-          setStatus(d.status ?? "DRAFT");
+          setStatus(["PAID", "PARTIALLY_PAID", "DUE"].includes(d.status) ? "" : (d.status ?? "DRAFT"));
           setExwUsd(round2(d.exwUsd ?? 0));
           setCommissionPct(round2(d.commissionPct ?? 0));
           setCommissionAmountUsd(round2(d.commissionAmountUsd ?? 0));
@@ -106,7 +107,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status,
+          ...(status !== "" && { status: status as string }),
           exwUsd: Number(exwUsd.toFixed(2)),
           commissionPct: Number(commissionPct.toFixed(2)),
           commissionAmountUsd: Number(commissionAmountUsd.toFixed(2)),
@@ -164,11 +165,26 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">Status</h2>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-          ))}
-        </select>
+        {["PAID", "PARTIALLY_PAID", "DUE"].includes(sale.status) ? (
+          <>
+            <p className="text-sm text-gray-600">
+              Status: <strong>{sale.status.replace(/_/g, " ")}</strong> — set automatically from payments and due dates.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Change status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <option value="">Keep as is</option>
+                <option value="CANCELLED">Cancel sale</option>
+              </select>
+            </div>
+          </>
+        ) : (
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            {statusOptions.map((s) => (
+              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+        )}
         <div className="mt-3">
           <label className="block text-sm font-medium text-gray-700 mb-1">Sales condition (Incoterm for invoiced amount)</label>
           <select value={invoicedBasis} onChange={(e) => setInvoicedBasis(e.target.value as "EXW" | "FOB" | "CIF" | "DDP")} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
