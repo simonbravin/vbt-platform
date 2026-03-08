@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, FileText, Mail } from "lucide-react";
 
 type Statement = {
   client: { id: string; name: string };
@@ -23,6 +24,11 @@ export function StatementsClient() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -45,14 +51,63 @@ export function StatementsClient() {
     fetch("/api/clients?limit=500").then((r) => r.json()).then((d) => setClients(d.clients ?? []));
   }, []);
 
-  const handleExport = () => {
-    const params = new URLSearchParams();
+  const exportParams = () => {
+    const p = new URLSearchParams();
+    if (clientId) p.set("clientId", clientId);
+    if (entityId) p.set("entityId", entityId);
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    return p;
+  };
+
+  const handleExportCsv = () => {
+    const params = exportParams();
     params.set("format", "csv");
-    if (clientId) params.set("clientId", clientId);
-    if (entityId) params.set("entityId", entityId);
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
     window.open(`/api/sales/statements/export?${params}`, "_blank");
+  };
+
+  const handleExportPdf = () => {
+    const params = exportParams();
+    params.set("format", "pdf");
+    window.open(`/api/sales/statements/export?${params}`, "_blank");
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailTo.trim()) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    try {
+      const res = await fetch("/api/sales/statements/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: emailTo.trim(),
+          message: emailMessage.trim() || undefined,
+          clientId: clientId || undefined,
+          entityId: entityId || undefined,
+          dateFrom: from || undefined,
+          dateTo: to || undefined,
+        }),
+      });
+      const text = await res.text();
+      let data: { ok?: boolean; message?: string; error?: string } = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = {};
+      }
+      if (res.ok && data.ok) {
+        setEmailResult({ type: "success", text: data.message ?? `Sent to ${emailTo}` });
+        setEmailTo("");
+        setEmailMessage("");
+      } else {
+        setEmailResult({ type: "error", text: data.error ?? "Failed to send email" });
+      }
+    } catch {
+      setEmailResult({ type: "error", text: "Failed to send email" });
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   return (
@@ -79,10 +134,43 @@ export function StatementsClient() {
         <button type="button" onClick={fetchData} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium">
           Apply
         </button>
-        <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
+        <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
           <Download className="w-4 h-4" /> Export CSV
         </button>
+        <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
+          <FileText className="w-4 h-4" /> Export PDF
+        </button>
+        <button type="button" onClick={() => { setEmailOpen(true); setEmailResult(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:opacity-90">
+          <Mail className="w-4 h-4" /> Send by email
+        </button>
       </div>
+
+      {emailOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => !emailSending && setEmailOpen(false)}>
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold text-gray-900 mb-3">Send statements by email</h3>
+            <p className="text-sm text-gray-500 mb-3">Current filters (client, entity, date range) will be applied. The PDF will be attached.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To (email)</label>
+                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="client@company.com" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
+                <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder="Add a short message..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+              </div>
+              {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-green-600" : "text-red-600"}`}>{emailResult.text}</p>}
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
+              <button type="button" onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                {emailSending ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
         {loading ? (
