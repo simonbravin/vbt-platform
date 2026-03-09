@@ -204,8 +204,17 @@ export async function PATCH(
     });
     const hasOverdueInvoice = overdueCount > 0;
     const merged = { ...existing, ...updatePayload } as typeof existing;
-    const newStatus = computeSaleStatus(existing.status, merged, totalPaid, hasOverdueInvoice);
-    updatePayload.status = newStatus;
+    // Use intended status (user-sent or existing) so CONFIRMED is not overwritten by DRAFT
+    const currentStatusForCalc = data.status ?? existing.status;
+    const newStatus = computeSaleStatus(currentStatusForCalc, merged, totalPaid, hasOverdueInvoice);
+    const automaticStatuses = ["PAID", "PARTIALLY_PAID", "DUE"];
+    if (automaticStatuses.includes(newStatus)) {
+      updatePayload.status = newStatus;
+    } else if (data.status != null && ["DRAFT", "CONFIRMED", "CANCELLED"].includes(data.status)) {
+      updatePayload.status = data.status;
+    } else {
+      updatePayload.status = newStatus;
+    }
 
     if (data.invoicedBasis !== undefined && existing.invoicedBasis !== data.invoicedBasis) {
       await createAuditLog({
@@ -218,7 +227,7 @@ export async function PATCH(
           oldBasis: existing.invoicedBasis,
           newBasis: data.invoicedBasis,
           previousStatus: existing.status,
-          newStatus,
+          newStatus: updatePayload.status,
         },
       });
     }
