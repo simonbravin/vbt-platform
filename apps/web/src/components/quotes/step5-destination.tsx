@@ -53,9 +53,9 @@ export function Step5Destination({ state, update }: Props) {
     }
   }, [state.taxRuleSetId, taxRuleSets]);
 
-  const factoryCost = state.factoryCostUsd ?? 0;
-  const commissionPctAmount = factoryCost * (state.commissionPct / 100);
-  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed in taxes & fees
+  const totalFactoryCost = (state.factoryCostUsd ?? 0) * Math.max(1, state.totalKits || 0);
+  const commissionPctAmount = totalFactoryCost * (state.commissionPct / 100);
+  const fob = totalFactoryCost + commissionPctAmount; // FOB = total factory + % commission; fixed in taxes & fees
   const cif = fob + state.freightCostUsd;
 
   // Tax preview: exclude "Local Margin" (we add single "Commission (fixed)" line); match server Option A

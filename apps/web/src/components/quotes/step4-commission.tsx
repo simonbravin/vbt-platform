@@ -13,8 +13,11 @@ interface Props {
   update: (patch: Partial<QuoteWizardState>) => void;
 }
 
+// CSV / Step 3 always yield cost for one kit; total factory = perKit × totalKits (school, 150 houses, etc.).
 export function Step4Commission({ state, update }: Props) {
-  const factoryCost = state.factoryCostUsd ?? 0;
+  const factoryCostPerKit = state.factoryCostUsd ?? 0;
+  const totalKits = Math.max(1, state.totalKits || 0);
+  const totalFactoryCost = factoryCostPerKit * totalKits;
   const numContainers =
     state.kitsPerContainer > 0 && state.totalKits > 0
       ? Math.ceil(state.totalKits / state.kitsPerContainer)
@@ -57,9 +60,9 @@ export function Step4Commission({ state, update }: Props) {
   const rawContainersFromM2 =
     (state.m2S80 / CAP_S80) + (state.m2S150 / CAP_S150) + (state.m2S200 / CAP_S200);
 
-  const commissionPctAmount = factoryCost * (state.commissionPct / 100);
+  const commissionPctAmount = totalFactoryCost * (state.commissionPct / 100);
   const commissionAmount = commissionPctAmount + state.commissionFixed;
-  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed is in taxes & fees (step 5)
+  const fob = totalFactoryCost + commissionPctAmount; // FOB = total factory + % commission; fixed is in taxes & fees (step 5)
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -221,8 +224,13 @@ export function Step4Commission({ state, update }: Props) {
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Factory cost (EXW)</span>
-            <span className="font-medium">{fmt(factoryCost)}</span>
+            <span className="font-medium">{fmt(totalFactoryCost)}</span>
           </div>
+          {totalKits > 1 && (
+            <p className="text-xs text-gray-500">
+              {fmt(factoryCostPerKit)}/kit × {totalKits} kits = {fmt(totalFactoryCost)}
+            </p>
+          )}
           <div className="flex justify-between text-base font-semibold pt-2 border-t">
             <span className="text-vbt-blue">FOB (factory + % commission)</span>
             <span className="text-vbt-blue">{fmt(fob)}</span>

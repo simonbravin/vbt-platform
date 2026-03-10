@@ -43,9 +43,8 @@ export function Step3MaterialCost({ state, update }: Props) {
       .finally(() => setLoading(false));
   }, [state.revitImportId, state.costMethod]);
 
-  // Once both importData and settings are ready, compute factoryCostUsd for CSV.
-  // If piece prices are configured → use linearM × pricePerM (exact).
-  // If not → fall back to M² system rates (same as M2_BY_SYSTEM method).
+  // CSV always represents one kit (e.g. one house, one school unit). factoryCostUsd = cost per kit.
+  // If piece prices are configured → use linearM × pricePerM (exact). If not → M² system rates.
   useEffect(() => {
     if (state.costMethod !== "CSV" || !importData || !settings) return;
 

@@ -9,9 +9,9 @@ interface Props {
 }
 
 export function Step6Preview({ state, update }: Props) {
-  const factoryCost = state.factoryCostUsd ?? 0;
-  const commissionPctAmount = factoryCost * (state.commissionPct / 100);
-  const fob = factoryCost + commissionPctAmount; // FOB = factory + % commission; fixed in taxes & fees
+  const totalFactoryCost = (state.factoryCostUsd ?? 0) * Math.max(1, state.totalKits || 0);
+  const commissionPctAmount = totalFactoryCost * (state.commissionPct / 100);
+  const fob = totalFactoryCost + commissionPctAmount; // FOB = total factory + % commission; fixed in taxes & fees
   const cif = fob + state.freightCostUsd;
 
   const fmt = (n: number) =>
@@ -21,7 +21,7 @@ export function Step6Preview({ state, update }: Props) {
   const concreteEst = state.m2S80 * 0.08 + state.m2S150 * 0.15 + state.m2S200 * 0.2;
   const steelEst = state.m2S80 * 4 + state.m2S150 * 6 + state.m2S200 * 8;
 
-  const isZeroCost = factoryCost === 0;
+  const isZeroCost = totalFactoryCost === 0;
 
   return (
     <div className="space-y-6">
@@ -66,7 +66,7 @@ export function Step6Preview({ state, update }: Props) {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500">Factory cost (EXW)</span>
-            <span className="font-medium">{fmt(factoryCost)}</span>
+            <span className="font-medium">{fmt(totalFactoryCost)}</span>
           </div>
           <div className="flex justify-between font-semibold border-t pt-2">
             <span>FOB (factory + % commission)</span>

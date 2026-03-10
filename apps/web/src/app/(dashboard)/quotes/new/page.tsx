@@ -49,7 +49,7 @@ export interface QuoteWizardState {
   freightCostUsd: number;
   taxRuleSetId?: string;
   notes?: string;
-  // Computed
+  // Computed (from Step 3: always per kit — CSV is one kit; total = factoryCostUsd × totalKits in Step 4+)
   factoryCostUsd?: number;
   fobUsd?: number;
   cifUsd?: number;
@@ -119,10 +119,15 @@ export default function NewQuotePage() {
     setError(null);
 
     try {
+      const totalKits = Math.max(1, state.totalKits || 0);
+      const payload = {
+        ...state,
+        factoryCostUsd: (state.factoryCostUsd ?? 0) * totalKits,
+      };
       const res = await fetch("/api/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
