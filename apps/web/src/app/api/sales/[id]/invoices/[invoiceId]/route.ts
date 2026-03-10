@@ -51,8 +51,8 @@ export async function PATCH(
       select: { amountUsd: true },
     });
     const otherSum = otherInvoices.reduce((a, i) => a + i.amountUsd, 0);
-    const maxInvoiced = round2(getInvoicedAmount(existing.sale));
-    if (round2(otherSum + parsed.data.amountUsd) > maxInvoiced) {
+    const maxInvoiced = roundMoney(getInvoicedAmount(existing.sale));
+    if (roundMoney(otherSum + parsed.data.amountUsd) > maxInvoiced) {
       return NextResponse.json(
         {
           error: `Sum of invoice amounts would exceed invoiced amount for this sale (max ${maxInvoiced.toFixed(2)} USD).`,
