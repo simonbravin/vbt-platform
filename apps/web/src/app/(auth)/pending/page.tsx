@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/context";
 
 export default function PendingPage() {
@@ -16,15 +17,27 @@ export default function PendingPage() {
         </div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{t("auth.pendingTitle")}</h2>
         <p className="text-gray-500 mb-6">{t("auth.pendingMsg")}</p>
+        <p className="text-sm text-gray-500 mb-4">
+          Your account is pending assignment to an organization. Once an administrator assigns you to a partner, you will be able to access the platform.
+        </p>
         <p className="text-sm text-gray-400 mb-6">
           Need urgent access? Contact{" "}
           <a href="mailto:simon@visionlatam.com" className="text-vbt-orange hover:underline">
             simon@visionlatam.com
           </a>
         </p>
-        <Link href="/login" className="inline-flex items-center text-sm text-vbt-blue hover:underline">
-          ← {t("auth.signInLink")}
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link href="/login" className="inline-flex items-center text-sm text-vbt-blue hover:underline">
+            ← {t("auth.signInLink")}
+          </Link>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="text-sm text-gray-500 hover:text-gray-700 underline"
+          >
+            {t("auth.signOut")}
+          </button>
+        </div>
       </div>
     </div>
   );

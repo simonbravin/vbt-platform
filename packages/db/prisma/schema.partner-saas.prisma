@@ -1,0 +1,613 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Partner SaaS (Vision Latam) – Multi-tenant schema
+// Definitive ERD + gap fixes. See docs/ERD-GAP-ANALYSIS.md.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  output        = "../../../apps/web/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum OrganizationType {
+  vision_latam
+  commercial_partner
+  master_partner
+  internal
+}
+
+enum OrgMemberRole {
+  org_admin
+  sales_user
+  technical_user
+  viewer
+}
+
+enum OrgMemberStatus {
+  active
+  inactive
+  invited
+  suspended
+}
+
+enum PartnerType {
+  commercial_partner
+  master_partner
+}
+
+enum TerritoryType {
+  exclusive
+  open
+  referral
+}
+
+enum ClientType {
+  developer
+  builder
+  architect
+  government
+  end_client
+}
+
+enum ProjectStatus {
+  lead
+  qualified
+  quoting
+  engineering
+  won
+  lost
+  on_hold
+}
+
+enum ProjectClaimStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+  expired
+}
+
+enum QuoteItemType {
+  product
+  service
+  other
+}
+
+enum EngineeringRequestStatus {
+  submitted
+  in_review
+  pending_info
+  in_progress
+  completed
+  delivered
+}
+
+enum DocumentVisibility {
+  public
+  partners_only
+  internal
+}
+
+enum EngineeringFeeMode {
+  fixed
+  percent
+  per_request
+  included
+}
+
+enum TrainingEnrollmentStatus {
+  not_started
+  in_progress
+  completed
+}
+
+// ─── Users ──────────────────────────────────────────────────────────────────
+
+model User {
+  id                   String    @id @default(cuid())
+  fullName             String    @map("full_name")
+  email                String    @unique
+  passwordHash         String    @map("password_hash")
+  phone                String?
+  isActive             Boolean   @default(true) @map("is_active")
+  isPlatformSuperadmin Boolean   @default(false) @map("is_platform_superadmin")
+  emailVerified        DateTime? @map("email_verified")
+  image                String?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  lastLoginAt          DateTime? @map("last_login_at")
+
+  orgMembers              OrgMember[]
+  projectsAssigned        Project[]              @relation("ProjectAssignedTo")
+  quotesPrepared          Quote[]                 @relation("QuotePreparedBy")
+  quotesApproved          Quote[]                 @relation("QuoteApprovedBy")
+  engineeringRequestsReq  EngineeringRequest[]    @relation("EngineeringRequestedBy")
+  engineeringRequestsAss  EngineeringRequest[]    @relation("EngineeringAssignedTo")
+  engineeringFiles        EngineeringFile[]
+  engineeringDeliverables EngineeringDeliverable[]
+  documentsCreated        Document[]              @relation("DocumentCreatedBy")
+  trainingEnrollments     TrainingEnrollment[]
+  activityLogs            ActivityLog[]
+  invitedOrgMembers       OrgMember[]             @relation("InvitedBy")
+  approvedProjectClaims   ProjectClaim[]
+
+  @@map("users")
+}
+
+// ─── Organizations ───────────────────────────────────────────────────────────
+
+model Organization {
+  id               String             @id @default(cuid())
+  name             String
+  legalName        String?            @map("legal_name")
+  organizationType OrganizationType  @map("organization_type")
+  countryCode      String?            @map("country_code")
+  taxId            String?            @map("tax_id")
+  email            String?
+  phone            String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  status           String             @default("active") // active, suspended, etc.
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  members             OrgMember[]
+  partnerProfile      PartnerProfile?
+  territories         PartnerTerritory[]
+  clients             Client[]
+  projects            Project[]
+  projectClaims       ProjectClaim[]           @relation("ClaimingOrganization")
+  quotes              Quote[]
+  engineeringRequests EngineeringRequest[]
+  trainingEnrollments  TrainingEnrollment[]
+  activityLogs        ActivityLog[]
+
+  @@index([organizationType])
+  @@index([status])
+  @@map("organizations")
+}
+
+// ─── Org Members ─────────────────────────────────────────────────────────────
+
+model OrgMember {
+  id             String          @id @default(cuid())
+  organizationId String          @map("organization_id")
+  userId         String          @map("user_id")
+  role           OrgMemberRole   @default(viewer)
+  status         OrgMemberStatus @default(active)
+  invitedByUserId String?        @map("invited_by_user_id")
+  joinedAt       DateTime?       @map("joined_at")
+  lastActiveAt   DateTime?       @map("last_active_at")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("InvitedBy", fields: [invitedByUserId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("org_members")
+}
+
+// ─── Partner Profile ─────────────────────────────────────────────────────────
+
+model PartnerProfile {
+  id                    String    @id @default(cuid())
+  organizationId        String    @unique @map("organization_id")
+  partnerType           PartnerType @map("partner_type")
+  territoryMode         String?   @map("territory_mode") // e.g. exclusive, multi
+  entryFeeUsd           Float?    @map("entry_fee_usd")
+  trainingFeeUsd        Float?    @map("training_fee_usd")
+  materialCreditUsd     Float?    @map("material_credit_usd")
+  engineeringFeeMode    EngineeringFeeMode? @map("engineering_fee_mode")
+  engineeringFeeValue   Float?    @map("engineering_fee_value")
+  marginMinPct          Float?    @map("margin_min_pct")
+  marginMaxPct          Float?    @map("margin_max_pct")
+  minimumPricePolicy    String?   @map("minimum_price_policy")
+  salesTargetAnnualUsd  Float?    @map("sales_target_annual_usd")
+  salesTargetAnnualM2   Float?    @map("sales_target_annual_m2")
+  agreementStartDate    DateTime? @map("agreement_start_date")
+  agreementEndDate      DateTime? @map("agreement_end_date")
+  agreementStatus       String?   @map("agreement_status")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("partner_profiles")
+}
+
+// ─── Territories ─────────────────────────────────────────────────────────────
+
+model PartnerTerritory {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  countryCode    String        @map("country_code")
+  region         String?
+  city           String?
+  territoryType  TerritoryType @map("territory_type")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([countryCode])
+  @@map("partner_territories")
+}
+
+// ─── Clients ─────────────────────────────────────────────────────────────────
+
+model Client {
+  id             String     @id @default(cuid())
+  organizationId String     @map("organization_id")
+  name           String
+  clientType     ClientType @map("client_type")
+  countryCode    String?    @map("country_code")
+  city           String?
+  website        String?
+  email          String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  projects     Project[]
+
+  @@index([organizationId])
+  @@index([clientType])
+  @@map("clients")
+}
+
+// ─── Contacts ───────────────────────────────────────────────────────────────
+
+model Contact {
+  id        String   @id @default(cuid())
+  clientId  String   @map("client_id")
+  fullName  String   @map("full_name")
+  email     String?
+  phone     String?
+  jobTitle  String?  @map("job_title")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("contacts")
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id                     String        @id @default(cuid())
+  organizationId         String        @map("organization_id")
+  clientId               String?       @map("client_id")
+  projectName            String        @map("project_name")
+  projectCode            String?       @map("project_code")
+  countryCode            String?       @map("country_code")
+  city                   String?
+  address                String?
+  projectType            String?       @map("project_type")
+  status                 ProjectStatus @default(lead)
+  estimatedTotalAreaM2   Float?        @map("estimated_total_area_m2")
+  estimatedWallAreaM2    Float?        @map("estimated_wall_area_m2")
+  estimatedUnits         Int?          @map("estimated_units")
+  wallHeightM            Float?        @map("wall_height_m")
+  description            String?
+  competitionNotes       String?       @map("competition_notes")
+  probabilityPct         Float?        @map("probability_pct")
+  expectedCloseDate      DateTime?     @map("expected_close_date")
+  assignedToUserId       String?       @map("assigned_to_user_id")
+  isProjectProtected     Boolean       @default(false) @map("is_project_protected")
+  projectProtectionUntil DateTime?     @map("project_protection_until")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client                Client?               @relation(fields: [clientId], references: [id])
+  assignedToUser        User?                 @relation("ProjectAssignedTo", fields: [assignedToUserId], references: [id])
+  claims                ProjectClaim[]
+  quotes                Quote[]
+  engineeringRequests   EngineeringRequest[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+  @@index([assignedToUserId])
+  @@map("projects")
+}
+
+// ─── Project Claims ─────────────────────────────────────────────────────────
+
+model ProjectClaim {
+  id                     String            @id @default(cuid())
+  projectId              String            @map("project_id")
+  claimingOrganizationId String            @map("claiming_organization_id")
+  status                 ProjectClaimStatus @default(pending)
+  approvedByUserId       String?           @map("approved_by_user_id")
+  claimStartDate         DateTime?         @map("claim_start_date")
+  claimEndDate           DateTime?         @map("claim_end_date")
+  notes                  String?
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization Organization @relation("ClaimingOrganization", fields: [claimingOrganizationId], references: [id], onDelete: Cascade)
+  approvedBy User?       @relation(fields: [approvedByUserId], references: [id])
+
+  @@index([projectId])
+  @@index([claimingOrganizationId])
+  @@index([status])
+  @@map("project_claims")
+}
+
+// ─── Quotes ──────────────────────────────────────────────────────────────────
+
+model Quote {
+  id                    String    @id @default(cuid())
+  organizationId        String    @map("organization_id")
+  projectId             String    @map("project_id")
+  quoteNumber           String    @map("quote_number")
+  version               Int       @default(1)
+  status                QuoteStatus @default(draft)
+  currency              String    @default("USD")
+  factoryCostTotal      Float     @default(0) @map("factory_cost_total")
+  visionLatamMarkupPct  Float     @default(0) @map("vision_latam_markup_pct")
+  partnerMarkupPct      Float     @default(0) @map("partner_markup_pct")
+  logisticsCost         Float     @default(0) @map("logistics_cost")
+  importCost            Float     @default(0) @map("import_cost")
+  localTransportCost    Float     @default(0) @map("local_transport_cost")
+  technicalServiceCost  Float     @default(0) @map("technical_service_cost")
+  totalPrice            Float     @default(0) @map("total_price")
+  validUntil            DateTime? @map("valid_until")
+  preparedByUserId      String?   @map("prepared_by_user_id")
+  approvedByUserId      String?   @map("approved_by_user_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  preparedByUser User?        @relation("QuotePreparedBy", fields: [preparedByUserId], references: [id])
+  approvedByUser User?        @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id])
+  items          QuoteItem[]
+
+  @@unique([organizationId, quoteNumber, version])
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@map("quotes")
+}
+
+// ─── Quote Items ─────────────────────────────────────────────────────────────
+
+model QuoteItem {
+  id          String       @id @default(cuid())
+  quoteId     String       @map("quote_id")
+  itemType    QuoteItemType @map("item_type")
+  sku         String?
+  description String?
+  unit        String?
+  quantity    Float        @default(0)
+  unitCost    Float        @default(0) @map("unit_cost")
+  markupPct   Float        @default(0) @map("markup_pct")
+  unitPrice   Float        @default(0) @map("unit_price")
+  totalPrice  Float        @default(0) @map("total_price")
+  sortOrder   Int          @default(0) @map("sort_order")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+// ─── Engineering Requests ────────────────────────────────────────────────────
+
+model EngineeringRequest {
+  id                   String                    @id @default(cuid())
+  organizationId       String                    @map("organization_id")
+  projectId            String                    @map("project_id")
+  requestNumber        String                    @map("request_number")
+  status               EngineeringRequestStatus  @default(submitted)
+  requestedByUserId    String?                   @map("requested_by_user_id")
+  assignedToUserId     String?                   @map("assigned_to_user_id")
+  requestType          String?                   @map("request_type")
+  wallAreaM2           Float?                    @map("wall_area_m2")
+  systemType           String?                   @map("system_type")
+  targetDeliveryDate   DateTime?                 @map("target_delivery_date")
+  engineeringFeeValue Float?                    @map("engineering_fee_value")
+  notes                String?
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  updatedAt            DateTime                  @updatedAt @map("updated_at")
+
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedByUser User?                    @relation("EngineeringRequestedBy", fields: [requestedByUserId], references: [id])
+  assignedToUser  User?                    @relation("EngineeringAssignedTo", fields: [assignedToUserId], references: [id])
+  files          EngineeringFile[]
+  deliverables   EngineeringDeliverable[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@map("engineering_requests")
+}
+
+// ─── Engineering Files ───────────────────────────────────────────────────────
+
+model EngineeringFile {
+  id                   String   @id @default(cuid())
+  engineeringRequestId String   @map("engineering_request_id")
+  fileName             String   @map("file_name")
+  fileUrl              String   @map("file_url")
+  fileType             String?  @map("file_type")
+  uploadedByUserId     String?  @map("uploaded_by_user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  engineeringRequest EngineeringRequest @relation(fields: [engineeringRequestId], references: [id], onDelete: Cascade)
+  uploadedByUser      User?               @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([engineeringRequestId])
+  @@map("engineering_files")
+}
+
+// ─── Engineering Deliverables ─────────────────────────────────────────────────
+
+model EngineeringDeliverable {
+  id                   String   @id @default(cuid())
+  engineeringRequestId String   @map("engineering_request_id")
+  deliverableType      String   @map("deliverable_type")
+  fileName             String   @map("file_name")
+  fileUrl              String   @map("file_url")
+  version              Int      @default(1)
+  uploadedByUserId     String?  @map("uploaded_by_user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  engineeringRequest EngineeringRequest @relation(fields: [engineeringRequestId], references: [id], onDelete: Cascade)
+  uploadedByUser      User?               @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([engineeringRequestId])
+  @@map("engineering_deliverables")
+}
+
+// ─── Document Library ────────────────────────────────────────────────────────
+
+model DocumentCategory {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  documents Document[]
+
+  @@map("document_categories")
+}
+
+model Document {
+  id              String            @id @default(cuid())
+  categoryId      String            @map("category_id")
+  title           String
+  description     String?
+  documentType    String?           @map("document_type")
+  fileUrl         String            @map("file_url")
+  version         Int               @default(1)
+  languageCode    String?           @map("language_code")
+  countryScope   String?            @map("country_scope") // comma-separated or *
+  visibility      DocumentVisibility @default(partners_only)
+  publishedAt     DateTime?         @map("published_at")
+  createdByUserId String?           @map("created_by_user_id")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  category   DocumentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdByUser User?          @relation("DocumentCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([categoryId])
+  @@index([visibility])
+  @@index([countryScope])
+  @@map("documents")
+}
+
+// ─── Training ───────────────────────────────────────────────────────────────
+
+model TrainingProgram {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  level         String?
+  status        String   @default("active")
+  durationHours Float?   @map("duration_hours")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  modules    TrainingModule[]
+  enrollments TrainingEnrollment[]
+
+  @@map("training_programs")
+}
+
+model TrainingModule {
+  id                String   @id @default(cuid())
+  trainingProgramId String   @map("training_program_id")
+  title             String
+  moduleType        String?  @map("module_type")
+  contentUrl        String?  @map("content_url")
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+
+  @@index([trainingProgramId])
+  @@map("training_modules")
+}
+
+model TrainingEnrollment {
+  id                String                    @id @default(cuid())
+  organizationId    String                    @map("organization_id")
+  userId            String                    @map("user_id")
+  trainingProgramId String                    @map("training_program_id")
+  status            TrainingEnrollmentStatus   @default(not_started)
+  progressPct       Float                     @default(0) @map("progress_pct")
+  startedAt         DateTime?                 @map("started_at")
+  completedAt       DateTime?                 @map("completed_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, trainingProgramId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([trainingProgramId])
+  @@map("training_enrollments")
+}
+
+// ─── Activity Logs ───────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id             String   @id @default(cuid())
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  entityType     String   @map("entity_type")
+  entityId       String   @map("entity_id")
+  action         String
+  metadataJson   Json?    @map("metadata_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}

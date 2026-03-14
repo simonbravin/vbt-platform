@@ -24,7 +24,7 @@ export async function GET(
 
   const found = await prisma.user.findUnique({
     where: { id: params.id },
-    include: { orgMembers: { include: { org: true } } },
+    include: { orgMembers: { include: { organization: true } } },
   });
 
   if (!found) return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -54,15 +54,28 @@ export async function PATCH(
   const targetUser = await prisma.user.findUnique({ where: { id: params.id } });
   if (!targetUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const updated = await prisma.user.update({
-    where: { id: params.id },
-    data: status ? { status } : {},
-  });
+  const userData: { isActive?: boolean } = {};
+  if (status === "ACTIVE") userData.isActive = true;
+  if (status === "REJECTED" || status === "SUSPENDED") userData.isActive = false;
 
-  if (role && currentUser.orgId) {
+  const updated = Object.keys(userData).length
+    ? await prisma.user.update({
+        where: { id: params.id },
+        data: userData,
+      })
+    : targetUser;
+
+  const orgId = currentUser.activeOrgId ?? currentUser.orgId;
+  const orgRoleMap: Record<string, "org_admin" | "viewer" | "sales_user" | "technical_user"> = {
+    SUPERADMIN: "org_admin",
+    ADMIN: "org_admin",
+    SALES: "sales_user",
+    VIEWER: "viewer",
+  };
+  if (role && orgId && orgRoleMap[role]) {
     await prisma.orgMember.updateMany({
-      where: { userId: params.id, orgId: currentUser.orgId },
-      data: { role },
+      where: { userId: params.id, organizationId: orgId },
+      data: { role: orgRoleMap[role] },
     });
   }
 
@@ -73,9 +86,9 @@ export async function PATCH(
       : role
         ? "USER_ROLE_CHANGED"
         : null;
-  if (action && currentUser.orgId) {
+  if (action && orgId) {
     await createAuditLog({
-      orgId: currentUser.orgId,
+      orgId,
       userId: currentUser.id,
       action: action as any,
       entityType: "User",
@@ -105,7 +118,7 @@ export async function PATCH(
               </div>
               <div style="background-color: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px;">
                 <h2 style="color: #1a3a5c;">Account Approved!</h2>
-                <p>Hi ${targetUser.name ?? targetUser.email},</p>
+                <p>Hi ${(targetUser as { fullName?: string }).fullName ?? targetUser.email},</p>
                 <p>Your account has been approved. You can now sign in to the VBT Cotizador platform.</p>
                 <a href="${appUrl}/login" style="display: inline-block; background-color: #1a3a5c; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 16px;">Sign In</a>
               </div>
@@ -117,7 +130,7 @@ export async function PATCH(
                 <h1 style="color: white; margin: 0; font-size: 22px;">Vision Latam – VBT Cotizador</h1>
               </div>
               <div style="background-color: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px;">
-                <p>Hi ${targetUser.name ?? targetUser.email},</p>
+                <p>Hi ${(targetUser as { fullName?: string }).fullName ?? targetUser.email},</p>
                 <p>Unfortunately, your account request could not be approved at this time. Please contact <a href="mailto:simon@visionlatam.com">simon@visionlatam.com</a> for more information.</p>
               </div>
             </div>

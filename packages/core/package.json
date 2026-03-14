@@ -4,6 +4,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./validation": "./src/validation/index.ts",
     "./csv": "./src/csv-parser.ts",
     "./calc": "./src/calculations.ts",
     "./normalize": "./src/normalizer.ts",
@@ -14,6 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@vbt/db": "workspace:*",
     "papaparse": "^5.4.1",
     "zod": "^3.22.4"
   },

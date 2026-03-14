@@ -1,3 +1,8 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Partner SaaS (Vision Latam) – Multi-tenant schema
+// Definitive ERD + gap fixes. See docs/ERD-GAP-ANALYSIS.md.
+// ─────────────────────────────────────────────────────────────────────────────
+
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -11,784 +16,618 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-enum UserStatus {
-  PENDING
-  ACTIVE
-  REJECTED
-  SUSPENDED
+enum OrganizationType {
+  vision_latam
+  commercial_partner
+  master_partner
+  internal
 }
 
 enum OrgMemberRole {
-  SUPERADMIN
-  ADMIN
-  SALES
-  VIEWER
+  org_admin
+  sales_user
+  technical_user
+  viewer
 }
 
-enum BaseUom {
-  M
-  FT
+enum OrgMemberStatus {
+  active
+  inactive
+  invited
+  suspended
 }
 
-enum WeightUom {
-  KG
-  LBS
+enum PartnerType {
+  commercial_partner
+  master_partner
 }
 
-enum CostMethod {
-  CSV
-  M2_BY_SYSTEM
-  M2_TOTAL
+enum TerritoryType {
+  exclusive
+  open
+  referral
 }
 
-enum QuoteStatus {
-  DRAFT
-  SENT
-  ARCHIVED
-  CANCELLED
+enum ClientType {
+  developer
+  builder
+  architect
+  government
+  end_client
 }
 
 enum ProjectStatus {
-  DRAFT
-  IN_CONVERSATION
-  QUOTED
-  QUOTE_SENT
-  SOLD
-  ARCHIVED
+  lead
+  qualified
+  quoting
+  engineering
+  won
+  lost
+  on_hold
 }
 
-enum SaleStatus {
-  DRAFT
-  CONFIRMED
-  PARTIALLY_PAID
-  PAID
-  DUE       // al menos una SaleInvoice con dueDate < hoy y venta no PAID
-  CANCELLED
+enum ProjectClaimStatus {
+  pending
+  approved
+  rejected
+  expired
 }
 
-enum InvMoveType {
-  IN
-  OUT
-  TRANSFER
-  ADJUST
-  RESERVE
-  RELEASE
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+  expired
 }
 
-enum AuditAction {
-  USER_APPROVED
-  USER_REJECTED
-  USER_ROLE_CHANGED
-  COST_UPDATED
-  TAX_RULE_CHANGED
-  QUOTE_SENT
-  QUOTE_CREATED
-  QUOTE_ARCHIVED
-  QUOTE_UPDATED
-  QUOTE_DELETED
-  INV_MOVE
-  CATALOG_IMPORTED
-  PROJECT_CREATED
-  PROJECT_UPDATED
-  PROJECT_DELETED
-  SALE_CREATED
-  SALE_UPDATED
-  SALE_DELETED
-  SALE_INVOICED_BASIS_CHANGED
-  SALE_STATUS_CHANGED
-  SALE_STATUS_RECALCULATED
-  SALE_INVOICE_CREATED
-  SALE_INVOICE_UPDATED
-  SALE_INVOICE_DELETED
-  PAYMENT_RECORDED
+enum QuoteItemType {
+  product
+  service
+  other
 }
 
-enum SystemCode {
-  S80
-  S150
-  S200
+enum EngineeringRequestStatus {
+  draft
+  submitted
+  in_review
+  pending_info
+  needs_info
+  in_progress
+  completed
+  delivered
+  rejected
 }
 
-enum TaxBase {
-  CIF
-  FOB
-  BASE_IMPONIBLE
-  FIXED_PER_CONTAINER
-  FIXED_TOTAL
+enum DocumentVisibility {
+  public
+  partners_only
+  internal
 }
 
-enum MarkupType {
-  PERCENT
-  FIXED_USD
-  BOTH
+enum EngineeringFeeMode {
+  fixed
+  percent
+  per_request
+  included
 }
 
-// ─── Org & Users ─────────────────────────────────────────────────────────────
-
-model Org {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Default org settings
-  baseUom       BaseUom   @default(M)
-  weightUom     WeightUom @default(KG)
-  minRunFt      Float     @default(5000)
-  rateS80       Float     @default(37)
-  rateS150      Float     @default(67)
-  rateS200      Float     @default(85)
-  rateGlobal    Float     @default(60)
-  // Commission defaults
-  commissionPct Float     @default(0)
-  commissionFixed Float   @default(0)
-
-  members        OrgMember[]
-  clients        Client[]
-  projects       Project[]
-  quotes         Quote[]
-  warehouses     Warehouse[]
-  countryProfiles CountryProfile[]
-  freightProfiles FreightRateProfile[]
-  taxRuleSets    TaxRuleSet[]
-  revitImports   RevitImport[]
-  auditLogs      AuditLog[]
-  billingEntities BillingEntity[]
-  sales          Sale[]
-  payments       Payment[]
-
-  @@map("orgs")
+enum TrainingEnrollmentStatus {
+  not_started
+  in_progress
+  completed
 }
+
+// ─── Users ──────────────────────────────────────────────────────────────────
 
 model User {
-  id            String     @id @default(cuid())
-  email         String     @unique
-  name          String?
-  passwordHash  String
-  status        UserStatus @default(PENDING)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                   String    @id @default(cuid())
+  fullName             String    @map("full_name")
+  email                String    @unique
+  passwordHash         String    @map("password_hash")
+  phone                String?
+  isActive             Boolean   @default(true) @map("is_active")
+  isPlatformSuperadmin Boolean   @default(false) @map("is_platform_superadmin")
+  emailVerified        DateTime? @map("email_verified")
+  image                String?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  lastLoginAt          DateTime? @map("last_login_at")
 
-  orgMembers   OrgMember[]
-  quotesCreated Quote[]
-  auditLogs    AuditLog[]
-  salesCreated Sale[]
-  paymentsCreated Payment[]
+  orgMembers              OrgMember[]
+  projectsAssigned        Project[]              @relation("ProjectAssignedTo")
+  quotesPrepared          Quote[]                 @relation("QuotePreparedBy")
+  quotesApproved          Quote[]                 @relation("QuoteApprovedBy")
+  engineeringRequestsReq  EngineeringRequest[]    @relation("EngineeringRequestedBy")
+  engineeringRequestsAss  EngineeringRequest[]    @relation("EngineeringAssignedTo")
+  engineeringFiles        EngineeringFile[]
+  engineeringDeliverables EngineeringDeliverable[]
+  documentsCreated        Document[]              @relation("DocumentCreatedBy")
+  trainingEnrollments     TrainingEnrollment[]
+  activityLogs            ActivityLog[]
+  invitedOrgMembers       OrgMember[]             @relation("InvitedBy")
+  approvedProjectClaims   ProjectClaim[]
 
   @@map("users")
 }
 
+// ─── Organizations ───────────────────────────────────────────────────────────
+
+model Organization {
+  id               String             @id @default(cuid())
+  name             String
+  legalName        String?            @map("legal_name")
+  organizationType OrganizationType  @map("organization_type")
+  countryCode      String?            @map("country_code")
+  taxId            String?            @map("tax_id")
+  email            String?
+  phone            String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  status           String             @default("active") // active, suspended, etc.
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  members             OrgMember[]
+  partnerProfile      PartnerProfile?
+  territories         PartnerTerritory[]
+  clients             Client[]
+  projects            Project[]
+  projectClaims       ProjectClaim[]           @relation("ClaimingOrganization")
+  quotes              Quote[]
+  engineeringRequests EngineeringRequest[]
+  trainingEnrollments  TrainingEnrollment[]
+  activityLogs        ActivityLog[]
+
+  @@index([organizationType])
+  @@index([status])
+  @@map("organizations")
+}
+
+// ─── Org Members ─────────────────────────────────────────────────────────────
+
 model OrgMember {
-  id        String        @id @default(cuid())
-  orgId     String
-  userId    String
-  role      OrgMemberRole @default(VIEWER)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id             String          @id @default(cuid())
+  organizationId String          @map("organization_id")
+  userId         String          @map("user_id")
+  role           OrgMemberRole   @default(viewer)
+  status         OrgMemberStatus @default(active)
+  invitedByUserId String?        @map("invited_by_user_id")
+  joinedAt       DateTime?       @map("joined_at")
+  lastActiveAt   DateTime?       @map("last_active_at")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  org  Org  @relation(fields: [orgId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("InvitedBy", fields: [invitedByUserId], references: [id])
 
-  @@unique([orgId, userId])
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
   @@map("org_members")
 }
 
-model AuditLog {
-  id         String      @id @default(cuid())
-  orgId      String?
-  userId     String?
-  action     AuditAction
-  entityType String?
-  entityId   String?
-  meta       Json?
-  createdAt  DateTime    @default(now())
+// ─── Partner Profile ─────────────────────────────────────────────────────────
 
-  org  Org?  @relation(fields: [orgId], references: [id])
-  user User? @relation(fields: [userId], references: [id])
+model PartnerProfile {
+  id                    String    @id @default(cuid())
+  organizationId        String    @unique @map("organization_id")
+  contactName           String?   @map("contact_name")
+  contactEmail          String?   @map("contact_email")
+  partnerType           PartnerType @map("partner_type")
+  territoryMode         String?   @map("territory_mode") // e.g. exclusive, multi
+  onboardingState       String?   @map("onboarding_state") // application_received, agreement_signed, training_started, training_completed, active
+  entryFeeUsd           Float?    @map("entry_fee_usd")
+  trainingFeeUsd       Float?    @map("training_fee_usd")
+  materialCreditUsd     Float?    @map("material_credit_usd")
+  engineeringFeeMode    EngineeringFeeMode? @map("engineering_fee_mode")
+  engineeringFeeValue   Float?    @map("engineering_fee_value")
+  marginMinPct          Float?    @map("margin_min_pct")
+  marginMaxPct          Float?    @map("margin_max_pct")
+  minimumPricePolicy    String?   @map("minimum_price_policy")
+  salesTargetAnnualUsd  Float?    @map("sales_target_annual_usd")
+  salesTargetAnnualM2   Float?    @map("sales_target_annual_m2")
+  agreementStartDate    DateTime? @map("agreement_start_date")
+  agreementEndDate      DateTime? @map("agreement_end_date")
+  agreementStatus       String?   @map("agreement_status")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  @@index([orgId])
-  @@index([userId])
-  @@index([action])
-  @@map("audit_logs")
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("partner_profiles")
 }
 
-// ─── Clients (directory) ─────────────────────────────────────────────────────
+// ─── Territories ─────────────────────────────────────────────────────────────
+
+model PartnerTerritory {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  countryCode    String        @map("country_code")
+  region         String?
+  city           String?
+  territoryType  TerritoryType @map("territory_type")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([countryCode])
+  @@map("partner_territories")
+}
+
+// ─── Clients ─────────────────────────────────────────────────────────────────
 
 model Client {
-  id         String   @id @default(cuid())
-  orgId      String
-  name       String   // display name
-  legalName  String?
-  taxId      String?
-  address    String?
-  city       String?
-  countryId  String?
-  phone      String?
-  email      String?
-  website    String?
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String     @id @default(cuid())
+  organizationId String     @map("organization_id")
+  name           String
+  clientType     ClientType @map("client_type")
+  countryCode    String?    @map("country_code")
+  city           String?
+  website        String?
+  email          String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
 
-  org      Org             @relation(fields: [orgId], references: [id])
-  country  CountryProfile? @relation(fields: [countryId], references: [id])
-  projects Project[]
-  sales    Sale[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts     Contact[]
+  projects     Project[]
 
-  @@index([orgId])
-  @@index([countryId])
-  @@index([name])
+  @@index([organizationId])
+  @@index([clientType])
   @@map("clients")
 }
 
-// ─── System & Catalog ────────────────────────────────────────────────────────
+// ─── Contacts ───────────────────────────────────────────────────────────────
 
-model SystemType {
-  id          String     @id @default(cuid())
-  code        SystemCode @unique
-  name        String
-  thicknessMm Int
-  // Default concrete/steel per m2
-  concreteM3PerM2 Float  @default(0)
-  steelKgPerM2    Float  @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+model Contact {
+  id        String   @id @default(cuid())
+  clientId  String   @map("client_id")
+  fullName  String   @map("full_name")
+  email     String?
+  phone     String?
+  jobTitle  String?  @map("job_title")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  pieces PieceCatalog[]
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  @@map("system_types")
+  @@index([clientId])
+  @@map("contacts")
 }
 
-model PieceCatalog {
-  id                     String     @id @default(cuid())
-  systemId               String?
-  dieNumber              String?
-  canonicalName          String     // Type without SA####_ prefix
-  canonicalNameNormalized String    // lowercase, no punctuation
-  categoryRaw            String?    // raw Category from Excel
-  systemCode             SystemCode?
-  usefulWidthMm          Float?
-  usefulWidthM           Float?     // usefulWidthMm / 1000
-  lbsPerMUncored         Float?     @default(0)
-  lbsPerMCored           Float?     @default(0)
-  volumePerM             Float?     @default(0)
-  isActive               Boolean    @default(true)
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-
-  system    SystemType?   @relation(fields: [systemId], references: [id])
-  costs     PieceCost[]
-  aliases   PieceAlias[]
-  importLines RevitImportLine[]
-  inventoryItems InventoryItem[]
-
-  @@unique([canonicalNameNormalized])
-  @@index([systemCode])
-  @@map("piece_catalog")
-}
-
-model PieceCost {
-  id               String   @id @default(cuid())
-  pieceId          String
-  effectiveFrom    DateTime @default(now())
-  pricePer5000ftCored Float? @default(0)
-  pricePerFtCored  Float?   @default(0)
-  pricePerMCored   Float?   @default(0)
-  minRunFtOverride Float?   // null = use org default
-  notes            String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  piece PieceCatalog @relation(fields: [pieceId], references: [id])
-
-  @@index([pieceId])
-  @@map("piece_costs")
-}
-
-model PieceAlias {
-  id              String   @id @default(cuid())
-  orgId           String?
-  pieceId         String
-  aliasRaw        String
-  aliasNormalized String
-  source          String?  // 'EXCEL_IMPORT', 'CSV_MAPPING', 'MANUAL'
-  createdAt       DateTime @default(now())
-
-  piece PieceCatalog @relation(fields: [pieceId], references: [id])
-
-  @@unique([aliasNormalized, pieceId])
-  @@index([aliasNormalized])
-  @@map("piece_aliases")
-}
-
-// ─── Projects & Revit Imports ────────────────────────────────────────────────
+// ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
-  id          String   @id @default(cuid())
-  orgId       String
-  name        String
-  client      String?  // legacy free-text; use clientId when set
-  clientId   String?
-  location    String?
-  countryId   String?  // Project location country (for filtering/reports)
-  description String?
-  // Wall area breakdown
-  wallAreaM2S80  Float @default(0)
-  wallAreaM2S150 Float @default(0)
-  wallAreaM2S200 Float @default(0)
-  wallAreaM2Total Float @default(0)
-  // Container info
-  kitsPerContainer Int  @default(0)
-  numContainers    Int  @default(0)
-  totalKits        Int       @default(1)
-  plannedStartDate DateTime?
-  durationWeeks    Int?
-  isArchived       Boolean   @default(false)
-  // Pipeline & reporting
-  status           ProjectStatus @default(DRAFT)
-  baselineQuoteId  String?   @unique
-  soldAt           DateTime?
-  finalAmountUsd   Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                     String        @id @default(cuid())
+  organizationId         String        @map("organization_id")
+  clientId               String?       @map("client_id")
+  projectName            String        @map("project_name")
+  projectCode            String?       @map("project_code")
+  countryCode            String?       @map("country_code")
+  city                   String?
+  address                String?
+  projectType            String?       @map("project_type")
+  status                 ProjectStatus @default(lead)
+  estimatedTotalAreaM2   Float?        @map("estimated_total_area_m2")
+  estimatedWallAreaM2    Float?        @map("estimated_wall_area_m2")
+  estimatedUnits         Int?          @map("estimated_units")
+  wallHeightM            Float?        @map("wall_height_m")
+  description            String?
+  competitionNotes       String?       @map("competition_notes")
+  probabilityPct         Float?        @map("probability_pct")
+  expectedCloseDate      DateTime?     @map("expected_close_date")
+  assignedToUserId       String?       @map("assigned_to_user_id")
+  isProjectProtected     Boolean       @default(false) @map("is_project_protected")
+  projectProtectionUntil DateTime?     @map("project_protection_until")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
 
-  org            Org             @relation(fields: [orgId], references: [id])
-  clientRecord   Client?         @relation(fields: [clientId], references: [id])
-  country        CountryProfile? @relation(fields: [countryId], references: [id])
-  baselineQuote  Quote?          @relation("ProjectBaselineQuote", fields: [baselineQuoteId], references: [id])
-  revitImports   RevitImport[]
-  quotes         Quote[]
-  sales          Sale[]
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client                Client?               @relation(fields: [clientId], references: [id])
+  assignedToUser        User?                 @relation("ProjectAssignedTo", fields: [assignedToUserId], references: [id])
+  claims                ProjectClaim[]
+  quotes                Quote[]
+  engineeringRequests   EngineeringRequest[]
 
-  @@index([orgId])
+  @@index([organizationId])
   @@index([clientId])
-  @@index([countryId])
   @@index([status])
-  @@index([soldAt])
+  @@index([assignedToUserId])
   @@map("projects")
 }
 
-model RevitImport {
-  id          String   @id @default(cuid())
-  orgId       String
-  projectId   String?
-  filename    String
-  uploadedBy  String?
-  rowCount    Int      @default(0)
-  matchedCount Int     @default(0)
-  unmappedCount Int    @default(0)
-  status      String   @default("PENDING") // PENDING, MAPPED, IGNORED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ─── Project Claims ─────────────────────────────────────────────────────────
 
-  org     Org          @relation(fields: [orgId], references: [id])
-  project Project?     @relation(fields: [projectId], references: [id])
-  lines   RevitImportLine[]
+model ProjectClaim {
+  id                     String            @id @default(cuid())
+  projectId              String            @map("project_id")
+  claimingOrganizationId String            @map("claiming_organization_id")
+  status                 ProjectClaimStatus @default(pending)
+  approvedByUserId       String?           @map("approved_by_user_id")
+  claimStartDate         DateTime?         @map("claim_start_date")
+  claimEndDate           DateTime?         @map("claim_end_date")
+  notes                  String?
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
 
-  @@index([orgId])
-  @@map("revit_imports")
-}
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization Organization @relation("ClaimingOrganization", fields: [claimingOrganizationId], references: [id], onDelete: Cascade)
+  approvedBy User?       @relation(fields: [approvedByUserId], references: [id])
 
-model RevitImportLine {
-  id          String   @id @default(cuid())
-  importId    String
-  rowNum      Int
-  rawPieceCode String?
-  rawPieceName String
-  rawQty      Float
-  rawHeightMm Float
-  // Matched piece
-  pieceId     String?
-  matchMethod String?  // 'EXACT_CODE', 'ALIAS', 'CANONICAL', 'MANUAL', 'IGNORED'
-  isIgnored   Boolean  @default(false)
-  // Computed
-  linearM     Float?
-  linearFt    Float?
-  m2Line      Float?
-  weightLbsCored   Float?
-  weightLbsUncored Float?
-  weightKgCored    Float?
-  weightKgUncored  Float?
-  volumeM3    Float?
-  // Cost
-  pricePerM   Float?
-  pricePerFt  Float?
-  lineTotal   Float?
-  markupPct   Float?   @default(0)
-  lineTotalWithMarkup Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  import RevitImport    @relation(fields: [importId], references: [id])
-  piece  PieceCatalog?  @relation(fields: [pieceId], references: [id])
-
-  @@index([importId])
-  @@map("revit_import_lines")
-}
-
-// ─── Inventory ───────────────────────────────────────────────────────────────
-
-model Warehouse {
-  id        String   @id @default(cuid())
-  orgId     String
-  name      String
-  location  String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  org        Org            @relation(fields: [orgId], references: [id])
-  items      InventoryItem[]
-  movesFrom  InventoryMove[] @relation("MoveFrom")
-  movesTo    InventoryMove[] @relation("MoveTo")
-
-  @@index([orgId])
-  @@map("warehouses")
-}
-
-model InventoryItem {
-  id              String   @id @default(cuid())
-  warehouseId     String
-  pieceId         String
-  heightMm        Float?   // optional height-specific stock
-  qtyOnHand       Float    @default(0)
-  qtyReserved     Float    @default(0)
-  qtyAvailable    Float    @default(0) // computed: onHand - reserved
-  minStockAlert   Float?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  warehouse Warehouse    @relation(fields: [warehouseId], references: [id])
-  piece     PieceCatalog @relation(fields: [pieceId], references: [id])
-  moves     InventoryMove[]
-
-  @@unique([warehouseId, pieceId, heightMm])
-  @@index([warehouseId])
-  @@map("inventory_items")
-}
-
-model InventoryMove {
-  id            String      @id @default(cuid())
-  itemId        String
-  fromWarehouseId String?
-  toWarehouseId String?
-  type          InvMoveType
-  qty           Float
-  quoteId       String?
-  notes         String?
-  performedBy   String?
-  createdAt     DateTime    @default(now())
-
-  item          InventoryItem @relation(fields: [itemId], references: [id])
-  fromWarehouse Warehouse?    @relation("MoveFrom", fields: [fromWarehouseId], references: [id])
-  toWarehouse   Warehouse?    @relation("MoveTo", fields: [toWarehouseId], references: [id])
-
-  @@index([itemId])
-  @@index([quoteId])
-  @@map("inventory_moves")
-}
-
-// ─── Countries, Freight, Taxes ───────────────────────────────────────────────
-
-model CountryProfile {
-  id        String   @id @default(cuid())
-  orgId     String
-  code      String   // ISO2: PA, AR, CR, CO, SV, HN
-  name      String
-  currency  String   @default("USD")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  org             Org                  @relation(fields: [orgId], references: [id])
-  clients         Client[]
-  freightProfiles FreightRateProfile[]
-  taxRuleSets     TaxRuleSet[]
-  projects        Project[]
-  quotes          Quote[]
-
-  @@unique([orgId, code])
-  @@map("country_profiles")
-}
-
-model FreightRateProfile {
-  id              String   @id @default(cuid())
-  orgId           String
-  countryId       String
-  name            String
-  freightPerContainer Float  @default(0)
-  isDefault       Boolean  @default(false)
-  validFrom       DateTime @default(now())
-  expiryDate      DateTime?  // carrier offer validity (e.g. 30/45/60 days)
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  org     Org            @relation(fields: [orgId], references: [id])
-  country CountryProfile @relation(fields: [countryId], references: [id])
-
-  @@index([countryId])
-  @@map("freight_rate_profiles")
-}
-
-model TaxRuleSet {
-  id          String   @id @default(cuid())
-  orgId       String
-  countryId   String
-  name        String
-  isActive    Boolean  @default(true)
-  rules       Json     // array of TaxRuleItem
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  org     Org            @relation(fields: [orgId], references: [id])
-  country CountryProfile @relation(fields: [countryId], references: [id])
-
-  @@index([countryId])
-  @@map("tax_rule_sets")
+  @@index([projectId])
+  @@index([claimingOrganizationId])
+  @@index([status])
+  @@map("project_claims")
 }
 
 // ─── Quotes ──────────────────────────────────────────────────────────────────
 
 model Quote {
-  id          String      @id @default(cuid())
-  orgId       String
-  projectId   String
-  countryId   String?
-  quoteNumber String?     @unique
-  status      QuoteStatus @default(DRAFT)
-  costMethod  CostMethod  @default(CSV)
-  // Inputs
-  revitImportId String?
-  warehouseId   String?
-  reserveStock  Boolean   @default(false)
-  baseUom       BaseUom   @default(M)
-  // Material cost
-  factoryCostUsd Float    @default(0)
-  // Commission
-  commissionPct  Float    @default(0)
-  commissionFixed Float   @default(0)
-  fobUsd         Float    @default(0)
-  // Freight
-  freightProfileId String?
-  freightCostUsd  Float   @default(0)
-  numContainers   Int     @default(1)
-  kitsPerContainer Int    @default(0)
-  totalKits        Int    @default(0)
-  cifUsd          Float   @default(0)
-  // Totals
-  taxesFeesUsd    Float   @default(0)
-  landedDdpUsd    Float   @default(0)
-  // Informational
-  concreteM3      Float   @default(0)
-  steelKgEst      Float   @default(0)
-  wallAreaM2S80   Float   @default(0)
-  wallAreaM2S150  Float   @default(0)
-  wallAreaM2S200  Float   @default(0)
-  wallAreaM2Total Float   @default(0)
-  totalWeightKg   Float   @default(0)
-  totalVolumeM3   Float   @default(0)
-  // Snapshot (frozen at send)
-  snapshot        Json?
-  sentAt          DateTime?
-  sentTo          String?
-  notes           String?
-  createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  organizationId        String    @map("organization_id")
+  projectId             String    @map("project_id")
+  quoteNumber           String    @map("quote_number")
+  version               Int       @default(1)
+  status                QuoteStatus @default(draft)
+  currency              String    @default("USD")
+  factoryCostTotal      Float     @default(0) @map("factory_cost_total")
+  visionLatamMarkupPct  Float     @default(0) @map("vision_latam_markup_pct")
+  partnerMarkupPct      Float     @default(0) @map("partner_markup_pct")
+  logisticsCost         Float     @default(0) @map("logistics_cost")
+  importCost            Float     @default(0) @map("import_cost")
+  localTransportCost    Float     @default(0) @map("local_transport_cost")
+  technicalServiceCost  Float     @default(0) @map("technical_service_cost")
+  totalPrice            Float     @default(0) @map("total_price")
+  validUntil            DateTime? @map("valid_until")
+  preparedByUserId      String?   @map("prepared_by_user_id")
+  approvedByUserId      String?   @map("approved_by_user_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  org               Org             @relation(fields: [orgId], references: [id])
-  project           Project         @relation(fields: [projectId], references: [id])
-  projectAsBaseline Project?        @relation("ProjectBaselineQuote")
-  country           CountryProfile? @relation(fields: [countryId], references: [id])
-  createdByUser     User?           @relation(fields: [createdBy], references: [id])
-  lines             QuoteLine[]
-  taxLines          QuoteTaxLine[]
-  docs              QuoteDoc[]
-  sales             Sale[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  preparedByUser User?        @relation("QuotePreparedBy", fields: [preparedByUserId], references: [id])
+  approvedByUser User?        @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id])
+  items          QuoteItem[]
 
-  @@index([orgId])
-  @@index([projectId])
-  @@map("quotes")
-}
-
-model QuoteLine {
-  id          String   @id @default(cuid())
-  quoteId     String
-  lineNum     Int
-  description String
-  pieceId     String?
-  systemCode  SystemCode?
-  // Quantities
-  qty         Float    @default(0)
-  heightMm    Float?
-  linearM     Float?
-  linearFt    Float?
-  m2Line      Float?
-  // Pricing
-  uom         String?  // M, FT, M2
-  unitPrice   Float?
-  markupPct   Float    @default(0)
-  lineTotal   Float    @default(0)
-  // Weights/Volume
-  weightKgCored   Float?
-  weightKgUncored Float?
-  volumeM3        Float?
-  // Flags
-  isBelowMinRun Boolean @default(false)
-  productionNeeded Float?
-  isManualOverride Boolean @default(false)
-  createdAt   DateTime @default(now())
-
-  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-
-  @@index([quoteId])
-  @@map("quote_lines")
-}
-
-model QuoteTaxLine {
-  id           String   @id @default(cuid())
-  quoteId      String
-  order        Int
-  label        String
-  base         TaxBase
-  ratePct      Float?
-  fixedAmount  Float?
-  baseAmount   Float    @default(0)
-  computedAmount Float   @default(0)
-  perContainer Boolean  @default(false)
-  notes        String?
-  createdAt    DateTime @default(now())
-
-  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-
-  @@index([quoteId])
-  @@map("quote_tax_lines")
-}
-
-model QuoteDoc {
-  id          String   @id @default(cuid())
-  quoteId     String
-  type        String   // 'PDF', 'EMAIL'
-  url         String?
-  storagePath String?
-  emailTo     String?
-  emailMessageId String?
-  generatedAt DateTime @default(now())
-  meta        Json?
-
-  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-
-  @@index([quoteId])
-  @@map("quote_docs")
-}
-
-// ─── Sales ───────────────────────────────────────────────────────────────────
-
-model BillingEntity {
-  id        String   @id @default(cuid())
-  orgId     String
-  name      String
-  slug      String   // VISION_LATAM, VISION_CANADA
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  org     Org           @relation(fields: [orgId], references: [id])
-  invoices SaleInvoice[]
-  payments Payment[]
-
-  @@unique([orgId, slug])
-  @@index([orgId])
-  @@map("billing_entities")
-}
-
-model Sale {
-  id          String     @id @default(cuid())
-  orgId       String
-  clientId    String
-  projectId   String
-  quoteId     String?
-  saleNumber  String?
-  quantity    Int        @default(1)
-  status      SaleStatus @default(DRAFT)
-  // Financial (totals, editable)
-  exwUsd              Float @default(0)
-  commissionPct       Float @default(0)
-  commissionAmountUsd Float @default(0)
-  fobUsd              Float @default(0)
-  freightUsd          Float @default(0)
-  cifUsd              Float @default(0)
-  taxesFeesUsd        Float @default(0)
-  landedDdpUsd        Float @default(0)
-  invoicedBasis       String?  // EXW | FOB | CIF | DDP — which amount is used as "invoiced" and for paid status
-  taxBreakdownJson    Json?
-  notes               String?
-  createdBy           String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  org           Org            @relation(fields: [orgId], references: [id])
-  client        Client         @relation(fields: [clientId], references: [id])
-  project       Project        @relation(fields: [projectId], references: [id])
-  quote         Quote?         @relation(fields: [quoteId], references: [id])
-  createdByUser User?          @relation(fields: [createdBy], references: [id])
-  invoices      SaleInvoice[]
-  payments      Payment[]
-
-  @@unique([orgId, saleNumber])
-  @@index([orgId])
-  @@index([clientId])
+  @@unique([organizationId, quoteNumber, version])
+  @@index([organizationId])
   @@index([projectId])
   @@index([status])
   @@index([createdAt])
-  @@map("sales")
+  @@map("quotes")
 }
 
-model SaleInvoice {
-  id              String    @id @default(cuid())
-  saleId          String
-  entityId        String
-  amountUsd       Float     @default(0)
-  dueDate         DateTime?
-  sequence        Int       @default(1)
-  referenceNumber String?   // external invoice number (e.g. from billing system)
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+// ─── Quote Items ─────────────────────────────────────────────────────────────
 
-  sale   Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  entity BillingEntity @relation(fields: [entityId], references: [id])
+model QuoteItem {
+  id          String       @id @default(cuid())
+  quoteId     String       @map("quote_id")
+  itemType    QuoteItemType @map("item_type")
+  sku         String?
+  description String?
+  unit        String?
+  quantity    Float        @default(0)
+  unitCost    Float        @default(0) @map("unit_cost")
+  markupPct   Float        @default(0) @map("markup_pct")
+  unitPrice   Float        @default(0) @map("unit_price")
+  totalPrice  Float        @default(0) @map("total_price")
+  sortOrder   Int          @default(0) @map("sort_order")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
-  @@index([saleId])
-  @@index([entityId])
-  @@index([dueDate])
-  @@map("sale_invoices")
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_items")
 }
 
-model Payment {
-  id             String    @id @default(cuid())
-  orgId          String
-  saleId         String
-  entityId       String
-  amountUsd      Float     @default(0)
-  amountLocal    Float?
-  currencyLocal  String?
-  exchangeRate   Float?
-  paidAt         DateTime  @default(now())
-  notes          String?
-  createdBy      String?
-  createdAt      DateTime  @default(now())
+// ─── Engineering Requests ────────────────────────────────────────────────────
 
-  org           Org            @relation(fields: [orgId], references: [id])
-  sale          Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  entity        BillingEntity  @relation(fields: [entityId], references: [id])
-  createdByUser User?          @relation(fields: [createdBy], references: [id])
+model EngineeringRequest {
+  id                   String                    @id @default(cuid())
+  organizationId       String                    @map("organization_id")
+  projectId            String                    @map("project_id")
+  requestNumber        String                    @map("request_number")
+  status               EngineeringRequestStatus  @default(submitted)
+  requestedByUserId    String?                   @map("requested_by_user_id")
+  assignedToUserId     String?                   @map("assigned_to_user_id")
+  requestType          String?                   @map("request_type")
+  wallAreaM2           Float?                    @map("wall_area_m2")
+  systemType           String?                   @map("system_type")
+  targetDeliveryDate   DateTime?                 @map("target_delivery_date")
+  engineeringFeeValue   Float?                    @map("engineering_fee_value")
+  notes                String?
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  updatedAt            DateTime                  @updatedAt @map("updated_at")
 
-  @@index([orgId])
-  @@index([saleId])
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedByUser User?                    @relation("EngineeringRequestedBy", fields: [requestedByUserId], references: [id])
+  assignedToUser  User?                    @relation("EngineeringAssignedTo", fields: [assignedToUserId], references: [id])
+  files          EngineeringFile[]
+  deliverables   EngineeringDeliverable[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@map("engineering_requests")
+}
+
+// ─── Engineering Files ───────────────────────────────────────────────────────
+
+model EngineeringFile {
+  id                   String   @id @default(cuid())
+  engineeringRequestId String   @map("engineering_request_id")
+  fileName             String   @map("file_name")
+  fileUrl              String   @map("file_url")
+  fileType             String?  @map("file_type")
+  fileSize             Int?     @map("file_size")
+  uploadedByUserId     String?  @map("uploaded_by_user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  engineeringRequest EngineeringRequest @relation(fields: [engineeringRequestId], references: [id], onDelete: Cascade)
+  uploadedByUser      User?               @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([engineeringRequestId])
+  @@map("engineering_files")
+}
+
+// ─── Engineering Deliverables ─────────────────────────────────────────────────
+
+model EngineeringDeliverable {
+  id                   String   @id @default(cuid())
+  engineeringRequestId String   @map("engineering_request_id")
+  deliverableType      String   @map("deliverable_type")
+  title                String?
+  description          String?
+  fileName             String   @map("file_name")
+  fileUrl              String   @map("file_url")
+  version              Int      @default(1)
+  uploadedByUserId     String?  @map("uploaded_by_user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  engineeringRequest EngineeringRequest @relation(fields: [engineeringRequestId], references: [id], onDelete: Cascade)
+  uploadedByUser      User?               @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([engineeringRequestId])
+  @@map("engineering_deliverables")
+}
+
+// ─── Document Library ────────────────────────────────────────────────────────
+
+model DocumentCategory {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  documents Document[]
+
+  @@map("document_categories")
+}
+
+model Document {
+  id              String            @id @default(cuid())
+  categoryId      String            @map("category_id")
+  title           String
+  description     String?
+  documentType    String?           @map("document_type")
+  fileUrl         String            @map("file_url")
+  version         Int               @default(1)
+  languageCode    String?           @map("language_code")
+  countryScope   String?            @map("country_scope") // comma-separated or *
+  visibility      DocumentVisibility @default(partners_only)
+  publishedAt     DateTime?         @map("published_at")
+  createdByUserId String?           @map("created_by_user_id")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  category   DocumentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdByUser User?          @relation("DocumentCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([categoryId])
+  @@index([visibility])
+  @@index([countryScope])
+  @@map("documents")
+}
+
+// ─── Training ───────────────────────────────────────────────────────────────
+
+model TrainingProgram {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  level         String?
+  status        String   @default("active")
+  durationHours Float?   @map("duration_hours")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  modules    TrainingModule[]
+  enrollments TrainingEnrollment[]
+
+  @@map("training_programs")
+}
+
+model TrainingModule {
+  id                String   @id @default(cuid())
+  trainingProgramId String   @map("training_program_id")
+  title             String
+  moduleType        String?  @map("module_type")
+  contentUrl        String?  @map("content_url")
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+
+  @@index([trainingProgramId])
+  @@map("training_modules")
+}
+
+model TrainingEnrollment {
+  id                String                    @id @default(cuid())
+  organizationId    String                    @map("organization_id")
+  userId            String                    @map("user_id")
+  trainingProgramId String                    @map("training_program_id")
+  status            TrainingEnrollmentStatus   @default(not_started)
+  progressPct       Float                     @default(0) @map("progress_pct")
+  startedAt         DateTime?                 @map("started_at")
+  completedAt       DateTime?                 @map("completed_at")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, trainingProgramId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([trainingProgramId])
+  @@map("training_enrollments")
+}
+
+// ─── Activity Logs ───────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id             String   @id @default(cuid())
+  organizationId String?   @map("organization_id")
+  userId         String?   @map("user_id")
+  entityType     String   @map("entity_type")
+  entityId       String   @map("entity_id")
+  action         String
+  metadataJson   Json?    @map("metadata_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType])
   @@index([entityId])
-  @@index([paidAt])
-  @@map("payments")
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// ─── Platform config (global defaults, superadmin only) ───────────────────────
+
+model PlatformConfig {
+  id         String   @id @default(cuid())
+  configJson Json     @map("config_json")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_config")
 }

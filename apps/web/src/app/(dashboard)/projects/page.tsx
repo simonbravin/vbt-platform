@@ -1,34 +1,34 @@
 import { requireAuth } from "@/lib/utils";
+import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { Plus, FolderOpen, History } from "lucide-react";
 import { ProjectsClient } from "./ProjectsClient";
+import { listProjects } from "@vbt/core";
+import type { SessionUser } from "@/lib/auth";
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
-  const orgId = (user as any).orgId;
+  const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
+  const orgId = effectiveOrgId ?? user.activeOrgId ?? user.orgId ?? "";
+  if (!orgId) return null;
 
-  const [projects, total] = await Promise.all([
-    prisma.project.findMany({
-      where: { orgId, isArchived: false },
-      include: {
-        clientRecord: { select: { id: true, name: true } },
-        country: { select: { id: true, name: true, code: true } },
-        baselineQuote: { select: { id: true, quoteNumber: true, fobUsd: true } },
-        _count: { select: { quotes: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    }),
-    prisma.project.count({ where: { orgId, isArchived: false } }),
-  ]);
+  const tenantCtx = {
+    userId: user.userId ?? user.id,
+    organizationId: orgId,
+    isPlatformSuperadmin: user.isPlatformSuperadmin ?? false,
+  };
+  const { projects, total } = await listProjects(prisma, tenantCtx, {
+    limit: 50,
+    offset: 0,
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{total} active projects</p>
+          <p className="text-gray-500 text-sm mt-0.5">{total} projects</p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
           </Link>
           <Link
             href="/projects/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-vbt-blue/90"
           >
             <Plus className="w-4 h-4" /> New Project
           </Link>

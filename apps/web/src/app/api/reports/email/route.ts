@@ -1,134 +1,188 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
+import { buildVbtEmailHtml } from "@/lib/email-templates";
 import { Resend } from "resend";
+import type { SessionUser } from "@/lib/auth";
 import { z } from "zod";
 
-const STATUS_VALUES = ["DRAFT", "QUOTED", "QUOTE_SENT", "SOLD", "ARCHIVED"] as const;
-const statusLabel: Record<string, string> = {
-  DRAFT: "Draft",
-  QUOTED: "Quoted",
-  QUOTE_SENT: "Quote sent",
-  SOLD: "Sold",
-  ARCHIVED: "Archived",
-};
-
 const bodySchema = z.object({
-  to: z.string().email("Invalid email address"),
-  subject: z.string().optional(),
+  to: z.string().email(),
+  subject: z.string().max(200).optional(),
   status: z.string().optional(),
   countryId: z.string().optional(),
+  countryCode: z.string().optional(),
   clientId: z.string().optional(),
   soldFrom: z.string().optional(),
   soldTo: z.string().optional(),
   search: z.string().optional(),
 });
 
-function escapeCsv(v: unknown): string {
-  const s = String(v ?? "");
-  return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
-}
+const STATUS_MAP: Record<string, string> = {
+  DRAFT: "lead",
+  QUOTED: "quoting",
+  QUOTE_SENT: "quoting",
+  SOLD: "won",
+  ARCHIVED: "lost",
+  lead: "lead",
+  qualified: "qualified",
+  quoting: "quoting",
+  engineering: "engineering",
+  won: "won",
+  lost: "lost",
+  on_hold: "on_hold",
+};
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string };
-
-  const body = await req.json();
-  const parsed = bodySchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { to, subject, status, countryId, clientId, soldFrom, soldTo, search } = parsed.data;
-
-  const where: Record<string, unknown> = { orgId: user.orgId };
-  if (status && STATUS_VALUES.includes(status as (typeof STATUS_VALUES)[number])) {
-    where.status = status;
+  const user = session.user as SessionUser & { activeOrgId?: string | null; id?: string };
+  const organizationId = await getEffectiveActiveOrgId(user);
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
   }
-  if (countryId) where.countryId = countryId;
-  if (clientId) where.clientId = clientId;
-  if (soldFrom || soldTo) {
-    where.soldAt = {};
-    if (soldFrom) (where.soldAt as Record<string, Date>).gte = new Date(soldFrom);
-    if (soldTo) {
-      const d = new Date(soldTo);
-      d.setHours(23, 59, 59, 999);
-      (where.soldAt as Record<string, Date>).lte = d;
+
+  // Only org_admin and platform superadmin may send report by email
+  if (!user.isPlatformSuperadmin) {
+    const member = await prisma.orgMember.findFirst({
+      where: { organizationId, userId: (user as { id: string }).id },
+      select: { role: true },
+    });
+    if (!member || member.role !== "org_admin") {
+      return NextResponse.json({ error: "Forbidden: only org admins can send report by email" }, { status: 403 });
     }
   }
-  if (search?.trim()) {
+
+  let body: z.infer<typeof bodySchema>;
+  try {
+    body = bodySchema.parse(await req.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid body. Required: to (email). Optional: subject, status, countryId, countryCode, clientId, soldFrom, soldTo, search." }, { status: 400 });
+  }
+
+  const where: Record<string, unknown> = { organizationId };
+  const countryCode = body.countryCode ?? body.countryId ?? "";
+  if (body.status) {
+    where.status = STATUS_MAP[body.status] ?? body.status;
+  }
+  if (countryCode) where.countryCode = countryCode;
+  if (body.clientId) where.clientId = body.clientId;
+  if (body.search?.trim()) {
     where.OR = [
-      { name: { contains: search.trim(), mode: "insensitive" as const } },
-      { client: { contains: search.trim(), mode: "insensitive" as const } },
-      { clientRecord: { name: { contains: search.trim(), mode: "insensitive" as const } } },
-      { location: { contains: search.trim(), mode: "insensitive" as const } },
-      { country: { name: { contains: search.trim(), mode: "insensitive" as const } } },
-      { country: { code: { contains: search.trim(), mode: "insensitive" as const } } },
+      { projectName: { contains: body.search.trim(), mode: "insensitive" } },
+      { client: { name: { contains: body.search.trim(), mode: "insensitive" } } },
+      { city: { contains: body.search.trim(), mode: "insensitive" } },
+      { address: { contains: body.search.trim(), mode: "insensitive" } },
     ];
+  }
+  if (body.soldFrom || body.soldTo) {
+    (where as Record<string, unknown>).status = "won";
+    (where as Record<string, unknown>).quotes = {
+      some: {
+        status: "accepted",
+        updatedAt: {
+          ...(body.soldFrom ? { gte: new Date(body.soldFrom) } : {}),
+          ...(body.soldTo ? { lte: new Date(body.soldTo + "T23:59:59.999Z") } : {}),
+        },
+      },
+    };
   }
 
   const projects = await prisma.project.findMany({
     where,
     include: {
-      clientRecord: { select: { id: true, name: true } },
-      country: { select: { id: true, name: true, code: true } },
-      baselineQuote: { select: { id: true, quoteNumber: true, fobUsd: true } },
+      client: { select: { id: true, name: true } },
+      quotes: {
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+        where: { status: "accepted" },
+        select: { id: true, quoteNumber: true, totalPrice: true, status: true, updatedAt: true },
+      },
       _count: { select: { quotes: true } },
     },
     orderBy: { updatedAt: "desc" },
-    take: 10000,
+    take: 5000,
   });
 
-  const headers = [
-    "Project",
-    "Client",
-    "Location",
-    "Country",
-    "Status",
-    "Baseline quote",
-    "Project FOB",
-    "Sale date",
-    "Final amount",
-    "Quotes count",
-  ];
+  const acceptedQuoteByProject = await prisma.quote.findMany({
+    where: { organizationId, projectId: { in: projects.map((p) => p.id) }, status: "accepted" },
+    select: { projectId: true, totalPrice: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  const valueSoldByProject = new Map(acceptedQuoteByProject.map((q) => [q.projectId, { totalPrice: q.totalPrice ?? 0, updatedAt: q.updatedAt }]));
+
+  const rows = projects.map((p) => {
+    const accepted = p.quotes[0] ?? valueSoldByProject.get(p.id);
+    return {
+      projectName: p.projectName,
+      client: p.client?.name ?? null,
+      location: p.city ?? p.address ?? null,
+      countryCode: p.countryCode ?? null,
+      status: p.status,
+      quoteNumber: (p.quotes[0] as { quoteNumber?: string } | undefined)?.quoteNumber ?? null,
+      fobUsd: (p.quotes[0] as { totalPrice?: number } | undefined)?.totalPrice ?? (accepted as { totalPrice?: number } | undefined)?.totalPrice ?? null,
+      soldAt: (accepted as { updatedAt?: Date } | undefined)?.updatedAt ?? null,
+      finalAmountUsd: p.status === "won" && accepted ? ((accepted as { totalPrice?: number }).totalPrice ?? null) : null,
+      quotesCount: p._count.quotes,
+    };
+  });
+
+  const escape = (v: unknown) => {
+    const s = String(v ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const headers = ["Project", "Client", "Location", "Country", "Status", "Quote number", "FOB (USD)", "Sale date", "Final amount", "Quotes count"];
   const csvRows = [
     headers.join(","),
-    ...projects.map((p) =>
+    ...rows.map((r) =>
       [
-        p.name,
-        (p.clientRecord?.name ?? p.client) ?? "",
-        p.location ?? "",
-        p.country?.name ?? "",
-        statusLabel[p.status] ?? p.status,
-        p.baselineQuote?.quoteNumber ?? "",
-        p.baselineQuote?.fobUsd ?? "",
-        p.soldAt ? new Date(p.soldAt).toLocaleDateString() : "",
-        p.finalAmountUsd ?? "",
-        p._count.quotes,
-      ].map(escapeCsv).join(",")
+        r.projectName,
+        r.client ?? "",
+        r.location ?? "",
+        r.countryCode ?? "",
+        r.status,
+        r.quoteNumber ?? "",
+        r.fobUsd ?? "",
+        r.soldAt ? new Date(r.soldAt).toLocaleDateString() : "",
+        r.finalAmountUsd ?? "",
+        r.quotesCount,
+      ]
+        .map(escape)
+        .join(",")
     ),
   ];
   const csv = csvRows.join("\n");
   const filename = `vbt-projects-report-${new Date().toISOString().slice(0, 10)}.csv`;
 
   if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json(
-      { error: "Email service not configured. Set RESEND_API_KEY." },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "Email not configured (RESEND_API_KEY)" }, { status: 503 });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const emailSubject = subject ?? `VBT Projects Report – ${new Date().toISOString().slice(0, 10)}`;
+  const subject = body.subject?.trim() || "VBT Projects Report";
+  const bodyHtml = `
+    <p style="margin: 0 0 16px 0;">Please find the projects report attached (${rows.length} row(s)).</p>
+    <p style="margin: 0; color: #555;">Filters applied: ${body.status ? `Status ${body.status}` : "All statuses"}${countryCode ? `, Country ${countryCode}` : ""}${body.clientId ? ", Client filter" : ""}${body.search?.trim() ? ", Search" : ""}${body.soldFrom || body.soldTo ? ", Sold date range" : ""}.</p>
+  `.trim();
+
+  const htmlBody = buildVbtEmailHtml({
+    title: "Projects Report",
+    subtitle: "Vision Building Technologies",
+    bodyHtml,
+    attachmentDescription: "The report is attached as a CSV file.",
+  });
 
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "quotes@visionbuildingtechs.com",
-      to,
-      subject: emailSubject,
-      html: `<p>Please find the VBT projects report attached (${projects.length} project(s)).</p>`,
+      from: process.env.RESEND_FROM_EMAIL ?? "reports@visionbuildingtechs.com",
+      to: body.to,
+      subject,
+      html: htmlBody,
       attachments: [
         {
           filename,
@@ -136,12 +190,9 @@ export async function POST(req: Request) {
         },
       ],
     });
-    return NextResponse.json({ ok: true, message: `Report sent to ${to}` });
+    return NextResponse.json({ message: `Report sent to ${body.to}` });
   } catch (err) {
-    console.error("Reports email send failed:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to send email" },
-      { status: 500 }
-    );
+    console.error("Reports email send error:", err);
+    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 }

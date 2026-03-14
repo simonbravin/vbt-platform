@@ -1,0 +1,794 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  output        = "../../../apps/web/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum OrgMemberRole {
+  SUPERADMIN
+  ADMIN
+  SALES
+  VIEWER
+}
+
+enum BaseUom {
+  M
+  FT
+}
+
+enum WeightUom {
+  KG
+  LBS
+}
+
+enum CostMethod {
+  CSV
+  M2_BY_SYSTEM
+  M2_TOTAL
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ARCHIVED
+  CANCELLED
+}
+
+enum ProjectStatus {
+  DRAFT
+  IN_CONVERSATION
+  QUOTED
+  QUOTE_SENT
+  SOLD
+  ARCHIVED
+}
+
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_PAID
+  PAID
+  DUE       // al menos una SaleInvoice con dueDate < hoy y venta no PAID
+  CANCELLED
+}
+
+enum InvMoveType {
+  IN
+  OUT
+  TRANSFER
+  ADJUST
+  RESERVE
+  RELEASE
+}
+
+enum AuditAction {
+  USER_APPROVED
+  USER_REJECTED
+  USER_ROLE_CHANGED
+  COST_UPDATED
+  TAX_RULE_CHANGED
+  QUOTE_SENT
+  QUOTE_CREATED
+  QUOTE_ARCHIVED
+  QUOTE_UPDATED
+  QUOTE_DELETED
+  INV_MOVE
+  CATALOG_IMPORTED
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  SALE_CREATED
+  SALE_UPDATED
+  SALE_DELETED
+  SALE_INVOICED_BASIS_CHANGED
+  SALE_STATUS_CHANGED
+  SALE_STATUS_RECALCULATED
+  SALE_INVOICE_CREATED
+  SALE_INVOICE_UPDATED
+  SALE_INVOICE_DELETED
+  PAYMENT_RECORDED
+}
+
+enum SystemCode {
+  S80
+  S150
+  S200
+}
+
+enum TaxBase {
+  CIF
+  FOB
+  BASE_IMPONIBLE
+  FIXED_PER_CONTAINER
+  FIXED_TOTAL
+}
+
+enum MarkupType {
+  PERCENT
+  FIXED_USD
+  BOTH
+}
+
+// ─── Org & Users ─────────────────────────────────────────────────────────────
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Default org settings
+  baseUom       BaseUom   @default(M)
+  weightUom     WeightUom @default(KG)
+  minRunFt      Float     @default(5000)
+  rateS80       Float     @default(37)
+  rateS150      Float     @default(67)
+  rateS200      Float     @default(85)
+  rateGlobal    Float     @default(60)
+  // Commission defaults
+  commissionPct Float     @default(0)
+  commissionFixed Float   @default(0)
+
+  members        OrgMember[]
+  clients        Client[]
+  projects       Project[]
+  quotes         Quote[]
+  warehouses     Warehouse[]
+  countryProfiles CountryProfile[]
+  freightProfiles FreightRateProfile[]
+  taxRuleSets    TaxRuleSet[]
+  revitImports   RevitImport[]
+  auditLogs      AuditLog[]
+  billingEntities BillingEntity[]
+  sales          Sale[]
+  payments       Payment[]
+
+  @@map("orgs")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String?
+  passwordHash  String
+  status        UserStatus @default(PENDING)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  orgMembers   OrgMember[]
+  quotesCreated Quote[]
+  auditLogs    AuditLog[]
+  salesCreated Sale[]
+  paymentsCreated Payment[]
+
+  @@map("users")
+}
+
+model OrgMember {
+  id        String        @id @default(cuid())
+  orgId     String
+  userId    String
+  role      OrgMemberRole @default(VIEWER)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  org  Org  @relation(fields: [orgId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([orgId, userId])
+  @@map("org_members")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  orgId      String?
+  userId     String?
+  action     AuditAction
+  entityType String?
+  entityId   String?
+  meta       Json?
+  createdAt  DateTime    @default(now())
+
+  org  Org?  @relation(fields: [orgId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ─── Clients (directory) ─────────────────────────────────────────────────────
+
+model Client {
+  id         String   @id @default(cuid())
+  orgId      String
+  name       String   // display name
+  legalName  String?
+  taxId      String?
+  address    String?
+  city       String?
+  countryId  String?
+  phone      String?
+  email      String?
+  website    String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  org      Org             @relation(fields: [orgId], references: [id])
+  country  CountryProfile? @relation(fields: [countryId], references: [id])
+  projects Project[]
+  sales    Sale[]
+
+  @@index([orgId])
+  @@index([countryId])
+  @@index([name])
+  @@map("clients")
+}
+
+// ─── System & Catalog ────────────────────────────────────────────────────────
+
+model SystemType {
+  id          String     @id @default(cuid())
+  code        SystemCode @unique
+  name        String
+  thicknessMm Int
+  // Default concrete/steel per m2
+  concreteM3PerM2 Float  @default(0)
+  steelKgPerM2    Float  @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  pieces PieceCatalog[]
+
+  @@map("system_types")
+}
+
+model PieceCatalog {
+  id                     String     @id @default(cuid())
+  systemId               String?
+  dieNumber              String?
+  canonicalName          String     // Type without SA####_ prefix
+  canonicalNameNormalized String    // lowercase, no punctuation
+  categoryRaw            String?    // raw Category from Excel
+  systemCode             SystemCode?
+  usefulWidthMm          Float?
+  usefulWidthM           Float?     // usefulWidthMm / 1000
+  lbsPerMUncored         Float?     @default(0)
+  lbsPerMCored           Float?     @default(0)
+  volumePerM             Float?     @default(0)
+  isActive               Boolean    @default(true)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  system    SystemType?   @relation(fields: [systemId], references: [id])
+  costs     PieceCost[]
+  aliases   PieceAlias[]
+  importLines RevitImportLine[]
+  inventoryItems InventoryItem[]
+
+  @@unique([canonicalNameNormalized])
+  @@index([systemCode])
+  @@map("piece_catalog")
+}
+
+model PieceCost {
+  id               String   @id @default(cuid())
+  pieceId          String
+  effectiveFrom    DateTime @default(now())
+  pricePer5000ftCored Float? @default(0)
+  pricePerFtCored  Float?   @default(0)
+  pricePerMCored   Float?   @default(0)
+  minRunFtOverride Float?   // null = use org default
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  piece PieceCatalog @relation(fields: [pieceId], references: [id])
+
+  @@index([pieceId])
+  @@map("piece_costs")
+}
+
+model PieceAlias {
+  id              String   @id @default(cuid())
+  orgId           String?
+  pieceId         String
+  aliasRaw        String
+  aliasNormalized String
+  source          String?  // 'EXCEL_IMPORT', 'CSV_MAPPING', 'MANUAL'
+  createdAt       DateTime @default(now())
+
+  piece PieceCatalog @relation(fields: [pieceId], references: [id])
+
+  @@unique([aliasNormalized, pieceId])
+  @@index([aliasNormalized])
+  @@map("piece_aliases")
+}
+
+// ─── Projects & Revit Imports ────────────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(cuid())
+  orgId       String
+  name        String
+  client      String?  // legacy free-text; use clientId when set
+  clientId   String?
+  location    String?
+  countryId   String?  // Project location country (for filtering/reports)
+  description String?
+  // Wall area breakdown
+  wallAreaM2S80  Float @default(0)
+  wallAreaM2S150 Float @default(0)
+  wallAreaM2S200 Float @default(0)
+  wallAreaM2Total Float @default(0)
+  // Container info
+  kitsPerContainer Int  @default(0)
+  numContainers    Int  @default(0)
+  totalKits        Int       @default(1)
+  plannedStartDate DateTime?
+  durationWeeks    Int?
+  isArchived       Boolean   @default(false)
+  // Pipeline & reporting
+  status           ProjectStatus @default(DRAFT)
+  baselineQuoteId  String?   @unique
+  soldAt           DateTime?
+  finalAmountUsd   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org            Org             @relation(fields: [orgId], references: [id])
+  clientRecord   Client?         @relation(fields: [clientId], references: [id])
+  country        CountryProfile? @relation(fields: [countryId], references: [id])
+  baselineQuote  Quote?          @relation("ProjectBaselineQuote", fields: [baselineQuoteId], references: [id])
+  revitImports   RevitImport[]
+  quotes         Quote[]
+  sales          Sale[]
+
+  @@index([orgId])
+  @@index([clientId])
+  @@index([countryId])
+  @@index([status])
+  @@index([soldAt])
+  @@map("projects")
+}
+
+model RevitImport {
+  id          String   @id @default(cuid())
+  orgId       String
+  projectId   String?
+  filename    String
+  uploadedBy  String?
+  rowCount    Int      @default(0)
+  matchedCount Int     @default(0)
+  unmappedCount Int    @default(0)
+  status      String   @default("PENDING") // PENDING, MAPPED, IGNORED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org     Org          @relation(fields: [orgId], references: [id])
+  project Project?     @relation(fields: [projectId], references: [id])
+  lines   RevitImportLine[]
+
+  @@index([orgId])
+  @@map("revit_imports")
+}
+
+model RevitImportLine {
+  id          String   @id @default(cuid())
+  importId    String
+  rowNum      Int
+  rawPieceCode String?
+  rawPieceName String
+  rawQty      Float
+  rawHeightMm Float
+  // Matched piece
+  pieceId     String?
+  matchMethod String?  // 'EXACT_CODE', 'ALIAS', 'CANONICAL', 'MANUAL', 'IGNORED'
+  isIgnored   Boolean  @default(false)
+  // Computed
+  linearM     Float?
+  linearFt    Float?
+  m2Line      Float?
+  weightLbsCored   Float?
+  weightLbsUncored Float?
+  weightKgCored    Float?
+  weightKgUncored  Float?
+  volumeM3    Float?
+  // Cost
+  pricePerM   Float?
+  pricePerFt  Float?
+  lineTotal   Float?
+  markupPct   Float?   @default(0)
+  lineTotalWithMarkup Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  import RevitImport    @relation(fields: [importId], references: [id])
+  piece  PieceCatalog?  @relation(fields: [pieceId], references: [id])
+
+  @@index([importId])
+  @@map("revit_import_lines")
+}
+
+// ─── Inventory ───────────────────────────────────────────────────────────────
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org        Org            @relation(fields: [orgId], references: [id])
+  items      InventoryItem[]
+  movesFrom  InventoryMove[] @relation("MoveFrom")
+  movesTo    InventoryMove[] @relation("MoveTo")
+
+  @@index([orgId])
+  @@map("warehouses")
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  warehouseId     String
+  pieceId         String
+  heightMm        Float?   // optional height-specific stock
+  qtyOnHand       Float    @default(0)
+  qtyReserved     Float    @default(0)
+  qtyAvailable    Float    @default(0) // computed: onHand - reserved
+  minStockAlert   Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  warehouse Warehouse    @relation(fields: [warehouseId], references: [id])
+  piece     PieceCatalog @relation(fields: [pieceId], references: [id])
+  moves     InventoryMove[]
+
+  @@unique([warehouseId, pieceId, heightMm])
+  @@index([warehouseId])
+  @@map("inventory_items")
+}
+
+model InventoryMove {
+  id            String      @id @default(cuid())
+  itemId        String
+  fromWarehouseId String?
+  toWarehouseId String?
+  type          InvMoveType
+  qty           Float
+  quoteId       String?
+  notes         String?
+  performedBy   String?
+  createdAt     DateTime    @default(now())
+
+  item          InventoryItem @relation(fields: [itemId], references: [id])
+  fromWarehouse Warehouse?    @relation("MoveFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse?    @relation("MoveTo", fields: [toWarehouseId], references: [id])
+
+  @@index([itemId])
+  @@index([quoteId])
+  @@map("inventory_moves")
+}
+
+// ─── Countries, Freight, Taxes ───────────────────────────────────────────────
+
+model CountryProfile {
+  id        String   @id @default(cuid())
+  orgId     String
+  code      String   // ISO2: PA, AR, CR, CO, SV, HN
+  name      String
+  currency  String   @default("USD")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org             Org                  @relation(fields: [orgId], references: [id])
+  clients         Client[]
+  freightProfiles FreightRateProfile[]
+  taxRuleSets     TaxRuleSet[]
+  projects        Project[]
+  quotes          Quote[]
+
+  @@unique([orgId, code])
+  @@map("country_profiles")
+}
+
+model FreightRateProfile {
+  id              String   @id @default(cuid())
+  orgId           String
+  countryId       String
+  name            String
+  freightPerContainer Float  @default(0)
+  isDefault       Boolean  @default(false)
+  validFrom       DateTime @default(now())
+  expiryDate      DateTime?  // carrier offer validity (e.g. 30/45/60 days)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org     Org            @relation(fields: [orgId], references: [id])
+  country CountryProfile @relation(fields: [countryId], references: [id])
+
+  @@index([countryId])
+  @@map("freight_rate_profiles")
+}
+
+model TaxRuleSet {
+  id          String   @id @default(cuid())
+  orgId       String
+  countryId   String
+  name        String
+  isActive    Boolean  @default(true)
+  rules       Json     // array of TaxRuleItem
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org     Org            @relation(fields: [orgId], references: [id])
+  country CountryProfile @relation(fields: [countryId], references: [id])
+
+  @@index([countryId])
+  @@map("tax_rule_sets")
+}
+
+// ─── Quotes ──────────────────────────────────────────────────────────────────
+
+model Quote {
+  id          String      @id @default(cuid())
+  orgId       String
+  projectId   String
+  countryId   String?
+  quoteNumber String?     @unique
+  status      QuoteStatus @default(DRAFT)
+  costMethod  CostMethod  @default(CSV)
+  // Inputs
+  revitImportId String?
+  warehouseId   String?
+  reserveStock  Boolean   @default(false)
+  baseUom       BaseUom   @default(M)
+  // Material cost
+  factoryCostUsd Float    @default(0)
+  // Commission
+  commissionPct  Float    @default(0)
+  commissionFixed Float   @default(0)
+  fobUsd         Float    @default(0)
+  // Freight
+  freightProfileId String?
+  freightCostUsd  Float   @default(0)
+  numContainers   Int     @default(1)
+  kitsPerContainer Int    @default(0)
+  totalKits        Int    @default(0)
+  cifUsd          Float   @default(0)
+  // Totals
+  taxesFeesUsd    Float   @default(0)
+  landedDdpUsd    Float   @default(0)
+  // Informational
+  concreteM3      Float   @default(0)
+  steelKgEst      Float   @default(0)
+  wallAreaM2S80   Float   @default(0)
+  wallAreaM2S150  Float   @default(0)
+  wallAreaM2S200  Float   @default(0)
+  wallAreaM2Total Float   @default(0)
+  totalWeightKg   Float   @default(0)
+  totalVolumeM3   Float   @default(0)
+  // Snapshot (frozen at send)
+  snapshot        Json?
+  sentAt          DateTime?
+  sentTo          String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org               Org             @relation(fields: [orgId], references: [id])
+  project           Project         @relation(fields: [projectId], references: [id])
+  projectAsBaseline Project?        @relation("ProjectBaselineQuote")
+  country           CountryProfile? @relation(fields: [countryId], references: [id])
+  createdByUser     User?           @relation(fields: [createdBy], references: [id])
+  lines             QuoteLine[]
+  taxLines          QuoteTaxLine[]
+  docs              QuoteDoc[]
+  sales             Sale[]
+
+  @@index([orgId])
+  @@index([projectId])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id          String   @id @default(cuid())
+  quoteId     String
+  lineNum     Int
+  description String
+  pieceId     String?
+  systemCode  SystemCode?
+  // Quantities
+  qty         Float    @default(0)
+  heightMm    Float?
+  linearM     Float?
+  linearFt    Float?
+  m2Line      Float?
+  // Pricing
+  uom         String?  // M, FT, M2
+  unitPrice   Float?
+  markupPct   Float    @default(0)
+  lineTotal   Float    @default(0)
+  // Weights/Volume
+  weightKgCored   Float?
+  weightKgUncored Float?
+  volumeM3        Float?
+  // Flags
+  isBelowMinRun Boolean @default(false)
+  productionNeeded Float?
+  isManualOverride Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_lines")
+}
+
+model QuoteTaxLine {
+  id           String   @id @default(cuid())
+  quoteId      String
+  order        Int
+  label        String
+  base         TaxBase
+  ratePct      Float?
+  fixedAmount  Float?
+  baseAmount   Float    @default(0)
+  computedAmount Float   @default(0)
+  perContainer Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_tax_lines")
+}
+
+model QuoteDoc {
+  id          String   @id @default(cuid())
+  quoteId     String
+  type        String   // 'PDF', 'EMAIL'
+  url         String?
+  storagePath String?
+  emailTo     String?
+  emailMessageId String?
+  generatedAt DateTime @default(now())
+  meta        Json?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_docs")
+}
+
+// ─── Sales ───────────────────────────────────────────────────────────────────
+
+model BillingEntity {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  slug      String   // VISION_LATAM, VISION_CANADA
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org     Org           @relation(fields: [orgId], references: [id])
+  invoices SaleInvoice[]
+  payments Payment[]
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+  @@map("billing_entities")
+}
+
+model Sale {
+  id          String     @id @default(cuid())
+  orgId       String
+  clientId    String
+  projectId   String
+  quoteId     String?
+  saleNumber  String?
+  quantity    Int        @default(1)
+  status      SaleStatus @default(DRAFT)
+  // Financial (totals, editable)
+  exwUsd              Float @default(0)
+  commissionPct       Float @default(0)
+  commissionAmountUsd Float @default(0)
+  fobUsd              Float @default(0)
+  freightUsd          Float @default(0)
+  cifUsd              Float @default(0)
+  taxesFeesUsd        Float @default(0)
+  landedDdpUsd        Float @default(0)
+  invoicedBasis       String?  // EXW | FOB | CIF | DDP — which amount is used as "invoiced" and for paid status
+  taxBreakdownJson    Json?
+  notes               String?
+  createdBy           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  org           Org            @relation(fields: [orgId], references: [id])
+  client        Client         @relation(fields: [clientId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  quote         Quote?         @relation(fields: [quoteId], references: [id])
+  createdByUser User?          @relation(fields: [createdBy], references: [id])
+  invoices      SaleInvoice[]
+  payments      Payment[]
+
+  @@unique([orgId, saleNumber])
+  @@index([orgId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sales")
+}
+
+model SaleInvoice {
+  id              String    @id @default(cuid())
+  saleId          String
+  entityId        String
+  amountUsd       Float     @default(0)
+  dueDate         DateTime?
+  sequence        Int       @default(1)
+  referenceNumber String?   // external invoice number (e.g. from billing system)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sale   Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  entity BillingEntity @relation(fields: [entityId], references: [id])
+
+  @@index([saleId])
+  @@index([entityId])
+  @@index([dueDate])
+  @@map("sale_invoices")
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  orgId          String
+  saleId         String
+  entityId       String
+  amountUsd      Float     @default(0)
+  amountLocal    Float?
+  currencyLocal  String?
+  exchangeRate   Float?
+  paidAt         DateTime  @default(now())
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+
+  org           Org            @relation(fields: [orgId], references: [id])
+  sale          Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  entity        BillingEntity  @relation(fields: [entityId], references: [id])
+  createdByUser User?          @relation(fields: [createdBy], references: [id])
+
+  @@index([orgId])
+  @@index([saleId])
+  @@index([entityId])
+  @@index([paidAt])
+  @@map("payments")
+}

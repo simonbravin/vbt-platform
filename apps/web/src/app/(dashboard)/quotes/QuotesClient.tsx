@@ -4,23 +4,28 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { LayoutGrid, List, FileText, Search, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getCountryName } from "@/lib/countries";
 
 type Quote = {
   id: string;
-  quoteNumber: string | null;
+  quoteNumber: string;
   status: string;
-  costMethod: string;
-  landedDdpUsd: number;
+  totalPrice: number;
   createdAt: Date | string;
-  project: { name: string; client: string | null };
-  country: { name: string; code: string } | null;
+  project: {
+    projectName: string;
+    id: string;
+    countryCode?: string | null;
+    client?: { name: string } | null;
+  };
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  SENT: "bg-green-100 text-green-700",
-  DRAFT: "bg-amber-100 text-amber-700",
-  ARCHIVED: "bg-gray-100 text-gray-500",
-  CANCELLED: "bg-red-100 text-red-500",
+  sent: "bg-green-100 text-green-700",
+  draft: "bg-amber-100 text-amber-700",
+  accepted: "bg-blue-100 text-blue-700",
+  rejected: "bg-red-100 text-red-500",
+  expired: "bg-gray-100 text-gray-500",
 };
 
 export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes: Quote[]; initialStatus?: string }) {
@@ -43,9 +48,9 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
     try {
       const params = new URLSearchParams({ search: search.trim() });
       if (initialStatus) params.set("status", initialStatus);
-      const res = await fetch(`/api/quotes?${params}`);
+      const res = await fetch(`/api/saas/quotes?${params}`);
       const data = await res.json();
-      setQuotes(Array.isArray(data) ? data : []);
+      setQuotes(data?.quotes ?? []);
     } finally {
       setSearching(false);
     }
@@ -72,7 +77,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            className="flex-1 px-3 py-2 text-sm border-0 focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+            className="flex-1 px-3 py-2 text-sm border-0 focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:ring-inset"
           />
           <button
             type="button"
@@ -106,7 +111,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {["Quote #", "Project", "Destination", "Method", "Landed DDP", "Status", "Date", ""].map((h) => (
+                {["Quote #", "Project", "Destination", "Total", "Status", "Date", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>
                 ))}
               </tr>
@@ -120,17 +125,14 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-800">{q.project.name}</p>
-                    {q.project.client && <p className="text-gray-400 text-xs">{q.project.client}</p>}
+                    <p className="font-medium text-gray-800">{q.project.projectName}</p>
+                    {q.project.client?.name && <p className="text-gray-400 text-xs">{q.project.client.name}</p>}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {q.country?.name ?? <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{q.costMethod}</span>
+                    {getCountryName(q.project.countryCode) || <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-800">
-                    {formatCurrency(q.landedDdpUsd)}
+                    {formatCurrency(q.totalPrice)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[q.status] ?? "bg-gray-100 text-gray-500"}`}>
@@ -181,11 +183,11 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                 <p className="font-semibold text-vbt-blue text-sm">
                   {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
                 </p>
-                <p className="font-medium text-gray-800 mt-1">{q.project.name}</p>
-                {q.project.client && <p className="text-gray-400 text-xs mt-0.5">{q.project.client}</p>}
+                <p className="font-medium text-gray-800 mt-1">{q.project.projectName}</p>
+                {q.project.client?.name && <p className="text-gray-400 text-xs mt-0.5">{q.project.client.name}</p>}
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{q.country?.name ?? "—"}</span>
-                  <span className="text-sm font-bold text-gray-800">{formatCurrency(q.landedDdpUsd)}</span>
+                  <span className="text-xs text-gray-400">{getCountryName(q.project.countryCode) || "—"}</span>
+                  <span className="text-sm font-bold text-gray-800">{formatCurrency(q.totalPrice)}</span>
                 </div>
               </Link>
             </div>

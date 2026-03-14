@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@vbt/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import type { OrgMemberRole } from "@vbt/db";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -32,32 +33,32 @@ export const authOptions: NextAuthOptions = {
           where: { email },
           include: {
             orgMembers: {
-              include: { org: true },
-              take: 1,
+              where: { status: "active" },
+              include: { organization: true },
+              orderBy: { joinedAt: "asc" },
             },
           },
         });
 
         if (!user) return null;
-        if (user.status === "PENDING") {
+        if (!user.isActive) {
           throw new Error("PENDING");
-        }
-        if (user.status !== "ACTIVE") {
-          throw new Error("INACTIVE");
         }
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        const membership = user.orgMembers[0];
+        // Use first active membership as active org (multi-org: one active per session)
+        const activeMembership = user.orgMembers[0];
 
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
-          role: membership?.role ?? "VIEWER",
-          orgId: membership?.orgId ?? null,
-          orgSlug: membership?.org?.slug ?? null,
+          name: user.fullName,
+          activeOrgId: activeMembership?.organization.id ?? null,
+          activeOrgName: activeMembership?.organization.name ?? null,
+          role: (activeMembership?.role ?? "viewer") as string,
+          isPlatformSuperadmin: user.isPlatformSuperadmin,
         };
       },
     }),
@@ -66,29 +67,51 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.activeOrgId = (user as any).activeOrgId;
+        token.activeOrgName = (user as any).activeOrgName;
         token.role = (user as any).role;
-        token.orgId = (user as any).orgId;
-        token.orgSlug = (user as any).orgSlug;
+        token.isPlatformSuperadmin = (user as any).isPlatformSuperadmin;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).orgId = token.orgId;
-        (session.user as any).orgSlug = token.orgSlug;
+        (session.user as any).userId = token.id;
+        (session.user as any).activeOrgId = token.activeOrgId ?? null;
+        (session.user as any).activeOrgName = token.activeOrgName ?? null;
+        (session.user as any).role = token.role ?? "viewer";
+        (session.user as any).roles = token.role ? [token.role] : [];
+        (session.user as any).isPlatformSuperadmin = token.isPlatformSuperadmin ?? false;
+        // Backward compat for existing UI that expects orgId
+        (session.user as any).orgId = token.activeOrgId ?? null;
+        (session.user as any).orgSlug = token.activeOrgName ?? null;
       }
       return session;
     },
   },
 };
 
+/**
+ * Session user shape for Partner SaaS.
+ * - userId: same as id (for clarity in tenant helpers).
+ * - activeOrgId: organization scope for this session (null if no org membership).
+ * - role: role in the active organization (org_admin | sales_user | technical_user | viewer).
+ * - roles: array with the active org role (for compatibility; one active org per session).
+ * - isPlatformSuperadmin: can access all tenants and manage permissions.
+ */
 export type SessionUser = {
   id: string;
+  userId: string;
   email: string;
   name?: string | null;
-  role: string;
-  orgId: string | null;
-  orgSlug: string | null;
+  activeOrgId: string | null;
+  activeOrgName?: string | null;
+  role: OrgMemberRole | string;
+  roles: string[];
+  isPlatformSuperadmin: boolean;
+  /** @deprecated Use activeOrgId */
+  orgId?: string | null;
+  /** @deprecated Use activeOrgName */
+  orgSlug?: string | null;
 };

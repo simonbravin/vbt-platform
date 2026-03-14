@@ -1,10 +1,11 @@
 import { requireAuth } from "@/lib/utils";
+import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileText, FolderOpen, Package, TrendingUp, Plus, DollarSign, Send } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { getInvoicedAmount } from "@/lib/sales";
+import type { SessionUser } from "@/lib/auth";
 
 export default async function DashboardPage() {
   let user: Awaited<ReturnType<typeof requireAuth>>;
@@ -14,8 +15,9 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const orgId = (user as { orgId?: string | null }).orgId;
-  if (orgId == null || orgId === "") {
+  const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
+  const organizationId = effectiveOrgId ?? (user as { activeOrgId?: string | null; orgId?: string | null }).activeOrgId ?? (user as { orgId?: string | null }).orgId;
+  if (organizationId == null || organizationId === "") {
     redirect("/login");
   }
 
@@ -33,39 +35,26 @@ export default async function DashboardPage() {
 
   try {
     [projectCount, quoteCount, draftCount, sentCount, quotesSentYtd] = await Promise.all([
-      prisma.project.count({ where: { orgId, isArchived: false } }),
-      prisma.quote.count({ where: { orgId } }),
-      prisma.quote.count({ where: { orgId, status: "DRAFT" } }),
-      prisma.quote.count({ where: { orgId, status: "SENT" } }),
-      prisma.quote.count({ where: { orgId, status: "SENT", createdAt: { gte: startOfYear } } }),
+      prisma.project.count({ where: { organizationId, status: { not: "lost" } } }),
+      prisma.quote.count({ where: { organizationId } }),
+      prisma.quote.count({ where: { organizationId, status: "draft" } }),
+      prisma.quote.count({ where: { organizationId, status: "sent" } }),
+      prisma.quote.count({ where: { organizationId, status: "sent", createdAt: { gte: startOfYear } } }),
     ]);
 
-    const salesYtdRows = await prisma.sale.findMany({
-      where: {
-        orgId,
-        createdAt: { gte: startOfYear },
-        status: { notIn: ["DRAFT", "CANCELLED"] },
-      },
-      select: { exwUsd: true, fobUsd: true, cifUsd: true, landedDdpUsd: true, invoicedBasis: true },
-    });
-    salesYtd = salesYtdRows.reduce((sum, s) => sum + getInvoicedAmount(s), 0);
-
     recentQuotes = await prisma.quote.findMany({
-      where: { orgId },
-      include: { project: true, country: true },
+      where: { organizationId },
+      include: { project: { include: { client: true } } },
       orderBy: { createdAt: "desc" },
       take: 5,
     });
 
     recentProjects = await prisma.project.findMany({
-      where: { orgId, isArchived: false },
+      where: { organizationId, status: { not: "lost" } },
+      include: { client: true },
       orderBy: { createdAt: "desc" },
       take: 5,
     });
-
-    if ((user as { role?: string }).role === "SUPERADMIN") {
-      pendingUsers = await prisma.user.count({ where: { status: "PENDING" } });
-    }
   } catch (err) {
     console.error("Dashboard data fetch error:", err);
     return (
@@ -158,7 +147,7 @@ export default async function DashboardPage() {
             icon: TrendingUp,
             color: "text-amber-600",
             bg: "bg-amber-50",
-            href: "/quotes?status=DRAFT",
+            href: "/quotes?status=draft",
           },
           {
             label: "Sent Quotes",
@@ -166,7 +155,7 @@ export default async function DashboardPage() {
             icon: Package,
             color: "text-green-600",
             bg: "bg-green-50",
-            href: "/quotes?status=SENT",
+            href: "/quotes?status=sent",
           },
           {
             label: "Sales (YTD)",
@@ -182,7 +171,7 @@ export default async function DashboardPage() {
             icon: Send,
             color: "text-vbt-blue",
             bg: "bg-blue-50",
-            href: "/quotes?status=SENT",
+            href: "/quotes?status=sent",
           },
         ].map((stat) => (
           <Link
@@ -228,21 +217,21 @@ export default async function DashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-gray-800 text-sm">
-                      {quote.quoteNumber ?? quote.id.slice(0, 8).toUpperCase()}
+                      {(quote as { quoteNumber?: string }).quoteNumber ?? quote.id.slice(0, 8).toUpperCase()}
                     </p>
                     <p className="text-gray-400 text-xs">
-                      {(quote as { project?: { name: string } | null; country?: { name: string } | null }).project?.name ?? "—"} • {(quote as { country?: { name: string } | null }).country?.name ?? "No destination"}
+                      {(quote as { project?: { projectName?: string; name?: string } | null }).project?.projectName ?? (quote as { project?: { name?: string } | null }).project?.name ?? "—"}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-800">
-                      {formatCurrency(quote.landedDdpUsd)}
+                      {formatCurrency((quote as { totalPrice?: number }).totalPrice ?? 0)}
                     </p>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        quote.status === "SENT"
+                        quote.status === "sent"
                           ? "bg-green-100 text-green-700"
-                          : quote.status === "DRAFT"
+                          : quote.status === "draft"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-gray-100 text-gray-600"
                       }`}
@@ -281,14 +270,14 @@ export default async function DashboardPage() {
                   className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
                 >
                   <div>
-                    <p className="font-medium text-gray-800 text-sm">{project.name}</p>
+                    <p className="font-medium text-gray-800 text-sm">{(project as { projectName?: string; name?: string }).projectName ?? (project as { name?: string }).name ?? "—"}</p>
                     <p className="text-gray-400 text-xs">
-                      {project.client ?? "No client"} • {project.location ?? "No location"}
+                      {(project as { client?: { name: string } | null }).client?.name ?? "No client"} • {(project as { city?: string; countryCode?: string }).city ?? (project as { countryCode?: string }).countryCode ?? "No location"}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">
-                      {(Number(project.wallAreaM2Total) || 0).toFixed(0)} m²
+                      {(Number((project as { estimatedTotalAreaM2?: number }).estimatedTotalAreaM2) || 0).toFixed(0)} m²
                     </p>
                   </div>
                 </Link>

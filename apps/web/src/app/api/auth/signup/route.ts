@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Resend } from "resend";
+import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,25 +40,28 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Find the default org
-    const org = await prisma.org.findFirst({ where: { slug: "vision-latam" } });
+    // Find the default org (Vision Latam – seed creates with name "Vision Latam")
+    const org = await prisma.organization.findFirst({
+      where: { name: "Vision Latam" },
+    });
 
     const user = await prisma.user.create({
       data: {
-        name,
+        fullName: name,
         email,
         passwordHash,
-        status: "PENDING",
+        isActive: false, // pending approval
       },
     });
 
-    // Add as PENDING member of org (no active role yet)
+    // Add as invited member of org until approved
     if (org) {
       await prisma.orgMember.create({
         data: {
-          orgId: org.id,
+          organizationId: org.id,
           userId: user.id,
-          role: "VIEWER",
+          role: "viewer",
+          status: "invited",
         },
       });
     }
@@ -66,16 +70,22 @@ export async function POST(req: Request) {
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+        const html = buildVbtEmailHtml({
+          title: "New account request",
+          subtitle: "Vision Building Technologies",
+          bodyHtml: `
+            <p style="margin: 0 0 12px 0;"><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p style="margin: 0 0 16px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p style="margin: 0;"><a href="${escapeHtml(`${appUrl}/admin/users`)}" style="color: ${VBT_EMAIL.accent}; font-weight: 600;">Review in Admin Panel</a></p>
+          `.trim(),
+          footerText: "This notification was sent by the VBT Cotizador signup flow.",
+        });
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? "noreply@visionlatam.com",
           to: process.env.SUPERADMIN_EMAIL ?? "simon@visionlatam.com",
           subject: "New VBT Cotizador account request",
-          html: `
-            <h2>New Account Request</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/users">Review in Admin Panel</a></p>
-          `,
+          html,
         });
       } catch (emailErr) {
         console.warn("Failed to send notification email:", emailErr);

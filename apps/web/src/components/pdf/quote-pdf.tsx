@@ -267,8 +267,9 @@ export interface QuotePdfData {
   wallAreaM2Total: number;
   totalWeightKgCored?: number;
   totalVolumeM3?: number;
-  // Financials
+  // Financials (partners never see factory cost; they see basePriceForPartner = factory + Vision Latam %)
   factoryCostUsd: number;
+  basePriceForPartner?: number;
   commissionPct: number;
   commissionFixed: number;
   commissionAmount: number;
@@ -522,7 +523,11 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Financial Summary</Text>
           <View style={styles.summaryBox}>
-            <SumRow label="EXW (Factory cost)" value={safeFmt(data.factoryCostUsd)} />
+            {data.basePriceForPartner != null ? (
+              <SumRow label="Base price (Vision Latam)" value={safeFmt(data.basePriceForPartner)} />
+            ) : (
+              <SumRow label="EXW (Factory cost)" value={safeFmt(data.factoryCostUsd)} />
+            )}
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />
             <SumRow
               label={`Freight (${data.numContainers} container${data.numContainers !== 1 ? "s" : ""})`}

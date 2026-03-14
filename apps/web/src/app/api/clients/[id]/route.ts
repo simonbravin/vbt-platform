@@ -6,11 +6,8 @@ import { z } from "zod";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  legalName: z.string().optional(),
-  taxId: z.string().optional(),
-  address: z.string().optional(),
   city: z.string().optional(),
-  countryId: z.string().nullable().optional(),
+  countryCode: z.string().nullable().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   website: z.string().optional(),
@@ -23,14 +20,15 @@ export async function GET(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string };
+  const user = session.user as { activeOrgId?: string; orgId?: string };
+  const organizationId = user.activeOrgId ?? user.orgId;
+  if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId },
     include: {
-      country: { select: { id: true, name: true, code: true } },
       _count: { select: { projects: true } },
-      projects: { select: { id: true, name: true, status: true }, orderBy: { updatedAt: "desc" }, take: 20 },
+      projects: { select: { id: true, projectName: true, status: true }, orderBy: { updatedAt: "desc" }, take: 20 },
     },
   });
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
@@ -43,13 +41,15 @@ export async function PATCH(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string; role: string };
-  if (["VIEWER"].includes(user.role)) {
+  const user = session.user as { activeOrgId?: string; orgId?: string; role?: string };
+  if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const organizationId = user.activeOrgId ?? user.orgId;
+  if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const existing = await prisma.client.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId },
   });
   if (!existing) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
@@ -60,12 +60,12 @@ export async function PATCH(
   }
 
   const data = { ...parsed.data } as Record<string, unknown>;
-  if (data.countryId === "" || data.countryId === null) data.countryId = null;
+  if (data.countryCode === "" || data.countryCode === null) data.countryCode = null;
 
   const client = await prisma.client.update({
     where: { id: params.id },
     data: data as any,
-    include: { country: { select: { id: true, name: true, code: true } }, _count: { select: { projects: true } } },
+    include: { _count: { select: { projects: true } } },
   });
   return NextResponse.json(client);
 }
@@ -76,13 +76,15 @@ export async function DELETE(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string; role: string };
-  if (["VIEWER"].includes(user.role)) {
+  const user = session.user as { activeOrgId?: string; orgId?: string; role?: string };
+  if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const organizationId = user.activeOrgId ?? user.orgId;
+  if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId },
     include: { _count: { select: { projects: true } } },
   });
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });

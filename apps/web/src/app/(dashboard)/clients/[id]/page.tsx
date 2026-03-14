@@ -1,9 +1,11 @@
 import { requireAuth } from "@/lib/utils";
+import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ClientDetailActions } from "./ClientDetailActions";
+import type { SessionUser } from "@/lib/auth";
 
 export default async function ClientDetailPage({
   params,
@@ -11,25 +13,22 @@ export default async function ClientDetailPage({
   params: { id: string };
 }) {
   const user = await requireAuth();
-  const orgId = (user as { orgId: string }).orgId;
+  const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
+  const orgId = effectiveOrgId ?? user.activeOrgId ?? user.orgId ?? "";
+  if (!orgId) notFound();
 
-  const [client, countries] = await Promise.all([
+  const [client] = await Promise.all([
     prisma.client.findFirst({
-      where: { id: params.id, orgId },
+      where: { id: params.id, organizationId: orgId },
       include: {
-        country: { select: { id: true, name: true, code: true } },
         projects: {
-          select: { id: true, name: true, status: true },
+          select: { id: true, projectName: true, status: true },
           orderBy: { updatedAt: "desc" },
         },
       },
     }),
-    prisma.countryProfile.findMany({
-      where: { orgId },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true },
-    }),
   ]);
+  const countries: { id: string; name: string; code: string }[] = [];
 
   if (!client) notFound();
 
@@ -45,8 +44,8 @@ export default async function ClientDetailPage({
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
-            {client.legalName && client.legalName !== client.name && (
-              <p className="text-gray-500 text-sm">{client.legalName}</p>
+            {client.clientType && (
+              <p className="text-gray-500 text-sm">{client.clientType}</p>
             )}
           </div>
         </div>
@@ -56,34 +55,16 @@ export default async function ClientDetailPage({
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <h2 className="font-semibold text-gray-800 mb-4">Client details</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          {client.legalName && (
-            <>
-              <dt className="text-gray-500">Legal name</dt>
-              <dd className="text-gray-900">{client.legalName}</dd>
-            </>
-          )}
-          {(client as any).taxId && (
-            <>
-              <dt className="text-gray-500">Tax ID</dt>
-              <dd className="text-gray-900">{(client as any).taxId}</dd>
-            </>
-          )}
-          {client.country && (
+          {client.countryCode && (
             <>
               <dt className="text-gray-500">Country</dt>
-              <dd className="text-gray-900">{client.country.name}</dd>
+              <dd className="text-gray-900">{client.countryCode}</dd>
             </>
           )}
-          {(client as any).address && (
-            <>
-              <dt className="text-gray-500">Address</dt>
-              <dd className="text-gray-900">{(client as any).address}</dd>
-            </>
-          )}
-          {(client as any).city && (
+          {client.city && (
             <>
               <dt className="text-gray-500">City</dt>
-              <dd className="text-gray-900">{(client as any).city}</dd>
+              <dd className="text-gray-900">{client.city}</dd>
             </>
           )}
           {client.phone && (
@@ -117,10 +98,10 @@ export default async function ClientDetailPage({
               </dd>
             </>
           )}
-          {(client as any).notes && (
+          {client.notes && (
             <>
               <dt className="text-gray-500 sm:col-span-1">Notes</dt>
-              <dd className="text-gray-900 sm:col-span-2">{(client as any).notes}</dd>
+              <dd className="text-gray-900 sm:col-span-2">{client.notes}</dd>
             </>
           )}
         </dl>
@@ -140,7 +121,7 @@ export default async function ClientDetailPage({
                   href={`/projects/${p.id}`}
                   className="text-vbt-blue hover:underline font-medium"
                 >
-                  {p.name}
+                  {(p as { projectName: string }).projectName}
                 </Link>
                 {p.status && (
                   <span className="ml-2 text-xs text-gray-500">

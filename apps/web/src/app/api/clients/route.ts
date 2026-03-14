@@ -6,11 +6,8 @@ import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  legalName: z.string().optional(),
-  taxId: z.string().optional(),
-  address: z.string().optional(),
   city: z.string().optional(),
-  countryId: z.string().optional(),
+  countryCode: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   website: z.string().optional(),
@@ -20,20 +17,21 @@ const createSchema = z.object({
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string };
+  const user = session.user as { activeOrgId?: string; orgId?: string };
+  const organizationId = user.activeOrgId ?? user.orgId;
+  if (!organizationId) return NextResponse.json({ clients: [], total: 0, page: 1, limit: 50 });
 
   const url = new URL(req.url);
   const page = parseInt(url.searchParams.get("page") ?? "1");
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
   const search = url.searchParams.get("search") ?? "";
-  const countryId = url.searchParams.get("countryId") ?? "";
+  const countryCode = url.searchParams.get("countryCode") ?? url.searchParams.get("countryId") ?? "";
 
-  const where: Record<string, unknown> = { orgId: user.orgId };
-  if (countryId) (where as any).countryId = countryId;
+  const where: Record<string, unknown> = { organizationId };
+  if (countryCode) (where as any).countryCode = countryCode;
   if (search.trim()) {
     (where as any).OR = [
       { name: { contains: search.trim(), mode: "insensitive" } },
-      { legalName: { contains: search.trim(), mode: "insensitive" } },
       { email: { contains: search.trim(), mode: "insensitive" } },
     ];
   }
@@ -42,7 +40,6 @@ export async function GET(req: Request) {
     prisma.client.findMany({
       where,
       include: {
-        country: { select: { id: true, name: true, code: true } },
         _count: { select: { projects: true } },
       },
       orderBy: { name: "asc" },
@@ -58,10 +55,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { orgId: string; role: string };
-  if (["VIEWER"].includes(user.role)) {
+  const user = session.user as { activeOrgId?: string; orgId?: string; role?: string };
+  if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const organizationId = user.activeOrgId ?? user.orgId;
+  if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -71,19 +70,16 @@ export async function POST(req: Request) {
 
   const client = await prisma.client.create({
     data: {
-      orgId: user.orgId,
+      organizationId,
       name: parsed.data.name,
-      legalName: parsed.data.legalName ?? null,
-      taxId: parsed.data.taxId ?? null,
-      address: parsed.data.address ?? null,
+      clientType: "developer",
       city: parsed.data.city ?? null,
-      countryId: parsed.data.countryId ?? null,
+      countryCode: parsed.data.countryCode ?? null,
       phone: parsed.data.phone ?? null,
       email: parsed.data.email ?? null,
       website: parsed.data.website ?? null,
       notes: parsed.data.notes ?? null,
     },
-    include: { country: { select: { id: true, name: true, code: true } } },
   });
   return NextResponse.json(client, { status: 201 });
 }

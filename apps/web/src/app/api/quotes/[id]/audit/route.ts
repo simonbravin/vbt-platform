@@ -12,14 +12,15 @@ export async function GET(
   const user = session.user as any;
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
     select: { id: true },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
-  const logs = await prisma.auditLog.findMany({
-    where: { entityType: "Quote", entityId: params.id },
-    include: { user: { select: { name: true } } },
+  const orgId = (user as any).activeOrgId ?? user.orgId;
+  const logs = await prisma.activityLog.findMany({
+    where: { entityType: "Quote", entityId: params.id, ...(orgId ? { organizationId: orgId } : {}) },
+    include: { user: { select: { fullName: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -29,8 +30,8 @@ export async function GET(
       id: l.id,
       action: l.action,
       createdAt: l.createdAt,
-      userName: l.user?.name ?? null,
-      meta: l.meta,
+      userName: (l.user as { fullName?: string })?.fullName ?? null,
+      meta: l.metadataJson,
     }))
   );
 }

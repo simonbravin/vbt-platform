@@ -301,14 +301,21 @@ export default function QuoteDetailPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
           <h2 className="font-semibold text-gray-800">Cost Breakdown</h2>
           <div className="space-y-2 text-sm">
-            {[
-              { label: "EXW (Factory cost)", value: quote.factoryCostUsd },
-              { label: "FOB", value: quote.fobUsd, bold: true },
-              { label: `Freight (${quote.numContainers} containers)`, value: quote.freightCostUsd },
-              { label: "CIF", value: quote.cifUsd, bold: true },
-              { label: "Total taxes & fees", value: quote.taxesFeesUsd ?? 0 },
-              { label: "Landed DDP", value: quote.landedDdpUsd, bold: true },
-            ].map((row) => (
+            {(() => {
+              const showExw = quote.factoryCostUsd != null || quote.factoryCostTotal != null;
+              const firstRow = showExw
+                ? { label: "EXW (Factory cost)", value: quote.factoryCostUsd ?? quote.factoryCostTotal, bold: false as boolean }
+                : { label: "Base price (Vision Latam)", value: quote.basePriceForPartner, bold: false as boolean };
+              const rows: { label: string; value: unknown; bold?: boolean }[] = [
+                firstRow,
+                { label: "FOB", value: quote.fobUsd, bold: true },
+                { label: `Freight (${quote.numContainers ?? 0} containers)`, value: quote.freightCostUsd },
+                { label: "CIF", value: quote.cifUsd, bold: true },
+                { label: "Total taxes & fees", value: quote.taxesFeesUsd ?? 0 },
+                { label: "Landed DDP", value: quote.landedDdpUsd, bold: true },
+              ];
+              return rows;
+            })().map((row) => (
               <div key={row.label} className={`flex justify-between ${row.bold ? "font-semibold border-t pt-2" : ""}`}>
                 <span className={row.bold ? "" : "text-gray-500"}>{row.label}</span>
                 <span>{fmt(Number(row.value) || 0)}</span>

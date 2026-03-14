@@ -12,18 +12,29 @@ export async function GET(
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as any;
 
+  const organizationId = (user as any).activeOrgId ?? user.orgId;
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId },
     include: {
       project: true,
-      country: true,
-      lines: { orderBy: { lineNum: "asc" } },
-      taxLines: { orderBy: { order: "asc" } },
-      docs: { orderBy: { generatedAt: "desc" } },
+      items: { orderBy: { sortOrder: "asc" } },
     },
   });
 
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
+
+  const isPlatformSuperadmin = !!(user as { isPlatformSuperadmin?: boolean }).isPlatformSuperadmin;
+  if (!isPlatformSuperadmin) {
+    const platformRow = await prisma.platformConfig.findFirst({ select: { configJson: true } });
+    const raw = (platformRow?.configJson as { pricing?: { visionLatamCommissionPct?: number } })?.pricing;
+    const commissionPct = raw?.visionLatamCommissionPct ?? 20;
+    const factory = Number((quote as { factoryCostTotal?: number }).factoryCostTotal ?? 0);
+    const payload = JSON.parse(JSON.stringify(quote)) as Record<string, unknown>;
+    payload.factoryCostTotal = null;
+    payload.factoryCostUsd = null;
+    payload.basePriceForPartner = factory * (1 + commissionPct / 100);
+    return NextResponse.json(payload);
+  }
   return NextResponse.json(quote);
 }
 
@@ -39,7 +50,7 @@ export async function PATCH(
   }
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
@@ -47,7 +58,7 @@ export async function PATCH(
   const status = body.status;
   const notes = body.notes;
   const data: Record<string, unknown> = {};
-  if (status && ["DRAFT", "SENT", "ARCHIVED", "CANCELLED"].includes(status)) data.status = status;
+  if (status && ["draft", "sent", "accepted"].includes(status)) data.status = status;
   if (typeof notes === "string") data.notes = notes;
 
   if (Object.keys(data).length > 0) {
@@ -56,7 +67,7 @@ export async function PATCH(
       data: data as any,
     });
     await createAuditLog({
-      orgId: user.orgId,
+      orgId: (user as any).activeOrgId ?? user.orgId,
       userId: user.id,
       action: data.status === "ARCHIVED" ? "QUOTE_ARCHIVED" : "QUOTE_UPDATED",
       entityType: "Quote",
@@ -65,7 +76,7 @@ export async function PATCH(
     });
     const updated = await prisma.quote.findFirst({
       where: { id: params.id },
-      include: { project: true, country: true, lines: true, taxLines: true },
+      include: { project: true, items: true },
     });
     return NextResponse.json(updated);
   }
@@ -84,46 +95,18 @@ export async function DELETE(
   }
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, orgId: user.orgId },
+    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
   await createAuditLog({
-    orgId: user.orgId,
+    orgId: (user as any).activeOrgId ?? user.orgId,
     userId: user.id,
     action: "QUOTE_DELETED",
     entityType: "Quote",
     entityId: params.id,
-    meta: { quoteNumber: quote.quoteNumber ?? params.id },
+    meta: { quoteNumber: (quote as { quoteNumber?: string }).quoteNumber ?? params.id },
   });
-
-  // Release any reserved inventory
-  if (quote.reserveStock) {
-    const reserves = await prisma.inventoryMove.findMany({
-      where: { quoteId: params.id, type: "RESERVE" },
-    });
-
-    for (const res of reserves) {
-      await prisma.inventoryMove.create({
-        data: {
-          itemId: res.itemId,
-          type: "RELEASE",
-          qty: res.qty,
-          quoteId: params.id,
-          performedBy: user.id,
-          notes: `Released from cancelled quote ${quote.quoteNumber}`,
-        },
-      });
-
-      await prisma.inventoryItem.update({
-        where: { id: res.itemId },
-        data: {
-          qtyReserved: { decrement: res.qty },
-          qtyAvailable: { increment: res.qty },
-        },
-      });
-    }
-  }
 
   await prisma.quote.delete({
     where: { id: params.id },

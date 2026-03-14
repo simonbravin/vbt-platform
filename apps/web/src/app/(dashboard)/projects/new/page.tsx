@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { ArrowLeft, Plus } from "lucide-react";
+import { STATIC_COUNTRIES } from "@/lib/countries";
 
 type Country = { id: string; name: string; code: string };
 type Client = { id: string; name: string; legalName?: string | null };
@@ -25,23 +26,27 @@ export default function NewProjectPage() {
   });
   const [savingClient, setSavingClient] = useState(false);
   const [form, setForm] = useState({
-    name: "",
-    client: "",
+    projectName: "",
     clientId: "" as string,
-    location: "",
-    countryId: "" as string,
-    totalKits: 1,
-    wallAreaM2Total: "" as string,
-    plannedStartDate: "" as string,
-    durationWeeks: "" as string,
+    countryCode: "" as string,
+    city: "",
+    address: "",
+    estimatedTotalAreaM2: "" as string,
     description: "",
   });
 
   useEffect(() => {
     fetch("/api/countries")
       .then((r) => r.json())
-      .then((data) => setCountries(Array.isArray(data) ? data : data.countries ?? []))
-      .catch(() => setCountries([]));
+      .then((data) => {
+        const list = Array.isArray(data) ? data : data.countries ?? [];
+        if (list.length > 0) {
+          setCountries(list);
+        } else {
+          setCountries(STATIC_COUNTRIES.map((c) => ({ id: c.code, name: c.name, code: c.code })));
+        }
+      })
+      .catch(() => setCountries(STATIC_COUNTRIES.map((c) => ({ id: c.code, name: c.name, code: c.code }))));
   }, []);
 
   useEffect(() => {
@@ -82,21 +87,18 @@ export default function NewProjectPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { setError("Project name is required."); return; }
+    if (!form.projectName.trim()) { setError("Project name is required."); return; }
     setLoading(true);
     setError(null);
     try {
       const payload = {
-        name: form.name,
-        client: form.clientId ? undefined : (form.client || undefined),
-        clientId: form.clientId || undefined,
-        location: form.location || undefined,
-        countryId: form.countryId || undefined,
-        totalKits: form.totalKits,
-        wallAreaM2Total: form.wallAreaM2Total ? parseFloat(form.wallAreaM2Total) : 0,
-        plannedStartDate: form.plannedStartDate || undefined,
-        durationWeeks: form.durationWeeks ? parseInt(form.durationWeeks, 10) : undefined,
-        description: form.description || undefined,
+        projectName: form.projectName.trim(),
+        clientId: form.clientId || null,
+        countryCode: form.countryCode || null,
+        city: form.city.trim() || undefined,
+        address: form.address.trim() || undefined,
+        estimatedTotalAreaM2: form.estimatedTotalAreaM2 ? parseFloat(form.estimatedTotalAreaM2) : null,
+        description: form.description.trim() || undefined,
       };
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -128,8 +130,8 @@ export default function NewProjectPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
           <input
             type="text"
-            value={form.name}
-            onChange={(e) => update("name", e.target.value)}
+            value={form.projectName}
+            onChange={(e) => update("projectName", e.target.value)}
             placeholder="e.g., Residencial Las Palmas"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
@@ -156,92 +158,55 @@ export default function NewProjectPage() {
               <Plus className="w-4 h-4" /> New client
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">Or leave empty and enter client name manually below (legacy).</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Client (free text, if not selected above)</label>
-          <input
-            type="text"
-            value={form.client}
-            onChange={(e) => update("client", e.target.value)}
-            placeholder="Client name (optional if client selected)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-            disabled={!!form.clientId}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
-            placeholder="City, region"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-          />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
           <select
-            value={form.countryId}
-            onChange={(e) => update("countryId", e.target.value)}
+            value={form.countryCode}
+            onChange={(e) => update("countryCode", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue bg-white"
           >
             <option value="">— Select country —</option>
             {countries.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+              <option key={c.id} value={c.code ?? ""}>{c.name} ({c.code})</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total kits</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
           <input
-            type="number"
-            min={1}
-            value={form.totalKits}
-            onChange={(e) => update("totalKits", parseInt(e.target.value) || 1)}
+            type="text"
+            value={form.city}
+            onChange={(e) => update("city", e.target.value)}
+            placeholder="City"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
-          <p className="text-xs text-gray-500 mt-0.5">e.g. 1 for single project (school), 100 for development (100 houses)</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Superficie en m²</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <input
+            type="text"
+            value={form.address}
+            onChange={(e) => update("address", e.target.value)}
+            placeholder="Street, number"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Est. total area (m²)</label>
           <input
             type="number"
             min={0}
             step="0.01"
-            value={form.wallAreaM2Total}
-            onChange={(e) => update("wallAreaM2Total", e.target.value)}
-            placeholder="0"
+            value={form.estimatedTotalAreaM2}
+            onChange={(e) => update("estimatedTotalAreaM2", e.target.value)}
+            placeholder="e.g. 500"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Fecha posible de comienzo</label>
-          <input
-            type="date"
-            value={form.plannedStartDate}
-            onChange={(e) => update("plannedStartDate", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duración del proyecto (semanas)</label>
-          <input
-            type="number"
-            min={0}
-            value={form.durationWeeks}
-            onChange={(e) => update("durationWeeks", e.target.value)}
-            placeholder="e.g. 12"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-          />
-          <p className="text-xs text-gray-500 mt-0.5">Para planificar producción y entrega</p>
         </div>
 
         <div>

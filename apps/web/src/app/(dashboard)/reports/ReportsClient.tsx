@@ -36,6 +36,13 @@ const statusLabel: Record<string, string> = {
   QUOTE_SENT: "Quote sent",
   SOLD: "Sold",
   ARCHIVED: "Archived",
+  lead: "Lead",
+  qualified: "Qualified",
+  quoting: "Quoting",
+  engineering: "Engineering",
+  won: "Won",
+  lost: "Lost",
+  on_hold: "On hold",
 };
 
 type PieceRow = { pieceId: string; description: string; systemCode: string | null; qty: number; kg: number; m2: number };
@@ -43,7 +50,7 @@ type PiecesData = { byQty: PieceRow[]; byKg: PieceRow[]; byM2: PieceRow[] };
 
 type Client = { id: string; name: string };
 
-export function ReportsClient({ countries, clients }: { countries: Country[]; clients: Client[] }) {
+export function ReportsClient({ countries, clients, canSendReport = true }: { countries: Country[]; clients: Client[]; canSendReport?: boolean }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [total, setTotal] = useState(0);
@@ -72,17 +79,22 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
   } | null>(null);
   const limit = 20;
 
-  const fetchReport = useCallback(async () => {
-    setLoading(true);
+  const buildReportParams = useCallback(() => {
     const params = new URLSearchParams();
     if (page) params.set("page", String(page));
     if (limit) params.set("limit", String(limit));
     if (status) params.set("status", status);
-    if (countryId) params.set("countryId", countryId);
+    if (countryId) params.set("countryCode", countryId);
     if (clientId) params.set("clientId", clientId);
     if (soldFrom) params.set("soldFrom", soldFrom);
     if (soldTo) params.set("soldTo", soldTo);
     if (search.trim()) params.set("search", search.trim());
+    return params;
+  }, [page, limit, status, countryId, clientId, soldFrom, soldTo, search]);
+
+  const fetchReport = useCallback(async () => {
+    setLoading(true);
+    const params = buildReportParams();
     const res = await fetch(`/api/reports/projects?${params}`);
     const data = await res.json();
     if (res.ok) {
@@ -91,7 +103,7 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
       setSummary(data.summary ?? null);
     }
     setLoading(false);
-  }, [page, limit, status, countryId, clientId, soldFrom, soldTo, search]);
+  }, [buildReportParams]);
 
   useEffect(() => {
     fetchReport();
@@ -111,61 +123,18 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
       .catch(() => {});
   }, []);
 
-  const handleExport = () => {
-    const params = new URLSearchParams();
+  const handleExportCsv = () => {
+    const params = buildReportParams();
     params.set("limit", "10000");
-    if (status) params.set("status", status);
-    if (countryId) params.set("countryId", countryId);
-    if (clientId) params.set("clientId", clientId);
-    if (soldFrom) params.set("soldFrom", soldFrom);
-    if (soldTo) params.set("soldTo", soldTo);
-    if (search.trim()) params.set("search", search.trim());
-    fetch(`/api/reports/projects?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const rows = data.projects ?? [];
-        const headers = [
-          "Project",
-          "Client",
-          "Location",
-          "Country",
-          "Status",
-          "Baseline quote",
-          "Project FOB",
-          "Sale date",
-          "Final amount",
-          "Quotes count",
-        ];
-        const escape = (v: unknown) => {
-          const s = String(v ?? "");
-          return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
-        };
-        const csvRows = [
-          headers.join(","),
-          ...rows.map((p: Project) =>
-            [
-              p.name,
-              (p.clientRecord?.name ?? p.client) ?? "",
-              p.location ?? "",
-              p.country?.name ?? "",
-              statusLabel[p.status] ?? p.status,
-              p.baselineQuote?.quoteNumber ?? "",
-              p.baselineQuote?.fobUsd ?? "",
-              p.soldAt ? new Date(p.soldAt).toLocaleDateString() : "",
-              p.finalAmountUsd ?? "",
-              p._count.quotes,
-            ].map(escape).join(",")
-          ),
-        ];
-        const csv = csvRows.join("\n");
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `vbt-projects-report-${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+    params.set("format", "csv");
+    window.location.href = `/api/reports/projects?${params}`;
+  };
+
+  const handleExportExcel = () => {
+    const params = buildReportParams();
+    params.set("limit", "10000");
+    params.set("format", "xlsx");
+    window.location.href = `/api/reports/projects?${params}`;
   };
 
   const handleEmailReport = async () => {
@@ -256,21 +225,24 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">Filters</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
               <option value="">All</option>
-              <option value="DRAFT">Draft</option>
-              <option value="QUOTED">Quoted</option>
-              <option value="QUOTE_SENT">Quote sent</option>
-              <option value="SOLD">Sold</option>
-              <option value="ARCHIVED">Archived</option>
+              <option value="lead">Lead</option>
+              <option value="qualified">Qualified</option>
+              <option value="quoting">Quoting</option>
+              <option value="engineering">Engineering</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+              <option value="on_hold">On hold</option>
             </select>
           </div>
           <div>
@@ -278,11 +250,11 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
             <select
               value={countryId}
               onChange={(e) => { setCountryId(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
               <option value="">All</option>
               {countries.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -291,7 +263,7 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
             <select
               value={clientId}
               onChange={(e) => { setClientId(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
               <option value="">All</option>
               {clients.map((c) => (
@@ -305,7 +277,7 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
               type="date"
               value={soldFrom}
               onChange={(e) => { setSoldFrom(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             />
           </div>
           <div>
@@ -314,23 +286,23 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
               type="date"
               value={soldTo}
               onChange={(e) => { setSoldTo(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             />
           </div>
         </div>
-        <div className="flex flex-wrap gap-3 mt-3">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
           <input
             type="text"
             placeholder="Search project, client, location..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (setPage(1), fetchReport())}
-            className="flex-1 min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
           />
           <button
             type="button"
             onClick={() => { setPage(1); fetchReport(); }}
-            className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+            className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-vbt-blue/90 focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:ring-offset-2"
           >
             Apply
           </button>
@@ -509,19 +481,28 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">Projects</h2>
           <div className="flex items-center gap-2">
+            {canSendReport && (
+              <button
+                type="button"
+                onClick={() => setEmailOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <Mail className="w-4 h-4" /> Email report
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setEmailOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Mail className="w-4 h-4" /> Email report
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
+              onClick={handleExportCsv}
               className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             >
               <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="w-4 h-4" /> Export Excel
             </button>
           </div>
         </div>
@@ -558,10 +539,12 @@ export function ReportsClient({ countries, clients }: { countries: Country[]; cl
                       <td className="px-4 py-3 text-gray-600">{p.country?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.status === "SOLD" ? "bg-green-100 text-green-700" :
-                          p.status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
-                          p.status === "QUOTE_SENT" ? "bg-blue-100 text-blue-700" :
-                          p.status === "QUOTED" ? "bg-amber-100 text-amber-700" :
+                          p.status === "won" || p.status === "SOLD" ? "bg-green-100 text-green-700" :
+                          p.status === "lost" || p.status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
+                          p.status === "quoting" || p.status === "QUOTE_SENT" ? "bg-blue-100 text-blue-700" :
+                          p.status === "qualified" || p.status === "QUOTED" ? "bg-amber-100 text-amber-700" :
+                          p.status === "engineering" ? "bg-indigo-100 text-indigo-700" :
+                          p.status === "on_hold" ? "bg-yellow-100 text-yellow-700" :
                           "bg-gray-100 text-gray-600"
                         }`}>{statusLabel[p.status] ?? p.status}</span>
                       </td>

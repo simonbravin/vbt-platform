@@ -10,16 +10,17 @@ type Country = { id: string; name: string; code: string };
 type Client = {
   id: string;
   name: string;
-  legalName: string | null;
+  legalName?: string | null;
   taxId?: string | null;
   address?: string | null;
   city?: string | null;
+  countryCode?: string | null;
   countryId?: string | null;
   phone: string | null;
   email: string | null;
   website: string | null;
   notes?: string | null;
-  country: { id: string; name: string; code: string } | null;
+  country?: { id: string; name: string; code: string } | null;
 };
 
 export function ClientDetailActions({
@@ -39,6 +40,7 @@ export function ClientDetailActions({
     address: client.address ?? "",
     city: client.city ?? "",
     countryId: client.country?.id ?? "",
+    countryCode: client.countryCode ?? "",
     phone: client.phone ?? "",
     email: client.email ?? "",
     website: client.website ?? "",
@@ -55,6 +57,7 @@ export function ClientDetailActions({
       address: client.address ?? "",
       city: client.city ?? "",
       countryId: client.country?.id ?? "",
+      countryCode: client.countryCode ?? "",
       phone: client.phone ?? "",
       email: client.email ?? "",
       website: client.website ?? "",
@@ -76,15 +79,16 @@ export function ClientDetailActions({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: form.name.trim(),
-        legalName: form.legalName.trim() || undefined,
-        taxId: form.taxId.trim() || undefined,
-        address: form.address.trim() || undefined,
-        city: form.city.trim() || undefined,
-        countryId: form.countryId || null,
-        phone: form.phone.trim() || undefined,
-        email: form.email.trim() || undefined,
-        website: form.website.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        legalName: form.legalName?.trim() || undefined,
+        taxId: form.taxId?.trim() || undefined,
+        address: form.address?.trim() || undefined,
+        city: form.city?.trim() || undefined,
+        countryId: form.countryId || undefined,
+        countryCode: form.countryCode?.trim() || undefined,
+        phone: form.phone?.trim() || undefined,
+        email: form.email?.trim() || undefined,
+        website: form.website?.trim() || undefined,
+        notes: form.notes?.trim() || undefined,
       }),
     });
     const data = await res.json();

@@ -1,6 +1,37 @@
 import { prisma } from "./db";
-import { AuditAction } from "@vbt/db";
 
+export async function createActivityLog({
+  organizationId,
+  userId,
+  action,
+  entityType,
+  entityId,
+  metadata,
+}: {
+  organizationId?: string | null;
+  userId?: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await prisma.activityLog.create({
+      data: {
+        organizationId: organizationId ?? undefined,
+        userId: userId ?? undefined,
+        action,
+        entityType,
+        entityId,
+        metadataJson: metadata == null ? undefined : (metadata as object),
+      },
+    });
+  } catch (e) {
+    console.error("ActivityLog write failed:", e);
+  }
+}
+
+/** @deprecated Use createActivityLog with string action and metadata. */
 export async function createAuditLog({
   orgId,
   userId,
@@ -11,16 +42,17 @@ export async function createAuditLog({
 }: {
   orgId?: string;
   userId?: string;
-  action: AuditAction;
+  action: string;
   entityType?: string;
   entityId?: string;
   meta?: Record<string, unknown>;
 }) {
-  try {
-    await prisma.auditLog.create({
-      data: { orgId, userId, action, entityType, entityId, meta: meta as any },
-    });
-  } catch (e) {
-    console.error("AuditLog write failed:", e);
-  }
+  return createActivityLog({
+    organizationId: orgId ?? undefined,
+    userId: userId ?? undefined,
+    action,
+    entityType: entityType ?? "unknown",
+    entityId: entityId ?? "",
+    metadata: meta,
+  });
 }

@@ -22,6 +22,9 @@ import {
   ChevronDown,
   ChevronRight,
   ShoppingCart,
+  Wrench,
+  FileStack,
+  GraduationCap,
 } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
@@ -39,18 +42,30 @@ const navigation: NavItem[] = [
   { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
   { labelKey: "nav.clients", href: "/clients", icon: Building2 },
   { labelKey: "nav.quotes", href: "/quotes", icon: FileText },
-  { labelKey: "nav.sales", href: "/sales", icon: ShoppingCart },
-  { labelKey: "nav.reports", href: "/reports", icon: BarChart3 },
+  { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
+  { labelKey: "nav.documents", href: "/documents", icon: FileStack },
+  { labelKey: "nav.training", href: "/training", icon: GraduationCap },
+  { labelKey: "nav.sales", href: "/sales", icon: ShoppingCart, roles: ["SUPERADMIN"] },
+  { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["SUPERADMIN", "org_admin"] },
+  {
+    labelKey: "nav.settings",
+    icon: Settings,
+    roles: ["SUPERADMIN", "org_admin"],
+    children: [
+      { labelKey: "nav.settings.overview", href: "/settings", icon: Settings },
+      { labelKey: "nav.team", href: "/settings/team", icon: Users },
+    ],
+  },
   {
     labelKey: "nav.inventory",
     href: "/admin/inventory",
     icon: Package,
-    roles: ["SUPERADMIN", "ADMIN", "SALES"],
+    roles: ["SUPERADMIN"],
   },
   {
     labelKey: "nav.admin",
     icon: Settings,
-    roles: ["SUPERADMIN", "ADMIN"],
+    roles: ["SUPERADMIN"],
     children: [
       { labelKey: "nav.users", href: "/admin/users", icon: Users },
       { labelKey: "nav.entities", href: "/admin/entities", icon: Building, roles: ["SUPERADMIN"] },
@@ -71,7 +86,7 @@ interface SidebarProps {
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
-  const [expanded, setExpanded] = useState<string[]>(["nav.admin"]);
+  const [expanded, setExpanded] = useState<string[]>(["nav.admin", "nav.settings"]);
 
   const toggle = (key: string) => {
     setExpanded((prev) =>
