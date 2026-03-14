@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       try {
         const resetRecord = await prisma.passwordResetToken.findUnique({
           where: { token },
-          include: { user: true },
+          select: { id: true, userId: true, usedAt: true, expiresAt: true },
         });
 
         if (resetRecord) {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
           const passwordHash = await bcrypt.hash(password, 12);
           await prisma.$transaction([
-            prisma.user.update({
+            prisma.user.updateMany({
               where: { id: resetRecord.userId },
               data: { passwordHash },
             }),
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await prisma.user.update({
+    await prisma.user.updateMany({
       where: { id: payload.userId },
       data: { passwordHash },
     });
