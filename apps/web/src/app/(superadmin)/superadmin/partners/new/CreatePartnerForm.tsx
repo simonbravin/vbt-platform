@@ -28,6 +28,7 @@ export function CreatePartnerForm() {
     partnerType: "commercial_partner" | "master_partner";
     engineeringFeeMode: string;
     status: string;
+    sendInvite: boolean;
   }>({
     companyName: "",
     contactName: "",
@@ -37,6 +38,7 @@ export function CreatePartnerForm() {
     partnerType: "commercial_partner",
     engineeringFeeMode: "",
     status: "active",
+    sendInvite: true,
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -44,10 +46,11 @@ export function CreatePartnerForm() {
     setError(null);
     setSaving(true);
     try {
+      const contactEmailTrimmed = form.contactEmail.trim() || null;
       const body = {
         companyName: form.companyName.trim(),
         contactName: form.contactName.trim() || null,
-        contactEmail: form.contactEmail.trim() || null,
+        contactEmail: contactEmailTrimmed,
         website: form.website.trim() || null,
         country: form.country.trim() || null,
         partnerType: form.partnerType,
@@ -63,6 +66,27 @@ export function CreatePartnerForm() {
       if (!res.ok) {
         setError(data?.error?.message ?? data?.error ?? "Failed to create partner");
         return;
+      }
+      if (form.sendInvite && contactEmailTrimmed) {
+        try {
+          const inviteRes = await fetch(`/api/saas/partners/${data.id}/invite`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: contactEmailTrimmed, role: "owner" }),
+          });
+          if (inviteRes.ok) {
+            const inviteData = await inviteRes.json();
+            if (inviteData.pendingInvite) {
+              router.push(`/superadmin/partners/${data.id}?inviteSent=new`);
+            } else {
+              router.push(`/superadmin/partners/${data.id}?inviteSent=existing`);
+            }
+            router.refresh();
+            return;
+          }
+        } catch {
+          // Partner was created; invite failed. Still go to detail.
+        }
       }
       router.push(`/superadmin/partners/${data.id}`);
       router.refresh();
@@ -197,6 +221,21 @@ export function CreatePartnerForm() {
           </select>
         </div>
       </div>
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+        <input
+          id="sendInvite"
+          type="checkbox"
+          checked={form.sendInvite}
+          onChange={(e) => setForm((f) => ({ ...f, sendInvite: e.target.checked }))}
+          className="h-4 w-4 rounded border-gray-300 text-vbt-blue focus:ring-vbt-blue"
+        />
+        <label htmlFor="sendInvite" className="text-sm font-medium text-gray-700">
+          Send invitation email to contact
+        </label>
+      </div>
+      <p className="text-xs text-gray-500 -mt-2">
+        If the contact email is set, an invitation will be sent after creating the partner. If they don&apos;t have an account yet, they&apos;ll receive a link to create one and join the partner portal.
+      </p>
       <div className="flex gap-3">
         <button
           type="submit"

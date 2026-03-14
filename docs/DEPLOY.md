@@ -85,3 +85,17 @@ Si **simon@visionbuildingtechs.com** no existe o no puede entrar (inactivo / no 
 - Partner parameters override global defaults per partner; defaults are shown in the Parameters tab when editing a partner.
 - **Esquema de `users`:** La migración `20250313200000_align_users_table_with_schema` deja la tabla `users` alineada con Prisma (columnas `full_name`, `password_hash`, `is_active`, `is_platform_superadmin`, etc.). Si la DB tenía `name` en lugar de `full_name` o `passwordHash` en lugar de `password_hash`, la migración renombra o añade lo necesario. Es obligatorio ejecutar `prisma migrate deploy` en producción.
 - **Resiliencia en APIs:** Las rutas de dashboard y analytics tienen try/catch que devuelven datos vacíos/ceros ante errores inesperados (logs en servidor). El comportamiento correcto depende de que el esquema esté alineado vía migraciones.
+
+## Partner goals (objetivos anuales)
+
+- **Configuración:** Los objetivos por partner (meta USD anual y opcional m²) se configuran en **Superadmin → Partners → [Partner] → pestaña Parameters**. También se muestran en la pestaña Overview del detalle del partner (solo lectura, con enlace "Edit in Parameters").
+- **Dashboard del partner:** El dashboard del partner muestra un KPI "Sales goal (YTD)" con barra de progreso. Los datos provienen de `GET /api/saas/dashboard/goal` (meta desde `PartnerProfile`, ventas YTD = suma de `totalPrice` de cotizaciones aceptadas en el año en curso).
+- **FOB (futuro):** La métrica de ventas YTD puede sustituirse más adelante por **FOB** (factory cost + comisión Vision Latam + parte cedida a distribución/comercialización) cuando se defina el cálculo; el contrato del endpoint y la UI (meta vs avance) se mantienen.
+
+## Partner creation and invitation flow
+
+- **Create partner (Superadmin → Partners → Create partner):** Al crear un partner podés marcar **"Send invitation email to contact"**. Si el contacto tiene email y la casilla está marcada, después de crear la organización se envía automáticamente una invitación a ese email.
+- **Si el usuario ya existe:** Recibe un email tipo "You've been added to [Partner Name]". Puede iniciar sesión con su cuenta existente y ver la org del partner.
+- **Si el usuario no existe:** Se crea un registro en `partner_invites` y se envía un email con enlace **"Create account"** a `/invite/accept?token=...`. Al hacer clic, la persona completa nombre y contraseña, se crea el usuario y se lo asocia a la org del partner como **owner**. Luego puede iniciar sesión y acceder al portal del partner.
+- **Invite desde Team:** En el detalle del partner, pestaña **Team**, "Invite by email" funciona igual: si el email ya tiene cuenta → se agrega a la org y se envía "you've been added"; si no → se envía el link para crear cuenta. Las invitaciones pendientes expiran en 7 días.
+- **Migración:** La tabla `partner_invites` se crea con la migración `20250314000000_add_partner_invites`. Ejecutar `npx prisma migrate deploy` en `packages/db` para aplicarla.

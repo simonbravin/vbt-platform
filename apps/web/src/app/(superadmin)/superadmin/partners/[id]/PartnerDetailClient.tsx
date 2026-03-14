@@ -14,6 +14,7 @@ import {
   Sliders,
   Users,
   UserPlus,
+  Target,
 } from "lucide-react";
 
 type Territory = {
@@ -78,12 +79,15 @@ const ONBOARDING_STATES = [
 export function PartnerDetailClient({
   partnerId,
   initialPartner,
+  inviteSent,
 }: {
   partnerId: string;
   initialPartner: Partner;
+  inviteSent?: string;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["id"]>("overview");
+  const [dismissInviteBanner, setDismissInviteBanner] = useState(false);
   const [partner, setPartner] = useState<Partner>(initialPartner);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +156,24 @@ export function PartnerDetailClient({
           ))}
         </nav>
       </div>
+
+      {inviteSent && !dismissInviteBanner && (
+        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
+          <span>
+            {inviteSent === "new"
+              ? "Invitation sent. The contact will receive an email to create their account and join the partner portal."
+              : "Invitation sent. The contact will receive an email to sign in to the partner portal."}
+          </span>
+          <button
+            type="button"
+            onClick={() => setDismissInviteBanner(true)}
+            className="text-green-600 hover:text-green-800 ml-2"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
@@ -229,6 +251,42 @@ export function PartnerDetailClient({
               </p>
             </div>
           </div>
+
+          {/* Annual goals (read-only); edit in Parameters tab */}
+          <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-indigo-600" />
+                <h3 className="text-sm font-medium text-gray-900">Annual goals</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("parameters")}
+                className="text-sm text-vbt-blue hover:underline"
+              >
+                Edit in Parameters
+              </button>
+            </div>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-gray-500">Sales target (USD)</p>
+                <p className="mt-0.5 font-medium text-gray-900">
+                  {partner.partnerProfile?.salesTargetAnnualUsd != null
+                    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(partner.partnerProfile.salesTargetAnnualUsd)
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Sales target (m²)</p>
+                <p className="mt-0.5 font-medium text-gray-900">
+                  {partner.partnerProfile?.salesTargetAnnualM2 != null
+                    ? partner.partnerProfile.salesTargetAnnualM2.toLocaleString()
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <Link
             href={`/superadmin/partners/${partnerId}/edit`}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
@@ -303,6 +361,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   const [inviteRole, setInviteRole] = useState<"owner" | "admin" | "sales" | "engineer" | "viewer">("viewer");
   const [submitting, setSubmitting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -328,6 +387,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     setInviteError(null);
+    setInviteSuccess(null);
     setSubmitting(true);
     try {
       const res = await fetch(`/api/saas/partners/${partnerId}/invite`, {
@@ -343,8 +403,12 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
       setInviteEmail("");
       setInviteRole("viewer");
       setInviteOpen(false);
-      setMembers((prev) => [...prev, { ...data, user: data.user ?? { id: data.userId, fullName: null, email: inviteEmail.trim() } }]);
-      setTotal((t) => t + 1);
+      if (data.pendingInvite) {
+        setInviteSuccess(data.message ?? "Invitation sent. They will receive an email to create their account.");
+      } else {
+        setMembers((prev) => [...prev, { ...data, user: data.user ?? { id: data.userId, fullName: null, email: inviteEmail.trim() } }]);
+        setTotal((t) => t + 1);
+      }
     } catch {
       setInviteError("Failed to invite");
     } finally {
@@ -371,6 +435,9 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
           <p className="text-sm font-medium text-gray-700">Invite member to {partnerName}</p>
           {inviteError && (
             <p className="text-sm text-red-600">{inviteError}</p>
+          )}
+          {inviteSuccess && (
+            <p className="text-sm text-green-700">{inviteSuccess}</p>
           )}
           <form onSubmit={handleInvite} className="flex flex-wrap gap-3 items-end">
             <div>
@@ -414,11 +481,16 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
             </button>
           </form>
           <p className="text-xs text-gray-500">
-            User must already have an account. They will receive an email with the invitation.
+            If they already have an account, they&apos;ll get a sign-in link. If not, they&apos;ll receive a link to create their account and join the partner portal.
           </p>
         </div>
       )}
 
+      {inviteSuccess && (
+        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
+          {inviteSuccess}
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-gray-500">Loading members...</p>
       ) : members.length === 0 ? (

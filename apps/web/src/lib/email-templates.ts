@@ -93,3 +93,28 @@ export function buildPartnerInviteEmailHtml(options: PartnerInviteEmailOptions):
     footerText: "This invitation was sent by the VBT platform administrator.",
   });
 }
+
+/** Partner invite for new users: "Create your account to join {partnerName}" */
+export type PartnerInviteNewUserEmailOptions = {
+  partnerName: string;
+  inviteeEmail: string;
+  role: string;
+  acceptUrl: string;
+};
+
+export function buildPartnerInviteNewUserEmailHtml(options: PartnerInviteNewUserEmailOptions): string {
+  const { partnerName, role, acceptUrl } = options;
+  const bodyHtml = `
+    <p style="margin: 0 0 16px 0;">You have been invited to join the partner organization <strong>${escapeHtml(partnerName)}</strong> as <strong>${escapeHtml(role)}</strong>.</p>
+    <p style="margin: 0 0 16px 0;">Click the button below to create your account and get started. The link is valid for 7 days.</p>
+    <p style="margin: 0;">
+      <a href="${escapeHtml(acceptUrl)}" style="display: inline-block; padding: 10px 20px; background-color: ${VBT_EMAIL.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Create account</a>
+    </p>
+  `.trim();
+  return buildVbtEmailHtml({
+    title: "Invitation to join partner portal",
+    subtitle: "Vision Building Technologies",
+    bodyHtml,
+    footerText: "This invitation was sent by the VBT platform administrator.",
+  });
+}

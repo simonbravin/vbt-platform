@@ -66,6 +66,11 @@ function LoginForm() {
           {t("auth.resetSuccess")}
         </div>
       )}
+      {searchParams.get("message") && (
+        <div className="mb-4 p-3 bg-green-900/50 border border-green-400/50 rounded-lg text-green-200 text-sm">
+          {decodeURIComponent(searchParams.get("message") ?? "")}
+        </div>
+      )}
       {searchParams.get("error") === "INACTIVE" && (
         <div className="mb-4 p-3 bg-red-900/50 border border-red-400/50 rounded-lg text-red-200 text-sm">
           {t("auth.suspended")}

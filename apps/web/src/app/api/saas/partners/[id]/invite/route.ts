@@ -3,11 +3,13 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, requirePlatformSuperadmin, TenantError, tenantErrorStatus } from "@/lib/tenant";
 import { inviteOrgMember, ORG_ROLE_TO_API } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
-import { buildPartnerInviteEmailHtml } from "@/lib/email-templates";
+import { buildPartnerInviteEmailHtml, buildPartnerInviteNewUserEmailHtml } from "@/lib/email-templates";
 import { Resend } from "resend";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 const ROLES = ["owner", "admin", "sales", "engineer", "viewer"] as const;
+const INVITE_EXPIRY_DAYS = 7;
 
 const postSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -48,60 +50,104 @@ export async function POST(
       where: { email: { equals: emailNorm, mode: "insensitive" } },
       select: { id: true },
     });
-    if (!existingUser) {
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+    const roleLabel = parsed.data.role.charAt(0).toUpperCase() + parsed.data.role.slice(1);
+
+    if (existingUser) {
+      const tenantCtx = {
+        userId: user.userId,
+        organizationId: null,
+        isPlatformSuperadmin: true,
+      };
+      const member = await inviteOrgMember(prisma, tenantCtx, {
+        userId: existingUser.id,
+        role: parsed.data.role,
+        organizationId: partner.id,
+      });
+
+      await createActivityLog({
+        organizationId: partner.id,
+        userId: user.userId,
+        action: "member_invited",
+        entityType: "org_member",
+        entityId: member.id,
+        metadata: { email: parsed.data.email, role: parsed.data.role },
+      });
+
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const html = buildPartnerInviteEmailHtml({
+            partnerName: partner.name,
+            inviteeEmail: parsed.data.email,
+            role: roleLabel,
+            appUrl,
+          });
+          await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL ?? "noreply@visionbuildingtechs.com",
+            to: parsed.data.email,
+            subject: `You've been added to ${partner.name} – VBT Cotizador`,
+            html,
+          });
+        } catch (emailErr) {
+          console.warn("Partner invite email failed:", emailErr);
+        }
+      }
+
       return NextResponse.json(
-        { error: "No user with this email. They must sign up first." },
-        { status: 404 }
+        { ...member, role: ORG_ROLE_TO_API[member.role] ?? member.role },
+        { status: 201 }
       );
     }
 
-    const tenantCtx = {
-      userId: user.userId,
-      organizationId: null,
-      isPlatformSuperadmin: true,
-    };
-    const member = await inviteOrgMember(prisma, tenantCtx, {
-      userId: existingUser.id,
-      role: parsed.data.role,
-      organizationId: partner.id,
+    // User doesn't exist: create pending invite and send "create your account" email
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + INVITE_EXPIRY_DAYS);
+
+    await prisma.partnerInvite.create({
+      data: {
+        email: emailNorm,
+        organizationId: partner.id,
+        role: parsed.data.role,
+        token,
+        expiresAt,
+      },
     });
 
     await createActivityLog({
       organizationId: partner.id,
       userId: user.userId,
-      action: "member_invited",
-      entityType: "org_member",
-      entityId: member.id,
+      action: "partner_invite_sent",
+      entityType: "partner_invite",
+      entityId: partner.id,
       metadata: { email: parsed.data.email, role: parsed.data.role },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const roleLabel = parsed.data.role.charAt(0).toUpperCase() + parsed.data.role.slice(1);
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const html = buildPartnerInviteEmailHtml({
+        const acceptUrl = `${appUrl}/invite/accept?token=${encodeURIComponent(token)}`;
+        const html = buildPartnerInviteNewUserEmailHtml({
           partnerName: partner.name,
           inviteeEmail: parsed.data.email,
           role: roleLabel,
-          appUrl,
+          acceptUrl,
         });
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? "noreply@visionbuildingtechs.com",
           to: parsed.data.email,
-          subject: `You've been added to ${partner.name} – VBT Cotizador`,
+          subject: `Invitation to join ${partner.name} – VBT Cotizador`,
           html,
         });
       } catch (emailErr) {
-        console.warn("Partner invite email failed:", emailErr);
+        console.warn("Partner invite (new user) email failed:", emailErr);
       }
     }
 
     return NextResponse.json(
-      {
-        ...member,
-        role: ORG_ROLE_TO_API[member.role] ?? member.role,
-      },
+      { pendingInvite: true, email: parsed.data.email, message: "Invitation sent. They will receive an email to create their account." },
       { status: 201 }
     );
   } catch (e) {

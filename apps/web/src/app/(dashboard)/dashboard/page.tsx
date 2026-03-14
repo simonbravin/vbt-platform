@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileText, FolderOpen, Package, TrendingUp, Plus, DollarSign, Send } from "lucide-react";
+import { GoalKpiCard } from "@/components/dashboard/GoalKpiCard";
 import { formatCurrency } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 
@@ -121,6 +122,9 @@ export default async function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {/* Goal KPI (partner sales target progress) */}
+      <GoalKpiCard />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

@@ -186,6 +186,7 @@ model Organization {
 
   members             OrgMember[]
   partnerProfile      PartnerProfile?
+  partnerInvites      PartnerInvite[]
   territories         PartnerTerritory[]
   clients             Client[]
   projects            Project[]
@@ -253,6 +254,28 @@ model PartnerProfile {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("partner_profiles")
+}
+
+// ─── Partner invite (pending signup) ───────────────────────────────────────────
+// When inviting someone who doesn't have an account: store token, send email with
+// link to /invite/accept?token=xxx so they can create account and join the org.
+
+model PartnerInvite {
+  id             String   @id @default(cuid())
+  email          String
+  organizationId  String   @map("organization_id")
+  role           String   // owner, admin, sales, engineer, viewer
+  token          String   @unique
+  expiresAt      DateTime @map("expires_at")
+  usedAt         DateTime? @map("used_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([token])
+  @@map("partner_invites")
 }
 
 // ─── Territories ─────────────────────────────────────────────────────────────

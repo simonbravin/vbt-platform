@@ -8,9 +8,11 @@ import { PartnerDetailClient } from "./PartnerDetailClient";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = { params: { id: string } };
+type PageProps = { params: { id: string }; searchParams: Promise<{ inviteSent?: string }> };
 
-export default async function PartnerDetailPage({ params }: PageProps) {
+export default async function PartnerDetailPage({ params, searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const inviteSent = resolvedSearchParams.inviteSent;
   const session = await getServerSession(authOptions);
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
@@ -42,6 +44,7 @@ export default async function PartnerDetailPage({ params }: PageProps) {
       </div>
       <PartnerDetailClient
         partnerId={partner.id}
+        inviteSent={inviteSent}
         initialPartner={{
           id: partner.id,
           name: partner.name,
