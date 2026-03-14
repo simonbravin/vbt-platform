@@ -10,6 +10,83 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+/** Superadmin email – treat as platform superadmin when DB has no is_platform_superadmin column */
+const SUPERADMIN_EMAIL = "simon@visionbuildingtechs.com";
+
+type RawUserRow = {
+  id: string;
+  email: string;
+  passwordHash: string;
+  isActive?: boolean;
+  isPlatformSuperadmin?: boolean;
+};
+
+/** When Prisma findUnique throws (e.g. column names differ in Neon), try raw queries. */
+async function loginRawFallback(
+  emailNorm: string
+): Promise<{
+  id: string;
+  email: string;
+  passwordHash: string;
+  isActive: boolean;
+  isPlatformSuperadmin: boolean;
+  orgMembers: Array<{ organization: { id: string; name: string }; role: string }>;
+} | null> {
+  let row: RawUserRow | null = null;
+
+  try {
+    const rows = await prisma.$queryRaw<RawUserRow[]>`
+      SELECT id, email, password_hash AS "passwordHash"
+      FROM users
+      WHERE LOWER(email) = LOWER(${emailNorm})
+      LIMIT 1
+    `;
+    if (rows[0]) {
+      row = { ...rows[0], isActive: true, isPlatformSuperadmin: rows[0].email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase() };
+    }
+  } catch {
+    try {
+      const rows = await prisma.$queryRaw<RawUserRow[]>`
+        SELECT id, email, "passwordHash"
+        FROM users
+        WHERE LOWER(email) = LOWER(${emailNorm})
+        LIMIT 1
+      `;
+      if (rows[0]) {
+        row = { ...rows[0], isActive: true, isPlatformSuperadmin: rows[0].email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase() };
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (!row) return null;
+
+  let orgMembers: Array<{ organization: { id: string; name: string }; role: string }> = [];
+  try {
+    const members = await prisma.orgMember.findMany({
+      where: { userId: row.id, status: "active" },
+      include: { organization: true },
+      orderBy: { joinedAt: "asc" },
+    });
+    orgMembers = members.map((m) => ({
+      organization: { id: m.organization.id, name: m.organization.name },
+      role: m.role,
+    }));
+  } catch {
+    // Org table may differ; continue without org
+  }
+
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.passwordHash,
+    isActive: row.isActive ?? true,
+    isPlatformSuperadmin: row.isPlatformSuperadmin ?? row.email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase(),
+    orgMembers,
+  };
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -28,23 +105,38 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
+        const emailNorm = email.toLowerCase().trim();
 
-        // Select only columns that exist in all environments (avoid full_name if DB uses "name")
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            passwordHash: true,
-            isActive: true,
-            isPlatformSuperadmin: true,
-            orgMembers: {
-              where: { status: "active" },
-              include: { organization: true },
-              orderBy: { joinedAt: "asc" },
+        let user: {
+          id: string;
+          email: string;
+          passwordHash: string;
+          isActive: boolean;
+          isPlatformSuperadmin: boolean;
+          orgMembers: Array<{ organization: { id: string; name: string }; role: string }>;
+        } | null = null;
+
+        try {
+          user = await prisma.user.findUnique({
+            where: { email: emailNorm },
+            select: {
+              id: true,
+              email: true,
+              passwordHash: true,
+              isActive: true,
+              isPlatformSuperadmin: true,
+              orgMembers: {
+                where: { status: "active" },
+                include: { organization: true },
+                orderBy: { joinedAt: "asc" },
+              },
             },
-          },
-        });
+          });
+        } catch (err) {
+          // Prisma may throw if columns don't match (e.g. Neon has "name" not "full_name", "passwordHash" not "password_hash")
+          const row = await loginRawFallback(emailNorm);
+          if (row) user = row;
+        }
 
         if (!user) return null;
         if (!user.isActive) {
@@ -54,7 +146,6 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        // Use first active membership as active org (multi-org: one active per session)
         const activeMembership = user.orgMembers[0];
 
         return {
