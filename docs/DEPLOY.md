@@ -2,6 +2,21 @@
 
 Use this checklist when deploying the VBT Cotizador (dual portal: Superadmin + Partner) to production.
 
+## Portals overview (one app, two entry points)
+
+- **Superadmin portal**  
+  - Entry: after login, superadmins with no active org are redirected to `/superadmin/dashboard`.  
+  - Layout: `(superadmin)` with **superadmin sidebar**: Dashboard, Partners, Reports, Analytics, Activity, Global Settings, **Pending approvals** (→ `/admin/users`), etc.  
+  - Use: global config, partner management, platform settings, and approving signups.
+
+- **Partner portal**  
+  - Entry: after login, users with an active organization land on `/dashboard`.  
+  - Layout: `(dashboard)` with **main sidebar**: Dashboard, Projects, Clients, Quotes, Engineering, Documents, Training, Reports, Settings (Overview, Team), etc. Partners do **not** see Sales, Inventory, or Admin.  
+  - Use: day-to-day work (projects, quotes, documents, training) scoped to their org.
+
+- **Why “Pending approvals” shows the same sidebar as Admin → Users**  
+  “Pending approvals” in the superadmin sidebar links to `/admin/users`. That page uses the **dashboard** layout (main sidebar). So when a superadmin opens Pending approvals, they see the full sidebar (including Admin → Users, Entities, etc.). That is correct: it’s the same User Management page; superadmins just reach it from the superadmin menu instead of the dashboard Admin section.
+
 ## Required environment variables
 
 | Variable | Description | Example |

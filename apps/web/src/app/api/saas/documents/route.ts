@@ -9,20 +9,25 @@ import { withSaaSHandler } from "@/lib/saas-handler";
 const VISIBILITY = ["public", "partners_only", "internal"] as const;
 
 async function getHandler(req: Request) {
-  const url = new URL(req.url);
-  const visibilityParam = url.searchParams.get("visibility");
-  const result = await listDocuments(prisma, {
-    categoryId: url.searchParams.get("categoryId") ?? undefined,
-    categoryCode: url.searchParams.get("categoryCode") ?? undefined,
-    visibility:
-      visibilityParam && VISIBILITY.includes(visibilityParam as (typeof VISIBILITY)[number])
-        ? (visibilityParam as (typeof VISIBILITY)[number])
-        : undefined,
-    countryScope: url.searchParams.get("countryScope") ?? undefined,
-    limit: Number(url.searchParams.get("limit")) || 100,
-    offset: Number(url.searchParams.get("offset")) || 0,
-  });
-  return NextResponse.json(result);
+  try {
+    const url = new URL(req.url);
+    const visibilityParam = url.searchParams.get("visibility");
+    const result = await listDocuments(prisma, {
+      categoryId: url.searchParams.get("categoryId") ?? undefined,
+      categoryCode: url.searchParams.get("categoryCode") ?? undefined,
+      visibility:
+        visibilityParam && VISIBILITY.includes(visibilityParam as (typeof VISIBILITY)[number])
+          ? (visibilityParam as (typeof VISIBILITY)[number])
+          : undefined,
+      countryScope: url.searchParams.get("countryScope") ?? undefined,
+      limit: Number(url.searchParams.get("limit")) || 100,
+      offset: Number(url.searchParams.get("offset")) || 0,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("GET /api/saas/documents error:", e);
+    return NextResponse.json({ documents: [], total: 0 });
+  }
 }
 
 async function postHandler(req: Request) {

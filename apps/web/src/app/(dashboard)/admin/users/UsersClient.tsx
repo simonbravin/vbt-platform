@@ -12,8 +12,9 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
 
   const load = () => {
     fetch("/api/admin/users")
-      .then((r) => r.json())
-      .then((d) => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => { setUsers(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => { setUsers([]); setLoading(false); });
   };
 
   useEffect(() => { load(); }, []);

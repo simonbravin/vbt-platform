@@ -16,6 +16,8 @@ const patchSchema = z.object({
   moduleVisibility: z.record(z.boolean()).optional(),
 });
 
+const EMPTY_CONFIG = { pricing: {}, moduleVisibility: {} };
+
 export async function GET() {
   try {
     const ctx = await getTenantContext();
@@ -34,7 +36,8 @@ export async function GET() {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
-    throw e;
+    console.error("platform-config GET error:", e);
+    return NextResponse.json(EMPTY_CONFIG);
   }
 }
 

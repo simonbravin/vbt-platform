@@ -10,7 +10,8 @@ const enrollSchema = z.object({ programId: z.string(), userId: z.string().option
 export async function GET(req: Request) {
   try {
     const ctx = await getTenantContext();
-    if (!ctx?.activeOrgId && !ctx?.isPlatformSuperadmin) {
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ctx.activeOrgId && !ctx.isPlatformSuperadmin) {
       return NextResponse.json({ error: "No active organization" }, { status: 403 });
     }
     const url = new URL(req.url);
@@ -27,7 +28,8 @@ export async function GET(req: Request) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
-    throw e;
+    console.error("GET /api/saas/training/enrollments error:", e);
+    return NextResponse.json({ enrollments: [], total: 0 });
   }
 }
 
