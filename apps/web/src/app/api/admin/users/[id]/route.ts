@@ -38,7 +38,8 @@ export async function PATCH(
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const currentUser = session.user as any;
-  if (currentUser.role !== "SUPERADMIN") {
+  const canUpdate = currentUser.role === "SUPERADMIN" || currentUser.isPlatformSuperadmin === true;
+  if (!canUpdate) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -49,10 +50,16 @@ export async function PATCH(
   }
 
   const { status, role } = parsed.data;
+  const orgId = currentUser.activeOrgId ?? currentUser.orgId;
 
-  // Fetch user before update to get their email
-  const targetUser = await prisma.user.findUnique({ where: { id: params.id } });
+  // Fetch user before update to get their email and org membership (for role update when approver has no org)
+  const targetUser = await prisma.user.findUnique({
+    where: { id: params.id },
+    include: { orgMembers: { take: 1, select: { organizationId: true } } },
+  });
   if (!targetUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const targetUserWithOrgs = targetUser as typeof targetUser & { orgMembers?: { organizationId: string }[] };
+  const targetOrgId = orgId ?? targetUserWithOrgs.orgMembers?.[0]?.organizationId;
 
   const userData: { isActive?: boolean } = {};
   if (status === "ACTIVE") userData.isActive = true;
@@ -65,16 +72,15 @@ export async function PATCH(
       })
     : targetUser;
 
-  const orgId = currentUser.activeOrgId ?? currentUser.orgId;
   const orgRoleMap: Record<string, "org_admin" | "viewer" | "sales_user" | "technical_user"> = {
     SUPERADMIN: "org_admin",
     ADMIN: "org_admin",
     SALES: "sales_user",
     VIEWER: "viewer",
   };
-  if (role && orgId && orgRoleMap[role]) {
+  if (role && targetOrgId && orgRoleMap[role]) {
     await prisma.orgMember.updateMany({
-      where: { userId: params.id, organizationId: orgId },
+      where: { userId: params.id, organizationId: targetOrgId },
       data: { role: orgRoleMap[role] },
     });
   }
@@ -86,9 +92,9 @@ export async function PATCH(
       : role
         ? "USER_ROLE_CHANGED"
         : null;
-  if (action && orgId) {
+  if (action && (orgId ?? targetOrgId)) {
     await createAuditLog({
-      orgId,
+      orgId: orgId ?? targetOrgId ?? undefined,
       userId: currentUser.id,
       action: action as any,
       entityType: "User",
@@ -131,7 +137,7 @@ export async function PATCH(
               </div>
               <div style="background-color: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px;">
                 <p>Hi ${(targetUser as { fullName?: string }).fullName ?? targetUser.email},</p>
-                <p>Unfortunately, your account request could not be approved at this time. Please contact <a href="mailto:simon@visionlatam.com">simon@visionlatam.com</a> for more information.</p>
+                <p>Unfortunately, your account request could not be approved at this time. Please contact <a href="mailto:${process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com"}">${process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com"}</a> for more information.</p>
               </div>
             </div>
           `,

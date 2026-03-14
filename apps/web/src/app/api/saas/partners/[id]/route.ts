@@ -9,7 +9,7 @@ const patchSchema = z.object({
   companyName: z.string().min(1).optional(),
   contactName: z.string().nullable().optional(),
   contactEmail: z.string().nullable().optional().or(z.literal("")),
-  website: z.string().url().nullable().optional().or(z.literal("")),
+  website: z.string().max(500).nullable().optional().or(z.literal("")),
   country: z.string().nullable().optional(),
   partnerType: z.enum(["commercial_partner", "master_partner"]).optional(),
   engineeringFeeMode: z.enum(["fixed", "percent", "per_request", "included"]).nullable().optional(),

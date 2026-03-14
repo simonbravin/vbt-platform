@@ -7,7 +7,7 @@ export const createPartnerSchema = z.object({
   companyName: z.string().min(1),
   contactName: z.string().nullable().optional(),
   contactEmail: z.string().nullable().optional().or(z.literal("")),
-  website: z.string().url().nullable().optional().or(z.literal("")),
+  website: z.string().max(500).nullable().optional().or(z.literal("")),
   country: z.string().nullable().optional(),
   partnerType: partnerTypeEnum,
   engineeringFeeMode: engineeringFeeModeEnum.nullable().optional(),

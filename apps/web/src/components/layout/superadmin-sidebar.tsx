@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileBarChart,
+  UserCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
@@ -28,6 +29,7 @@ interface NavItem {
 
 const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
+  { labelKey: "nav.superadmin.pendingApprovals", href: "/admin/users", icon: UserCheck },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
   { labelKey: "nav.superadmin.analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { labelKey: "nav.superadmin.reports", href: "/superadmin/reports", icon: FileBarChart },

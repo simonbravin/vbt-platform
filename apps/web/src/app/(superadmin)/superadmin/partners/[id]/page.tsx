@@ -58,6 +58,8 @@ export default async function PartnerDetailPage({ params, searchParams }: PagePr
                 contactEmail: partner.partnerProfile.contactEmail,
                 engineeringFeeMode: partner.partnerProfile.engineeringFeeMode,
                 onboardingState: partner.partnerProfile.onboardingState,
+                salesTargetAnnualUsd: partner.partnerProfile.salesTargetAnnualUsd,
+                salesTargetAnnualM2: partner.partnerProfile.salesTargetAnnualM2,
               }
             : null,
           territories: partner.territories,

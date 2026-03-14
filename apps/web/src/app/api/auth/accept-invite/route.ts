@@ -58,21 +58,21 @@ export async function POST(req: Request) {
           isActive: true,
         },
       });
-    } else {
-      return NextResponse.json(
-        { error: "An account with this email already exists. Please sign in instead." },
-        { status: 409 }
-      );
     }
+    // If user already exists (e.g. signed up meanwhile), add them to the org instead of failing
 
     const orgRole = API_ROLE_TO_ORG[invite.role] ?? "viewer";
-    await prisma.orgMember.create({
-      data: {
+    await prisma.orgMember.upsert({
+      where: {
+        organizationId_userId: { organizationId: invite.organizationId, userId: user.id },
+      },
+      create: {
         organizationId: invite.organizationId,
         userId: user.id,
         role: orgRole,
         status: "active",
       },
+      update: { role: orgRole, status: "active" },
     });
 
     await prisma.partnerInvite.update({

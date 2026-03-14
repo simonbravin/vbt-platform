@@ -99,3 +99,15 @@ Si **simon@visionbuildingtechs.com** no existe o no puede entrar (inactivo / no 
 - **Si el usuario no existe:** Se crea un registro en `partner_invites` y se envía un email con enlace **"Create account"** a `/invite/accept?token=...`. Al hacer clic, la persona completa nombre y contraseña, se crea el usuario y se lo asocia a la org del partner como **owner**. Luego puede iniciar sesión y acceder al portal del partner.
 - **Invite desde Team:** En el detalle del partner, pestaña **Team**, "Invite by email" funciona igual: si el email ya tiene cuenta → se agrega a la org y se envía "you've been added"; si no → se envía el link para crear cuenta. Las invitaciones pendientes expiran en 7 días.
 - **Migración:** La tabla `partner_invites` se crea con la migración `20250314000000_add_partner_invites`. Ejecutar `npx prisma migrate deploy` en `packages/db` para aplicarla.
+
+## Registrar el primer partner
+
+1. **Entrar como superadmin** (email en `SUPERADMIN_EMAIL`, p. ej. admin@visionbuildingtechs.com). Si ves "Account Pending Approval", otro superadmin debe aprobarte en **Pending approvals** (`/admin/users`) o usar el script de fix en `packages/db`.
+
+2. **Migraciones aplicadas** en Neon: `cd packages/db && npx prisma migrate deploy` (incluye `partner_invites`).
+
+3. **Crear partner:** Superadmin → **Partners** → **Create partner**. Completar al menos Company name * y Partner type. Website acepta cualquier texto o vacío. Opcional: Contact name, Contact email.
+
+4. **Invitación:** Si pusiste Contact email y dejaste **"Send invitation email to contact"** marcado, al guardar se envía el correo (con Resend). Si el contacto no tiene cuenta, recibe un enlace "Create account"; si ya tiene cuenta, "You've been added".
+
+5. **El partner entra:** Con el enlace del correo crea cuenta (nombre + contraseña) o inicia sesión. Entra al dashboard del partner con su única org. Opcional: en el detalle del partner podés configurar **Parameters** (metas anuales, fees, etc.) y **Territories**.

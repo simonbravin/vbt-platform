@@ -10,8 +10,8 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-/** Superadmin email – treat as platform superadmin when DB has no is_platform_superadmin column */
-const SUPERADMIN_EMAIL = "simon@visionbuildingtechs.com";
+/** Superadmin email – set SUPERADMIN_EMAIL in env to override (e.g. admin@visionbuildingtechs.com) */
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL ?? "simon@visionbuildingtechs.com";
 
 type RawUserRow = {
   id: string;
@@ -139,7 +139,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user) return null;
-        if (!user.isActive) {
+        const isSuperadmin = user.isPlatformSuperadmin === true || user.email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+        if (!user.isActive && !isSuperadmin) {
           throw new Error("PENDING");
         }
 
