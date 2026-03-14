@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma, Prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { verifyPasswordResetToken } from "@/lib/password-reset-token";
@@ -75,10 +75,34 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await prisma.user.updateMany({
-      where: { id: payload.userId },
-      data: { passwordHash },
-    });
+
+    try {
+      await prisma.user.updateMany({
+        where: { id: payload.userId },
+        data: { passwordHash },
+      });
+    } catch (updateErr: unknown) {
+      const err = updateErr as { code?: string; meta?: { column?: string } };
+      console.error("Reset password update failed:", err?.code, err?.meta);
+      // Production DB may use different column name ("passwordHash" or password_hash)
+      try {
+        await prisma.$executeRaw(
+          Prisma.sql`UPDATE users SET "passwordHash" = ${passwordHash} WHERE id = ${payload.userId}`
+        );
+      } catch {
+        try {
+          await prisma.$executeRaw(
+            Prisma.sql`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${payload.userId}`
+          );
+        } catch (rawErr) {
+          console.error("Reset password raw update failed:", rawErr);
+          return NextResponse.json(
+            { error: "Could not update password. Contact support." },
+            { status: 500 }
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ ok: true, message: "Password updated. You can sign in now." });
   } catch (error) {

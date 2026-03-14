@@ -19,4 +19,3 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export * from "../../../apps/web/.prisma/client";
-export type { Prisma } from "../../../apps/web/.prisma/client";
