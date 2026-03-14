@@ -17,13 +17,18 @@ async function getHandler(req: Request) {
     organizationId: ctx.activeOrgId ?? null,
     isPlatformSuperadmin: true,
   };
-  const result = await listPartners(prisma, tenantCtx, {
-    status: url.searchParams.get("status") ?? undefined,
-    partnerType: url.searchParams.get("partnerType") as "commercial_partner" | "master_partner" | undefined,
-    limit: Number(url.searchParams.get("limit")) || 50,
-    offset: Number(url.searchParams.get("offset")) || 0,
-  });
-  return NextResponse.json(result);
+  try {
+    const result = await listPartners(prisma, tenantCtx, {
+      status: url.searchParams.get("status") ?? undefined,
+      partnerType: url.searchParams.get("partnerType") as "commercial_partner" | "master_partner" | undefined,
+      limit: Number(url.searchParams.get("limit")) || 50,
+      offset: Number(url.searchParams.get("offset")) || 0,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[saas/partners GET]", e);
+    return NextResponse.json({ partners: [], total: 0 });
+  }
 }
 
 async function postHandler(req: Request) {

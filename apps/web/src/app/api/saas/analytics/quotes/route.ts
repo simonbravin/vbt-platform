@@ -25,11 +25,24 @@ async function getHandler(req: Request) {
   });
   if (!parsed.success) throw parsed.error;
   const { dateFrom, dateTo } = parsed.data;
-  const result = await getQuoteAnalytics(prisma, tenantCtx, {
-    dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-    dateTo: dateTo ? new Date(dateTo) : undefined,
-  });
-  return NextResponse.json(result);
+  try {
+    const result = await getQuoteAnalytics(prisma, tenantCtx, {
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[analytics/quotes]", e);
+    return NextResponse.json({
+      quotes_created: 0,
+      quotes_sent: 0,
+      quotes_accepted: 0,
+      quotes_rejected: 0,
+      average_quote_value: 0,
+      conversion_rate: 0,
+      average_sales_cycle_days: 0,
+    });
+  }
 }
 
 export const GET = withSaaSHandler({ cacheTtl: CACHE_TTL.analytics }, getHandler);

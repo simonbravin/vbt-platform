@@ -23,8 +23,13 @@ async function getHandler(req: Request) {
     limit: url.searchParams.get("limit") ?? undefined,
   });
   const limit = parsed.success && parsed.data.limit != null ? parsed.data.limit : 20;
-  const result = await getDashboardActivity(prisma, tenantCtx, limit);
-  return NextResponse.json(result);
+  try {
+    const result = await getDashboardActivity(prisma, tenantCtx, limit);
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[dashboard/activity]", e);
+    return NextResponse.json([]);
+  }
 }
 
 export const GET = withSaaSHandler({ cacheTtl: CACHE_TTL.dashboard }, getHandler);

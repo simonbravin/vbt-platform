@@ -115,7 +115,7 @@ export function GlobalReportsClient() {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
         <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1">Ensure you are logged in as a platform superadmin.</p>
+        <p className="text-sm mt-1">Check that you are logged in as a platform superadmin. If the problem continues, try again later.</p>
       </div>
     );
   }

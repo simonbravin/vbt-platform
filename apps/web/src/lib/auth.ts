@@ -179,7 +179,10 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).activeOrgName = token.activeOrgName ?? null;
         (session.user as any).role = token.role ?? "viewer";
         (session.user as any).roles = token.role ? [token.role] : [];
-        (session.user as any).isPlatformSuperadmin = token.isPlatformSuperadmin ?? false;
+        const fromToken = token.isPlatformSuperadmin === true;
+        const fromEmail =
+          session.user.email?.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+        (session.user as any).isPlatformSuperadmin = fromToken || fromEmail;
         // Backward compat for existing UI that expects orgId
         (session.user as any).orgId = token.activeOrgId ?? null;
         (session.user as any).orgSlug = token.activeOrgName ?? null;

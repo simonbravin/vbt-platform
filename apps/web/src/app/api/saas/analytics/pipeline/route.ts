@@ -17,8 +17,21 @@ async function getHandler() {
     organizationId: ctx.activeOrgId ?? null,
     isPlatformSuperadmin: ctx.isPlatformSuperadmin ?? false,
   };
-  const result = await getPipelineAnalytics(prisma, tenantCtx);
-  return NextResponse.json(result);
+  try {
+    const result = await getPipelineAnalytics(prisma, tenantCtx);
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[analytics/pipeline]", e);
+    return NextResponse.json({
+      projects_total: 0,
+      projects_by_status: {},
+      quotes_total: 0,
+      quotes_by_status: {},
+      quotes_value_pipeline: 0,
+      quotes_value_won: 0,
+      quotes_value_lost: 0,
+    });
+  }
 }
 
 export const GET = withSaaSHandler({ cacheTtl: CACHE_TTL.analytics }, async () => getHandler());

@@ -14,7 +14,8 @@
     "db:push": "prisma db push",
     "seed": "tsx --env-file=.env prisma/seed.ts",
     "studio": "prisma studio",
-    "check-users": "tsx scripts/check-users.ts"
+    "check-users": "tsx scripts/check-users.ts",
+    "verify-users-schema": "tsx scripts/verify-users-schema.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",

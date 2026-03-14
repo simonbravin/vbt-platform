@@ -24,13 +24,18 @@ async function getHandler(req: Request) {
   });
   if (!parsed.success) throw parsed.error;
   const { dateFrom, dateTo, partnerId, country } = parsed.data;
-  const result = await getPartnerPerformance(prisma, tenantCtx, {
-    dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-    dateTo: dateTo ? new Date(dateTo) : undefined,
-    partnerId,
-    country,
-  });
-  return NextResponse.json(result);
+  try {
+    const result = await getPartnerPerformance(prisma, tenantCtx, {
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+      partnerId,
+      country,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[analytics/partners]", e);
+    return NextResponse.json([]);
+  }
 }
 
 export const GET = withSaaSHandler({ cacheTtl: CACHE_TTL.analytics }, getHandler);

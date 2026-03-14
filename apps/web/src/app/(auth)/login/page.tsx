@@ -30,7 +30,7 @@ function LoginForm() {
     resolver: zodResolver(schema),
   });
 
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
 
   async function onSubmit(data: FormData) {
     setLoading(true);

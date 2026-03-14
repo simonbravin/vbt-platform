@@ -21,10 +21,12 @@ Use this checklist when deploying the VBT Cotizador (dual portal: Superadmin + P
 
 ## Pre-deploy checklist
 
-1. **Database**
-   - Run migrations: `cd packages/db && npx prisma migrate deploy` (includes `platform_config` and `password_reset_tokens`)
-   - Or push schema: `npx prisma db push` (dev/staging only)
-   - Optionally run seed: `npx prisma db seed` (creates superadmin if `SUPERADMIN_EMAIL` exists)
+1. **Database (obligatorio)**
+   - **Ejecutar migraciones:** `cd packages/db && npx prisma migrate deploy`
+   - Incluye: `platform_config`, `password_reset_tokens`, y **alineación de la tabla `users`** (`full_name`, `password_hash`, etc.). Sin esto, Neon (o cualquier DB creada con otro esquema) no coincide con Prisma y la app puede fallar.
+   - **Verificar esquema** después de desplegar: `cd packages/db && pnpm run verify-users-schema` (comprueba que `users` tenga las columnas requeridas).
+   - En desarrollo local puedes usar `npx prisma db push` (no sustituye a migrate deploy en producción).
+   - Opcional: `npx prisma db seed` (crea/actualiza superadmin si existe `SUPERADMIN_EMAIL`).
 
 2. **Environment**
    - Set all required variables in the host (Vercel, etc.).
@@ -81,3 +83,5 @@ Si **simon@visionbuildingtechs.com** no existe o no puede entrar (inactivo / no 
 
 - Platform config (Global Settings) is stored in the `platform_config` table; one row is created on first save. If you use `prisma migrate deploy`, ensure a migration exists for `platform_config`, or run `npx prisma db push` once to create the table.
 - Partner parameters override global defaults per partner; defaults are shown in the Parameters tab when editing a partner.
+- **Esquema de `users`:** La migración `20250313200000_align_users_table_with_schema` deja la tabla `users` alineada con Prisma (columnas `full_name`, `password_hash`, `is_active`, `is_platform_superadmin`, etc.). Si la DB tenía `name` en lugar de `full_name` o `passwordHash` en lugar de `password_hash`, la migración renombra o añade lo necesario. Es obligatorio ejecutar `prisma migrate deploy` en producción.
+- **Resiliencia en APIs:** Las rutas de dashboard y analytics tienen try/catch que devuelven datos vacíos/ceros ante errores inesperados (logs en servidor). El comportamiento correcto depende de que el esquema esté alineado vía migraciones.

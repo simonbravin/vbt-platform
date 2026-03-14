@@ -24,13 +24,18 @@ async function getHandler(req: Request) {
   });
   if (!parsed.success) throw parsed.error;
   const { sort, limit, dateFrom, dateTo } = parsed.data;
-  const result = await getPartnerLeaderboard(prisma, tenantCtx, {
-    sort: sort ?? "revenue",
-    limit: limit ?? 20,
-    dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-    dateTo: dateTo ? new Date(dateTo) : undefined,
-  });
-  return NextResponse.json(result);
+  try {
+    const result = await getPartnerLeaderboard(prisma, tenantCtx, {
+      sort: sort ?? "revenue",
+      limit: limit ?? 20,
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error("[analytics/leaderboard]", e);
+    return NextResponse.json([]);
+  }
 }
 
 export const GET = withSaaSHandler({ cacheTtl: CACHE_TTL.leaderboard }, getHandler);

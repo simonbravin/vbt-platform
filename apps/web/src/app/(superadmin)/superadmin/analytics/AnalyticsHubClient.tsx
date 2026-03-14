@@ -121,7 +121,7 @@ export function AnalyticsHubClient() {
       ]);
 
       if (!pipeRes.ok || !perfRes.ok || !quotesRes.ok || !leadRes.ok) {
-        setError("Failed to load analytics. Ensure you are logged in as platform superadmin.");
+        setError("Failed to load analytics. Check that you are logged in as platform superadmin or try again later.");
         return;
       }
 
