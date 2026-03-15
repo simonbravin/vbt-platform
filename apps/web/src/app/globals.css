@@ -81,3 +81,86 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Dark mode: override hardcoded light classes so all superadmin sections (Content, Admin, etc.) match Inicio/Partners/Analytics */
+.dark .bg-white {
+  background-color: hsl(var(--card));
+}
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50 {
+  background-color: hsl(var(--muted));
+}
+.dark .bg-gray-100 {
+  background-color: hsl(var(--muted));
+}
+.dark .text-gray-900 {
+  color: hsl(var(--foreground));
+}
+.dark .text-gray-700 {
+  color: hsl(var(--foreground));
+}
+.dark .text-gray-600 {
+  color: hsl(var(--muted-foreground));
+}
+.dark .text-gray-500 {
+  color: hsl(var(--muted-foreground));
+}
+.dark .text-gray-400 {
+  color: hsl(var(--muted-foreground));
+}
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-100 {
+  border-color: hsl(var(--border));
+}
+.dark .divide-gray-200 > * + * {
+  border-color: hsl(var(--border));
+}
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-50:focus {
+  background-color: hsl(var(--muted));
+}
+.dark .hover\:text-gray-700:hover,
+.dark .hover\:text-gray-900:hover {
+  color: hsl(var(--foreground));
+}
+.dark .hover\:border-gray-300:hover {
+  border-color: hsl(var(--border));
+}
+.dark input.border-gray-300,
+.dark select.border-gray-300,
+.dark textarea.border-gray-300,
+.dark [class*="border-gray-300"] {
+  border-color: hsl(var(--input));
+}
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+}
+.dark thead.bg-gray-50 {
+  background-color: hsl(var(--muted));
+}
+.dark tbody.bg-white {
+  background-color: hsl(var(--card));
+}
+.dark tbody.divide-y.divide-gray-200 > tr {
+  border-top-color: hsl(var(--border));
+}
+.dark tr.hover\:bg-gray-50:hover {
+  background-color: hsl(var(--muted));
+}
+.dark .text-red-600,
+.dark .text-red-700 {
+  color: hsl(var(--destructive));
+}
+.dark .border-red-200 {
+  border-color: hsl(var(--destructive) / 0.5);
+}
+.dark .bg-red-50 {
+  background-color: hsl(var(--destructive) / 0.1);
+}
+.dark .bg-blue-100 {
+  background-color: hsl(var(--primary) / 0.2);
+}
+.dark .text-blue-600 {
+  color: hsl(var(--primary));
+}
