@@ -63,6 +63,7 @@ export async function POST(req: Request) {
       });
       if (!user) {
         const passwordHash = await bcrypt.hash(password, 12);
+        // Explicit timestamps; DB has DEFAULT on created_at/updated_at (migration 20250316000000) as fallback
         user = await tx.user.create({
           data: {
             email: emailNorm,
