@@ -66,12 +66,13 @@ export async function POST(req: Request) {
         const passwordHash = await bcrypt.hash(password, 12);
         const id = crypto.randomUUID();
         const nowIso = now.toISOString();
-        // INSERT explícito: el cliente Prisma con @updatedAt no envía siempre esta columna en create();
-        // la migración 20250318000000 normaliza la tabla (snake_case + DEFAULT) y este INSERT asegura valores explícitos.
+        // Solución definitiva: INSERT explícito con cast ::timestamp. Prisma create() no envía @updatedAt
+        // de forma fiable; la migración 20250318000000 normaliza la tabla y pone DEFAULT. Aquí enviamos
+        // ISO string y casteamos en SQL para que funcione igual en todos los entornos (driver envía text).
         await tx.$executeRaw(
           Prisma.sql`
             INSERT INTO users (id, full_name, email, password_hash, is_active, is_platform_superadmin, created_at, updated_at)
-            VALUES (${id}, ${fullName.trim()}, ${emailNorm}, ${passwordHash}, true, false, ${nowIso}, ${nowIso})
+            VALUES (${id}, ${fullName.trim()}, ${emailNorm}, ${passwordHash}, true, false, ${nowIso}::timestamp, ${nowIso}::timestamp)
           `
         );
         user = { id };
