@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma, Prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { API_ROLE_TO_ORG } from "@vbt/core";
 import { z } from "zod";
+import crypto from "crypto";
 
 const acceptSchema = z.object({
   token: z.string().min(1, "Invalid token"),
@@ -63,18 +64,17 @@ export async function POST(req: Request) {
       });
       if (!user) {
         const passwordHash = await bcrypt.hash(password, 12);
-        // Explicit timestamps; DB has DEFAULT on created_at/updated_at (migration 20250316000000) as fallback
-        user = await tx.user.create({
-          data: {
-            email: emailNorm,
-            fullName: fullName.trim(),
-            passwordHash,
-            isActive: true,
-            createdAt: now,
-            updatedAt: now,
-          },
-          select: { id: true },
-        });
+        const id = crypto.randomUUID();
+        const nowIso = now.toISOString();
+        // INSERT explícito: el cliente Prisma con @updatedAt no envía siempre esta columna en create();
+        // la migración 20250318000000 normaliza la tabla (snake_case + DEFAULT) y este INSERT asegura valores explícitos.
+        await tx.$executeRaw(
+          Prisma.sql`
+            INSERT INTO users (id, full_name, email, password_hash, is_active, is_platform_superadmin, created_at, updated_at)
+            VALUES (${id}, ${fullName.trim()}, ${emailNorm}, ${passwordHash}, true, false, ${nowIso}, ${nowIso})
+          `
+        );
+        user = { id };
       }
 
       // 3) Upsert org member (idempotent if user already in org)
