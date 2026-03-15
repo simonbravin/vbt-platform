@@ -2,18 +2,14 @@
 
 ## Resumen
 
-- **`organizations`**: es la tabla que usa la app (modelo `Organization` en `schema.prisma`). Parteners/tenants: nombre, tipo, país, estado, etc. **Hay que seguir usándola.**
-- **`orgs`**: tabla distinta, solo definida en `schema.legacy.prisma` (modelo `Org`). Tiene slug, UOM, tarifas (rateS80, rateS150…), comisiones. **La app actual no la usa** (no hay referencias en el código activo).
+- **`organizations`**: tabla que usa la app (modelo `Organization` en `schema.prisma`). Parteners/tenants: nombre, tipo, país, estado, etc. **Es la única tabla de organizaciones en uso.**
+- **`orgs`**: tabla que **ya no existe**. Se eliminó por migración `20250321000000_drop_orgs_table` porque la app no la usaba (solo estaba en `schema.legacy.prisma` como referencia). El modelo `Org` sigue en el archivo legacy solo como documentación histórica.
 
-No son el mismo valor duplicado: son dos entidades distintas. Si en el futuro querés unificar o deprecar `orgs`, se puede planear una migración de datos y dejar una sola tabla de “organización”.
+## Estado actual
 
-## Detalle
+| Tabla | Estado | Uso |
+|-------|--------|-----|
+| **organizations** | Activa | App (partners, invitaciones, miembros, proyectos, cotizaciones, etc.) |
+| **orgs** | Eliminada | Ninguno; tabla borrada en Neon y migración aplicada |
 
-| Aspecto | organizations | orgs |
-|--------|----------------|------|
-| **Schema activo** | Sí (`schema.prisma`, modelo `Organization`) | No (solo en `schema.legacy.prisma`, modelo `Org`) |
-| **Uso en app** | Partner/tenant, invitaciones, miembros, proyectos, cotizaciones, etc. | Sin uso en el código actual |
-| **Columnas típicas** | id, name, legal_name, organization_type, country_code, tax_id, email, status, created_at, updated_at | id, name, slug, createdAt, updatedAt, baseUom, weightUom, minRunFt, rateS80, rateS150, rateS200, rateGlobal, commissionPct, commissionFixed |
-| **Ejemplo en Neon** | VBT Argentina SA (master_partner) | Vision Latam (vision-latam, con rates) |
-
-**Conclusión:** No hace falta eliminar ninguna; la app solo depende de `organizations`. `orgs` puede tratarse como legacy o para un módulo futuro (p. ej. configuración de tarifas por “org”). Si quisieras unificar, habría que definir qué datos de `orgs` pasan a `organizations` o a otra tabla y migrar.
+**Conclusión:** La app depende solo de `organizations`. La tabla `orgs` fue eliminada de la base y el código activo no la referencia.

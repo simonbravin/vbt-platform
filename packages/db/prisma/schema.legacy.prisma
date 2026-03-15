@@ -124,6 +124,8 @@ enum MarkupType {
 }
 
 // ─── Org & Users ─────────────────────────────────────────────────────────────
+// NOTE: Table "orgs" was dropped in migration 20250321000000. This model is legacy reference only.
+// The app uses Organization / "organizations" only.
 
 model Org {
   id        String   @id @default(cuid())
@@ -131,8 +133,6 @@ model Org {
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Default org settings
   baseUom       BaseUom   @default(M)
   weightUom     WeightUom @default(KG)
   minRunFt      Float     @default(5000)
@@ -140,10 +140,8 @@ model Org {
   rateS150      Float     @default(67)
   rateS200      Float     @default(85)
   rateGlobal    Float     @default(60)
-  // Commission defaults
   commissionPct Float     @default(0)
   commissionFixed Float   @default(0)
-
   members        OrgMember[]
   clients        Client[]
   projects       Project[]
@@ -157,7 +155,6 @@ model Org {
   billingEntities BillingEntity[]
   sales          Sale[]
   payments       Payment[]
-
   @@map("orgs")
 }
 
