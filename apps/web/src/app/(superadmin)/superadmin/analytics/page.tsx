@@ -13,8 +13,8 @@ export default async function SuperadminAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Analytics & Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold text-foreground">Analytics & Reports</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Global pipeline, partner performance, and quote analytics. Filter by partner and date.
         </p>
       </div>

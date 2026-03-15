@@ -13,8 +13,8 @@ export default async function SuperadminReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Global Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold text-foreground">Global Reports</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Platform-wide KPIs and partner performance. Export to CSV or Excel.
         </p>
       </div>

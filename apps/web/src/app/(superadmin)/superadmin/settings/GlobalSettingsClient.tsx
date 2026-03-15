@@ -95,7 +95,7 @@ export function GlobalSettingsClient() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" /> {t("common.loading")}
       </div>
     );
@@ -106,7 +106,7 @@ export function GlobalSettingsClient() {
       {message && (
         <div
           className={`rounded-lg border p-3 text-sm ${
-            message.type === "success" ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-800"
+            message.type === "success" ? "border-alert-successBorder bg-alert-success text-foreground" : "border-alert-errorBorder bg-alert-error text-foreground"
           }`}
         >
           {message.text}
@@ -114,19 +114,19 @@ export function GlobalSettingsClient() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-amber-100 p-2">
-              <DollarSign className="h-5 w-5 text-amber-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <DollarSign className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{t("superadmin.settings.pricing")}</h2>
-              <p className="text-sm text-gray-500">Default margin and fees. Partners inherit or override.</p>
+              <h2 className="font-semibold text-foreground">{t("superadmin.settings.pricing")}</h2>
+              <p className="text-sm text-muted-foreground">Default margin and fees. Partners inherit or override.</p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500">Min margin %</label>
+              <label className="block text-xs font-medium text-muted-foreground">Min margin %</label>
               <input
                 type="number"
                 min={0}
@@ -134,36 +134,36 @@ export function GlobalSettingsClient() {
                 step={0.5}
                 value={marginMinPct}
                 onChange={(e) => setMarginMinPct(e.target.value)}
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="e.g. 15"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Default entry fee (USD)</label>
+              <label className="block text-xs font-medium text-muted-foreground">Default entry fee (USD)</label>
               <input
                 type="number"
                 min={0}
                 step={1}
                 value={entryFeeUsd}
                 onChange={(e) => setEntryFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="e.g. 0"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Default training fee (USD)</label>
+              <label className="block text-xs font-medium text-muted-foreground">Default training fee (USD)</label>
               <input
                 type="number"
                 min={0}
                 step={1}
                 value={trainingFeeUsd}
                 onChange={(e) => setTrainingFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="e.g. 0"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Vision Latam commission % (partner base price = factory cost + this %)</label>
+              <label className="block text-xs font-medium text-muted-foreground">Vision Latam commission % (partner base price = factory cost + this %)</label>
               <input
                 type="number"
                 min={0}
@@ -171,22 +171,22 @@ export function GlobalSettingsClient() {
                 step={0.5}
                 value={visionLatamCommissionPct}
                 onChange={(e) => setVisionLatamCommissionPct(e.target.value)}
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="20"
               />
-              <p className="mt-0.5 text-xs text-gray-400">Partners never see factory cost; they see base price = factory + this commission.</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Partners never see factory cost; they see base price = factory + this commission.</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <Eye className="h-5 w-5 text-blue-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <Eye className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{t("superadmin.settings.moduleVisibility")}</h2>
-              <p className="text-sm text-gray-500">Which modules partners see by default.</p>
+              <h2 className="font-semibold text-foreground">{t("superadmin.settings.moduleVisibility")}</h2>
+              <p className="text-sm text-muted-foreground">Which modules partners see by default.</p>
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -196,38 +196,38 @@ export function GlobalSettingsClient() {
                   type="checkbox"
                   checked={visibility[key] ?? true}
                   onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-input"
                 />
-                <span className="text-sm text-gray-700">{t(labelKey)}</span>
+                <span className="text-sm text-foreground">{t(labelKey)}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-gray-100 p-2">
-              <Lock className="h-5 w-5 text-gray-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <Lock className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Override toggles</h2>
-              <p className="text-sm text-gray-500">Allow or lock partner overrides (future).</p>
+              <h2 className="font-semibold text-foreground">Override toggles</h2>
+              <p className="text-sm text-muted-foreground">Allow or lock partner overrides (future).</p>
             </div>
           </div>
-          <p className="mt-4 text-xs text-gray-400">Coming when override lock model is available.</p>
+          <p className="mt-4 text-xs text-muted-foreground">Coming when override lock model is available.</p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-vbt-blue/10 p-2">
-              <Building2 className="h-5 w-5 text-vbt-blue" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Partner parameters</h2>
-              <p className="text-sm text-gray-500">Set overrides per partner in the partner detail.</p>
+              <h2 className="font-semibold text-foreground">Partner parameters</h2>
+              <p className="text-sm text-muted-foreground">Set overrides per partner in the partner detail.</p>
             </div>
           </div>
-          <Link href="/superadmin/partners" className="mt-4 inline-block text-sm font-medium text-vbt-blue hover:underline">
+          <Link href="/superadmin/partners" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
             Go to Partners →
           </Link>
         </div>

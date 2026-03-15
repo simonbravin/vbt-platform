@@ -13,8 +13,8 @@ export default async function SuperadminActivityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Global activity</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold text-foreground">Global activity</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Recent platform activity across all partners. Use this to audit key events.
         </p>
       </div>

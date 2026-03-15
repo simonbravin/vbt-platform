@@ -64,18 +64,18 @@ export function SuperadminDashboardClient() {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 rounded-xl bg-gray-200 animate-pulse" />
+          <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
         ))}
-        <div className="lg:col-span-2 h-64 rounded-xl bg-gray-200 animate-pulse" />
+        <div className="lg:col-span-2 h-64 rounded-xl bg-muted animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
+      <div className="rounded-xl border border-alert-warningBorder bg-alert-warning p-6 text-foreground">
         <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1">{t("superadmin.dashboard.checkSuperadmin")}</p>
+        <p className="text-sm mt-1 text-muted-foreground">{t("superadmin.dashboard.checkSuperadmin")}</p>
       </div>
     );
   }
@@ -83,53 +83,53 @@ export function SuperadminDashboardClient() {
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <FolderOpen className="h-5 w-5 text-blue-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <FolderOpen className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.totalProjects")}</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.dashboard.totalProjects")}</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {overview?.projects_total ?? 0}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-100 p-2">
-              <FileText className="h-5 w-5 text-green-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.totalQuotes")}</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.dashboard.totalQuotes")}</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {overview?.quotes_total ?? 0}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-amber-100 p-2">
-              <TrendingUp className="h-5 w-5 text-amber-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.pipelineValue")}</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.dashboard.pipelineValue")}</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {formatCurrency(overview?.quotes_pipeline_value ?? 0)}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-emerald-100 p-2">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.wonValue")}</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.dashboard.wonValue")}</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {formatCurrency(overview?.quotes_won_value ?? 0)}
               </p>
             </div>
@@ -137,72 +137,72 @@ export function SuperadminDashboardClient() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.dashboard.partnerLeaderboard")}</h2>
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">{t("superadmin.dashboard.partnerLeaderboard")}</h2>
           <Link
             href="/superadmin/analytics"
-            className="text-sm font-medium text-vbt-blue hover:underline flex items-center gap-1"
+            className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
           >
             {t("superadmin.dashboard.viewAnalytics")} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.partner")}
                 </th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.projects")}
                 </th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.quotes")}
                 </th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.won")}
                 </th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.revenue")}
                 </th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {t("superadmin.dashboard.conversion")}
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {leaderboard.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">
                     {t("superadmin.dashboard.noPartnerDataYet")}
                   </td>
                 </tr>
               ) : (
                 leaderboard.map((row) => (
-                  <tr key={row.partnerId} className="hover:bg-gray-50">
+                  <tr key={row.partnerId} className="hover:bg-muted/50">
                     <td className="px-5 py-3">
                       <Link
                         href={`/superadmin/partners/${row.partnerId}`}
-                        className="font-medium text-gray-900 hover:text-vbt-blue flex items-center gap-2"
+                        className="font-medium text-foreground hover:text-primary flex items-center gap-2"
                       >
-                        <Building2 className="h-4 w-4 text-gray-400" />
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
                         {row.partnerName}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">
+                    <td className="px-5 py-3 text-right text-sm text-foreground">
                       {row.projects}
                     </td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">
+                    <td className="px-5 py-3 text-right text-sm text-foreground">
                       {row.quotes}
                     </td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">
+                    <td className="px-5 py-3 text-right text-sm text-foreground">
                       {row.quotes_accepted}
                     </td>
-                    <td className="px-5 py-3 text-right text-sm font-medium text-gray-900">
+                    <td className="px-5 py-3 text-right text-sm font-medium text-foreground">
                       {formatCurrency(row.revenue ?? 0)}
                     </td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">
+                    <td className="px-5 py-3 text-right text-sm text-foreground">
                       {row.conversionRate != null
                         ? `${Number(row.conversionRate).toFixed(1)}%`
                         : "—"}

@@ -105,19 +105,19 @@ export function GlobalReportsClient() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-xl bg-gray-200 animate-pulse" />
+            <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
-        <div className="h-64 rounded-xl bg-gray-200 animate-pulse" />
+        <div className="h-64 rounded-xl bg-muted animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
+      <div className="rounded-xl border border-alert-warningBorder bg-alert-warning p-6 text-foreground">
         <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1">Check that you are logged in as a platform superadmin. If the problem continues, try again later.</p>
+        <p className="text-sm mt-1 text-muted-foreground">Check that you are logged in as a platform superadmin. If the problem continues, try again later.</p>
       </div>
     );
   }
@@ -125,72 +125,72 @@ export function GlobalReportsClient() {
   return (
     <div className="space-y-8">
       {/* Date filter */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">From</label>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">To</label>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <FolderOpen className="h-5 w-5 text-blue-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <FolderOpen className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Projects</p>
-              <p className="text-2xl font-semibold text-gray-900">{pipeline?.projects_total ?? overview?.projects_total ?? 0}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+              <p className="text-2xl font-semibold text-foreground">{pipeline?.projects_total ?? overview?.projects_total ?? 0}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-100 p-2">
-              <FileText className="h-5 w-5 text-green-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Quotes</p>
-              <p className="text-2xl font-semibold text-gray-900">{pipeline?.quotes_total ?? overview?.quotes_total ?? 0}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Quotes</p>
+              <p className="text-2xl font-semibold text-foreground">{pipeline?.quotes_total ?? overview?.quotes_total ?? 0}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-amber-100 p-2">
-              <TrendingUp className="h-5 w-5 text-amber-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Pipeline Value</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Pipeline Value</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {formatCurrency(pipeline?.quotes_value_pipeline ?? overview?.quotes_pipeline_value ?? 0)}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-emerald-100 p-2">
-              <BarChart3 className="h-5 w-5 text-emerald-600" />
+            <div className="rounded-lg bg-muted p-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Won / Lost</p>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Won / Lost</p>
+              <p className="text-lg font-semibold text-foreground">
                 {formatCurrency(pipeline?.quotes_value_won ?? overview?.quotes_won_value ?? 0)} /{" "}
                 {formatCurrency(pipeline?.quotes_value_lost ?? 0)}
               </p>
@@ -200,66 +200,66 @@ export function GlobalReportsClient() {
       </div>
 
       {/* Partner leaderboard + Export */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Partner leaderboard</h2>
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">Partner leaderboard</h2>
           </div>
           <div className="flex items-center gap-2">
             <a
               href={exportUrl("csv")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               <Download className="h-4 w-4" /> Export CSV
             </a>
             <a
               href={exportUrl("xlsx")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               <Download className="h-4 w-4" /> Export Excel
             </a>
             <Link
               href="/superadmin/analytics"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-vbt-blue px-3 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Full Analytics <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quotes</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Won</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Partner</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Quotes</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Won</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenue</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Conversion</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {leaderboard.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500">No partner data yet</td>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">No partner data yet</td>
                 </tr>
               ) : (
                 leaderboard.map((row) => (
-                  <tr key={row.partnerId} className="hover:bg-gray-50">
+                  <tr key={row.partnerId} className="hover:bg-muted/50">
                     <td className="px-5 py-3">
                       <Link
                         href={`/superadmin/partners/${row.partnerId}`}
-                        className="font-medium text-gray-900 hover:text-vbt-blue"
+                        className="font-medium text-foreground hover:text-primary"
                       >
                         {row.partnerName}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-right text-gray-900">{row.projects}</td>
-                    <td className="px-5 py-3 text-right text-gray-900">{row.quotes}</td>
-                    <td className="px-5 py-3 text-right text-gray-900">{row.quotes_accepted}</td>
-                    <td className="px-5 py-3 text-right font-medium text-gray-900">{formatCurrency(row.revenue)}</td>
-                    <td className="px-5 py-3 text-right text-gray-600">{row.conversionRate}%</td>
+                    <td className="px-5 py-3 text-right text-foreground">{row.projects}</td>
+                    <td className="px-5 py-3 text-right text-foreground">{row.quotes}</td>
+                    <td className="px-5 py-3 text-right text-foreground">{row.quotes_accepted}</td>
+                    <td className="px-5 py-3 text-right font-medium text-foreground">{formatCurrency(row.revenue)}</td>
+                    <td className="px-5 py-3 text-right text-muted-foreground">{row.conversionRate}%</td>
                   </tr>
                 ))
               )}
