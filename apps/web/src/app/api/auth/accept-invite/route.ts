@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { API_ROLE_TO_ORG } from "@vbt/core";
 import { z } from "zod";
+import crypto from "crypto";
 
 const acceptSchema = z.object({
   token: z.string().min(1, "Invalid token"),
@@ -51,16 +52,13 @@ export async function POST(req: Request) {
     if (!user) {
       const passwordHash = await bcrypt.hash(password, 12);
       const now = new Date();
-      user = await prisma.user.create({
-        data: {
-          email: emailNorm,
-          fullName: fullName.trim(),
-          passwordHash,
-          isActive: true,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
+      const id = crypto.randomUUID();
+      // Raw insert so created_at/updated_at are always set (Neon may lack DEFAULT on updated_at; Prisma can omit it on create)
+      await prisma.$executeRaw`
+        INSERT INTO users (id, full_name, email, password_hash, is_active, is_platform_superadmin, created_at, updated_at)
+        VALUES (${id}, ${fullName.trim()}, ${emailNorm}, ${passwordHash}, true, false, ${now}, ${now})
+      `;
+      user = { id };
     }
     // If user already exists (e.g. signed up meanwhile), add them to the org instead of failing
 
