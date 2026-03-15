@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowLeft, FileText, Plus, Pencil, Trash2, ShoppingCart } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useT } from "@/lib/i18n/context";
 
 type Country = { id: string; name: string; code: string };
 type Quote = {
@@ -40,6 +41,7 @@ type AuditEntry = { id: string; action: string; createdAt: string; userName: str
 type SaleRow = { id: string; saleNumber: string | null; status: string; landedDdpUsd: number };
 
 export function ProjectDetailClient({ initialProject }: { initialProject: Project }) {
+  const t = useT();
   const router = useRouter();
   const [project, setProject] = useState<Project>(initialProject);
   const [editOpen, setEditOpen] = useState(false);
@@ -189,8 +191,8 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
   };
 
   const formatAction = (action: string, meta: { changed?: string[] } | null) => {
-    if (action === "PROJECT_CREATED") return "Project created";
-    if (action === "PROJECT_UPDATED" && meta?.changed?.length) return `Updated: ${meta.changed.join(", ")}`;
+    if (action === "PROJECT_CREATED") return t("projects.logCreated");
+    if (action === "PROJECT_UPDATED" && meta?.changed?.length) return `${t("projects.logUpdated")}: ${meta.changed.join(", ")}`;
     return action.replace(/_/g, " ").toLowerCase();
   };
 
@@ -220,7 +222,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                 }`}>{statusLabel[(project as any).status] ?? (project as any).status}</span>
               )}
               {project.expectedCloseDate && (
-                <p className="text-gray-400 text-xs mt-0.5">Expected close: {new Date(project.expectedCloseDate).toLocaleDateString()}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString()}</p>
               )}
             </div>
           </div>
@@ -231,14 +233,14 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
             onClick={openEdit}
             className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> {t("common.edit")}
           </button>
           <button
             type="button"
             onClick={() => setDeleteDialog(true)}
             className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
           >
-            <Trash2 className="w-4 h-4" /> Delete
+            <Trash2 className="w-4 h-4" /> {t("common.delete")}
           </button>
         </div>
       </div>
@@ -246,13 +248,13 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {deleteDialog && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => !deleting && setDeleteDialog(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-lg text-gray-900 mb-2">Delete project?</h3>
+            <h3 className="font-semibold text-lg text-gray-900 mb-2">{t("projects.deleteProjectTitle")}</h3>
             <p className="text-gray-600 text-sm mb-4">
-              This will archive the project &quot;{projectName}&quot;. It will no longer appear in the active projects list. You can see this action in Project Logs.
+              {t("projects.deleteProjectMsg", { name: projectName })}
             </p>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setDeleteDialog(false)} disabled={deleting} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? "Deleting..." : "Delete"}</button>
+              <button type="button" onClick={() => setDeleteDialog(false)} disabled={deleting} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">{t("common.cancel")}</button>
+              <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? t("projects.deleting") : t("common.delete")}</button>
             </div>
           </div>
         </div>,
@@ -261,11 +263,11 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Project info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">Project details</h2>
+        <h2 className="font-semibold text-gray-800 mb-4">{t("projects.projectDetails")}</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           {(project.client?.name ?? (project as any).clientRecord?.name) && (
             <>
-              <dt className="text-gray-500">Client</dt>
+              <dt className="text-gray-500">{t("projects.client")}</dt>
               <dd className="text-gray-900 font-medium">
                 {(project.client?.id ?? (project as any).clientRecord?.id) ? (
                   <Link href={`/clients/${project.client?.id ?? (project as any).clientRecord?.id}`} className="text-vbt-blue hover:underline">
@@ -279,41 +281,41 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           )}
           {(project.city ?? project.countryCode) && (
             <>
-              <dt className="text-gray-500">Location</dt>
+              <dt className="text-gray-500">{t("projects.location")}</dt>
               <dd className="text-gray-900">{[project.city, project.countryCode].filter(Boolean).join(", ")}</dd>
             </>
           )}
           {project.address && (
             <>
-              <dt className="text-gray-500">Address</dt>
+              <dt className="text-gray-500">{t("projects.address")}</dt>
               <dd className="text-gray-900">{project.address}</dd>
             </>
           )}
           {(project.estimatedTotalAreaM2 != null || project.estimatedWallAreaM2 != null) && (
             <>
-              <dt className="text-gray-500">Est. area</dt>
+              <dt className="text-gray-500">{t("projects.estArea")}</dt>
               <dd className="text-gray-900">
-                {project.estimatedTotalAreaM2 != null && `${Number(project.estimatedTotalAreaM2).toFixed(1)} m² total`}
+                {project.estimatedTotalAreaM2 != null && t("projects.estAreaTotal", { value: Number(project.estimatedTotalAreaM2).toFixed(1) })}
                 {project.estimatedTotalAreaM2 != null && project.estimatedWallAreaM2 != null && " · "}
-                {project.estimatedWallAreaM2 != null && `${Number(project.estimatedWallAreaM2).toFixed(1)} m² wall`}
+                {project.estimatedWallAreaM2 != null && t("projects.estAreaWall", { value: Number(project.estimatedWallAreaM2).toFixed(1) })}
               </dd>
             </>
           )}
           {project.expectedCloseDate && (
             <>
-              <dt className="text-gray-500">Expected close</dt>
+              <dt className="text-gray-500">{t("projects.expectedClose").replace(/:?\s*$/, "")}</dt>
               <dd className="text-gray-900">{new Date(project.expectedCloseDate).toLocaleDateString()}</dd>
             </>
           )}
           {project.description && (
             <>
-              <dt className="text-gray-500 sm:col-span-1">Description</dt>
+              <dt className="text-gray-500 sm:col-span-1">{t("projects.description")}</dt>
               <dd className="text-gray-900 sm:col-span-2">{project.description}</dd>
             </>
           )}
           {(project as any).status && (
             <>
-              <dt className="text-gray-500">Status</dt>
+              <dt className="text-gray-500">{t("common.status")}</dt>
               <dd className="text-gray-900 font-medium">{statusLabel[(project as any).status] ?? (project as any).status}</dd>
             </>
           )}
@@ -323,18 +325,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {/* Quotes */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Quotes ({project.quotes.length})</h2>
+          <h2 className="font-semibold text-gray-800">{t("projects.quotesWithCount", { count: project.quotes.length })}</h2>
           <Link
             href={`/quotes/create?projectId=${project.id}`}
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
           >
-            <Plus className="w-3.5 h-3.5" /> New Quote
+            <Plus className="w-3.5 h-3.5" /> {t("quotes.newQuote")}
           </Link>
         </div>
         {project.quotes.length === 0 ? (
           <div className="p-10 text-center">
             <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">No quotes for this project</p>
+            <p className="text-gray-400 text-sm">{t("projects.noQuotesForProject")}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -362,18 +364,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {/* Sales */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Sales ({sales.length})</h2>
+          <h2 className="font-semibold text-gray-800">{t("projects.salesWithCount", { count: sales.length })}</h2>
           <Link
             href={`/sales/new?projectId=${project.id}&clientId=${(project as any).clientId ?? (project as any).clientRecord?.id ?? ""}`}
             className="inline-flex items-center gap-2 px-3 py-1.5 border border-vbt-orange text-vbt-orange rounded-lg text-sm font-medium hover:bg-orange-50"
           >
-            <ShoppingCart className="w-3.5 h-3.5" /> New sale
+            <ShoppingCart className="w-3.5 h-3.5" /> {t("projects.newSale")}
           </Link>
         </div>
         {sales.length === 0 ? (
           <div className="p-10 text-center">
             <ShoppingCart className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">No sales for this project</p>
+            <p className="text-gray-400 text-sm">{t("projects.noSalesForProject")}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -397,14 +399,14 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {/* Activity / Change log */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">Activity</h2>
-          <p className="text-gray-500 text-xs mt-0.5">Changes and who made them</p>
+          <h2 className="font-semibold text-gray-800">{t("projects.activity")}</h2>
+          <p className="text-gray-500 text-xs mt-0.5">{t("projects.changesAndWho")}</p>
         </div>
         <div className="p-5">
           {loadingAudit ? (
-            <p className="text-gray-400 text-sm">Loading...</p>
+            <p className="text-gray-400 text-sm">{t("common.loading")}</p>
           ) : auditLog.length === 0 ? (
-            <p className="text-gray-400 text-sm">No activity yet</p>
+            <p className="text-gray-400 text-sm">{t("projects.noActivityYet")}</p>
           ) : (
             <ul className="space-y-3 text-sm">
               {auditLog.map((entry) => (
@@ -423,14 +425,14 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {editOpen && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-lg mb-4">Edit project</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("projects.editProject")}</h3>
             <div className="space-y-3 text-sm">
               <div>
-                <label className="block text-gray-700 mb-1">Project name *</label>
+                <label className="block text-gray-700 mb-1">{t("projects.projectNameLabel")}</label>
                 <input value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Status</label>
+                <label className="block text-gray-700 mb-1">{t("common.status")}</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
                   <option value="lead">Lead</option>
                   <option value="qualified">Qualified</option>
@@ -493,7 +495,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-              <button type="button" onClick={saveEdit} disabled={saving || !form.projectName?.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
+              <button type="button" onClick={saveEdit} disabled={saving || !form.projectName?.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-50">{saving ? t("common.saving") : t("common.save")}</button>
             </div>
           </div>
         </div>,
@@ -510,7 +512,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                 value={newClientForm.name}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-                placeholder="Company name"
+                placeholder={t("projects.companyNamePlaceholder")}
               />
             </div>
             <div>
@@ -551,7 +553,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
             </div>
             <div className="flex gap-2 pt-2 justify-end">
               <button type="button" onClick={() => setNewClientOpen(false)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button type="button" onClick={saveNewClient} disabled={savingClient || !newClientForm.name.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50">{savingClient ? "Saving..." : "Create client"}</button>
+              <button type="button" onClick={saveNewClient} disabled={savingClient || !newClientForm.name.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50">{savingClient ? t("common.saving") : t("projects.createClient")}</button>
             </div>
           </div>
         </div>,

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-
-const PARTNER_TYPES = [
-  { value: "commercial_partner", label: "Commercial partner" },
-  { value: "master_partner", label: "Master partner" },
-] as const;
-
-const FEE_MODES = [
-  { value: "fixed", label: "Fixed" },
-  { value: "percent", label: "Percent" },
-  { value: "per_request", label: "Per request" },
-  { value: "included", label: "Included" },
-] as const;
+import { useT } from "@/lib/i18n/context";
 
 export function CreatePartnerForm() {
+  const t = useT();
+  const PARTNER_TYPES = useMemo(() => [
+    { value: "commercial_partner", label: t("superadmin.partners.commercialPartner") },
+    { value: "master_partner", label: t("superadmin.partners.masterPartner") },
+  ] as const, [t]);
+  const FEE_MODES = useMemo(() => [
+    { value: "fixed", label: "Fixed" },
+    { value: "percent", label: "Percent" },
+    { value: "per_request", label: t("superadmin.partners.billingPerRequest") },
+    { value: "included", label: "Included" },
+  ] as const, [t]);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function CreatePartnerForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error?.message ?? data?.error ?? "Failed to create partner");
+        setError(data?.error?.message ?? data?.error ?? t("superadmin.partners.failedToCreate"));
         return;
       }
       if (form.sendInvite && contactEmailTrimmed) {
@@ -91,7 +91,7 @@ export function CreatePartnerForm() {
       router.push(`/superadmin/partners/${data.id}`);
       router.refresh();
     } catch (e) {
-      setError("Failed to create partner");
+      setError(t("superadmin.partners.failedToCreate"));
     } finally {
       setSaving(false);
     }
@@ -242,7 +242,7 @@ export function CreatePartnerForm() {
           disabled={saving || !form.companyName.trim()}
           className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90 disabled:opacity-50"
         >
-          {saving ? "Creating..." : "Create partner"}
+          {saving ? t("superadmin.partners.creating") : t("superadmin.partners.createPartner")}
         </button>
         <button
           type="button"

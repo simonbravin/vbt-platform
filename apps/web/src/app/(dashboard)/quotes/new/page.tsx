@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
@@ -10,15 +10,7 @@ import { Step3MaterialCost } from "@/components/quotes/step3-material";
 import { Step4Commission } from "@/components/quotes/step4-commission";
 import { Step5Destination } from "@/components/quotes/step5-destination";
 import { Step6Preview } from "@/components/quotes/step6-preview";
-
-const STEPS = [
-  { num: 1, label: "Method" },
-  { num: 2, label: "Import" },
-  { num: 3, label: "Material" },
-  { num: 4, label: "Commission" },
-  { num: 5, label: "Destination" },
-  { num: 6, label: "Preview" },
-];
+import { useT } from "@/lib/i18n/context";
 
 export interface QuoteWizardState {
   // Step 1
@@ -75,13 +67,21 @@ const initialState: QuoteWizardState = {
   freightCostUsd: 0,
 };
 
+const STEP_KEYS = ["quotes.stepMethod", "quotes.stepImport", "quotes.stepMaterial", "quotes.stepCommission", "quotes.stepDestination", "quotes.stepPreview"] as const;
+
 export default function NewQuotePage() {
+  const t = useT();
   const router = useRouter();
   const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [state, setState] = useState<QuoteWizardState>(initialState);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const STEPS = useMemo(
+    () => [1, 2, 3, 4, 5, 6].map((num, i) => ({ num, label: t(STEP_KEYS[i]) })),
+    [t]
+  );
 
   const update = useCallback((patch: Partial<QuoteWizardState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -133,13 +133,13 @@ export default function NewQuotePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Failed to create quote");
+        setError(data.error ?? t("quotes.failedCreate"));
         return;
       }
 
       router.push(`/quotes/${data.id}`);
     } catch (e) {
-      setError("An unexpected error occurred");
+      setError(t("auth.errorUnexpected"));
     } finally {
       setSubmitting(false);
     }
@@ -153,8 +153,8 @@ export default function NewQuotePage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">New Quote</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Follow the steps to create a cost quote</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("quotes.newQuoteTitle")}</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{t("quotes.newQuoteSubtitle")}</p>
       </div>
 
       {/* Step indicators */}
@@ -224,7 +224,7 @@ export default function NewQuotePage() {
           className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Previous
+          {t("quotes.previous")}
         </button>
 
         {step < 6 ? (
@@ -233,7 +233,7 @@ export default function NewQuotePage() {
             disabled={!canAdvance()}
             className="inline-flex items-center gap-2 px-5 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Next
+            {t("quotes.next")}
             <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
@@ -242,7 +242,7 @@ export default function NewQuotePage() {
             disabled={submitting}
             className="inline-flex items-center gap-2 px-6 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "Creating..." : "Create Quote"}
+            {submitting ? t("quotes.creating") : t("quotes.createQuote")}
             <Check className="w-4 h-4" />
           </button>
         )}

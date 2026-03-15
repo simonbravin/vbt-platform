@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Target } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useT } from "@/lib/i18n/context";
 
 type GoalData = {
   salesTargetAnnualUsd: number | null;
@@ -11,6 +12,7 @@ type GoalData = {
 };
 
 export function GoalKpiCard() {
+  const t = useT();
   const [data, setData] = useState<GoalData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,14 +34,14 @@ export function GoalKpiCard() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <div className="bg-card rounded-xl p-5 shadow-sm border border-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-            <Target className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+            <Target className="w-5 h-5 text-primary" />
           </div>
-          <span className="text-gray-500 text-sm">Sales goal (YTD)</span>
+          <span className="text-muted-foreground text-sm">{t("dashboard.goalTitle")}</span>
         </div>
-        <div className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+        <div className="h-8 bg-muted rounded-lg animate-pulse" />
       </div>
     );
   }
@@ -51,31 +53,31 @@ export function GoalKpiCard() {
   const exceeded = hasTarget && ytd >= target;
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+    <div className="bg-card rounded-xl p-5 shadow-sm border border-border">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-          <Target className="w-5 h-5 text-indigo-600" />
+        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+          <Target className="w-5 h-5 text-primary" />
         </div>
-        <span className="text-gray-500 text-sm font-medium">Sales goal (YTD)</span>
+        <span className="text-muted-foreground text-sm font-medium">{t("dashboard.goalTitle")}</span>
       </div>
       {!hasTarget ? (
         <>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(ytd)}</p>
-          <p className="text-gray-500 text-sm mt-0.5">No annual target set</p>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(ytd)}</p>
+          <p className="text-muted-foreground text-sm mt-0.5">{t("dashboard.goalNoTarget")}</p>
         </>
       ) : (
         <>
-          <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(ytd)} <span className="text-gray-400 font-normal text-lg">/ {formatCurrency(target)}</span>
+          <p className="text-2xl font-bold text-foreground">
+            {formatCurrency(ytd)} <span className="text-muted-foreground font-normal text-lg">/ {formatCurrency(target)}</span>
           </p>
-          <div className="mt-2 h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div className="mt-2 h-2.5 w-full bg-muted rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${exceeded ? "bg-emerald-500" : "bg-indigo-500"}`}
+              className={`h-full rounded-full transition-all ${exceeded ? "bg-primary" : "bg-vbt-orange"}`}
               style={{ width: `${percent}%` }}
             />
           </div>
-          <p className="text-gray-500 text-sm mt-1">
-            {exceeded ? "Target reached" : `${percent.toFixed(0)}% of annual target`}
+          <p className="text-muted-foreground text-sm mt-1">
+            {exceeded ? t("dashboard.goalReached") : t("dashboard.goalProgress", { percent: percent.toFixed(0) })}
           </p>
         </>
       )}

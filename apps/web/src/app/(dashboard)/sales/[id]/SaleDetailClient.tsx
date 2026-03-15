@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency, parseJsonSafe } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 const DUE_SOON_DAYS = 7;
 
@@ -59,6 +60,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export function SaleDetailClient({ saleId }: { saleId: string }) {
+  const t = useT();
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -127,7 +129,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         }),
       });
       const data = parseJsonSafe<{ error?: string }>(await res.text());
-      if (!res.ok) throw new Error(data.error ?? "Failed to add payment");
+      if (!res.ok) throw new Error(data.error ?? t("partner.sales.failedToAddPayment"));
       setPaymentOpen(false);
       setPayAmountUsd("");
       setPayAmountLocal("");
@@ -190,7 +192,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
           body: JSON.stringify(body),
         });
         const data = parseJsonSafe<{ error?: string }>(await res.text());
-        if (!res.ok) throw new Error(data.error ?? "Failed to update invoice");
+        if (!res.ok) throw new Error(data.error ?? t("partner.sales.failedToUpdateInvoice"));
       } else {
         const res = await fetch(`/api/sales/${saleId}/invoices`, {
           method: "POST",
@@ -198,7 +200,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
           body: JSON.stringify(body),
         });
         const data = parseJsonSafe<{ error?: string }>(await res.text());
-        if (!res.ok) throw new Error(data.error ?? "Failed to add invoice");
+        if (!res.ok) throw new Error(data.error ?? t("partner.sales.failedToAddInvoice"));
       }
       setInvoiceModalMode(null);
       refetchSale();
@@ -220,10 +222,10 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         refetchSale();
       } else {
         const data = parseJsonSafe<{ error?: string }>(await res.text());
-        setDeleteInvoiceError(data.error ?? "Failed to remove invoice");
+        setDeleteInvoiceError(data.error ?? t("partner.sales.failedToRemoveInvoice"));
       }
     } catch {
-      setDeleteInvoiceError("Failed to remove invoice");
+      setDeleteInvoiceError(t("partner.sales.failedToRemoveInvoice"));
     } finally {
       setDeletingInvoice(false);
     }
@@ -240,10 +242,10 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         refetchSale();
       } else {
         const data = parseJsonSafe<{ error?: string }>(await res.text());
-        setDeletePaymentError(data.error ?? "Failed to remove payment");
+        setDeletePaymentError(data.error ?? t("partner.sales.failedToRemovePayment"));
       }
     } catch {
-      setDeletePaymentError("Failed to remove payment");
+      setDeletePaymentError(t("partner.sales.failedToRemovePayment"));
     } finally {
       setDeletingPayment(false);
     }
@@ -260,9 +262,9 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         return;
       }
       const data = parseJsonSafe<{ error?: string }>(await res.text());
-      setDeleteSaleError(data.error ?? "Failed to delete sale");
+      setDeleteSaleError(data.error ?? t("partner.sales.failedToDeleteSale"));
     } catch {
-      setDeleteSaleError("Failed to delete sale");
+      setDeleteSaleError(t("partner.sales.failedToDeleteSale"));
     } finally {
       setDeletingSale(false);
     }
@@ -271,7 +273,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
   if (loading || !sale) {
     return (
       <div className="flex items-center justify-center py-12">
-        {loading ? <p className="text-gray-500">Loading...</p> : <p className="text-gray-500">Sale not found</p>}
+        {loading ? <p className="text-gray-500">{t("partner.sales.loading")}</p> : <p className="text-gray-500">{t("partner.sales.saleNotFound")}</p>}
       </div>
     );
   }

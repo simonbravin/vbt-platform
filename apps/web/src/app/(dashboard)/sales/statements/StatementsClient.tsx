@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
 import { ArrowLeft, Download, FileText, Mail } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Statement = {
   client: { id: string; name: string };
@@ -17,6 +18,7 @@ type Statement = {
 type Entity = { id: string; name: string; slug: string };
 
 export function StatementsClient() {
+  const t = useT();
   const [data, setData] = useState<{ statements: Statement[]; entities: Entity[]; filters: any } | null>(null);
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState("");
@@ -101,10 +103,10 @@ export function StatementsClient() {
         setEmailTo("");
         setEmailMessage("");
       } else {
-        setEmailResult({ type: "error", text: data.error ?? "Failed to send email" });
+        setEmailResult({ type: "error", text: data.error ?? t("partner.sales.failedToSendEmail") });
       }
     } catch {
-      setEmailResult({ type: "error", text: "Failed to send email" });
+      setEmailResult({ type: "error", text: t("partner.sales.failedToSendEmail") });
     } finally {
       setEmailSending(false);
     }
@@ -174,9 +176,9 @@ export function StatementsClient() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-gray-500">{t("partner.sales.loading")}</div>
         ) : !data?.statements?.length ? (
-          <div className="p-8 text-center text-gray-500">No data for the selected filters</div>
+          <div className="p-8 text-center text-gray-500">{t("partner.sales.noDataForFilters")}</div>
         ) : (
           <div className="p-4 space-y-6">
             {data.statements.map((st) => (

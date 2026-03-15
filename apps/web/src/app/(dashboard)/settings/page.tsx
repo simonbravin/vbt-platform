@@ -1,9 +1,15 @@
 import { requireAuth } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Users, Warehouse, Truck, TrendingUp, DollarSign } from "lucide-react";
+import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
+import type { Locale } from "@/lib/i18n/translations";
 
 export default async function SettingsHubPage() {
+  const cookieStore = await cookies();
+  const locale = (cookieStore.get(LOCALE_COOKIE_NAME)?.value === "es" ? "es" : "en") as Locale;
+  const t = getT(locale);
   try {
     await requireAuth();
   } catch {
@@ -12,10 +18,8 @@ export default async function SettingsHubPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Organization settings, team, and operational configuration.
-        </p>
+        <h1 className="text-2xl font-semibold text-gray-900">{t("partner.settings.title")}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t("partner.settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -27,9 +31,9 @@ export default async function SettingsHubPage() {
             <Users className="h-6 w-6 text-vbt-blue" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">Team</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Manage members and invite by email.</p>
-            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">Open →</span>
+            <h2 className="font-semibold text-gray-900">{t("partner.settings.team")}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.teamDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">{t("partner.settings.open")}</span>
           </div>
         </Link>
 
@@ -39,9 +43,9 @@ export default async function SettingsHubPage() {
               <Warehouse className="h-6 w-6 text-gray-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-700">Warehouses</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Configure warehouses when enabled for your organization.</p>
-              <p className="mt-2 text-xs text-gray-400">Available in Admin when enabled.</p>
+              <h2 className="font-semibold text-gray-700">{t("partner.settings.warehouses")}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.warehousesDescription")}</p>
+              <p className="mt-2 text-xs text-gray-400">{t("partner.settings.availableInAdmin")}</p>
             </div>
           </div>
         </div>
@@ -52,9 +56,9 @@ export default async function SettingsHubPage() {
               <Truck className="h-6 w-6 text-gray-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-700">Freight rates</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Freight rules when enabled for your organization.</p>
-              <p className="mt-2 text-xs text-gray-400">Available in Admin when enabled.</p>
+              <h2 className="font-semibold text-gray-700">{t("partner.settings.freightRates")}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.freightRatesDescription")}</p>
+              <p className="mt-2 text-xs text-gray-400">{t("partner.settings.availableInAdmin")}</p>
             </div>
           </div>
         </div>
@@ -65,9 +69,9 @@ export default async function SettingsHubPage() {
               <TrendingUp className="h-6 w-6 text-gray-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-700">Tax rules</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Tax configuration when enabled for your organization.</p>
-              <p className="mt-2 text-xs text-gray-400">Available in Admin when enabled.</p>
+              <h2 className="font-semibold text-gray-700">{t("partner.settings.taxRules")}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.taxRulesDescription")}</p>
+              <p className="mt-2 text-xs text-gray-400">{t("partner.settings.availableInAdmin")}</p>
             </div>
           </div>
         </div>
@@ -78,9 +82,9 @@ export default async function SettingsHubPage() {
               <DollarSign className="h-6 w-6 text-gray-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-700">Pricing</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Partner-specific markup and pricing when allowed.</p>
-              <p className="mt-2 text-xs text-gray-400">Configured per partner by platform admin.</p>
+              <h2 className="font-semibold text-gray-700">{t("partner.settings.pricing")}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.pricingDescription")}</p>
+              <p className="mt-2 text-xs text-gray-400">{t("partner.settings.configuredByAdmin")}</p>
             </div>
           </div>
         </div>

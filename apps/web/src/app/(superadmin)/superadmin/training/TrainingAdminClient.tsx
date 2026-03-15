@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BookOpen, Users } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type TrainingProgram = {
   id: string;
@@ -25,6 +26,7 @@ type Enrollment = {
 };
 
 export function TrainingAdminClient() {
+  const t = useT();
   const [programs, setPrograms] = useState<TrainingProgram[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [enrollmentsTotal, setEnrollmentsTotal] = useState(0);
@@ -41,7 +43,7 @@ export function TrainingAdminClient() {
         const data = await res.json();
         if (!cancelled) setPrograms(Array.isArray(data) ? data : []);
       } catch {
-        if (!cancelled) setError("Failed to load programs");
+        if (!cancelled) setError(t("superadmin.training.failedToLoadPrograms"));
       } finally {
         if (!cancelled) setLoadingPrograms(false);
       }
@@ -56,7 +58,7 @@ export function TrainingAdminClient() {
       try {
         const res = await fetch("/api/saas/training/enrollments?limit=100");
         if (!res.ok) {
-          if (!cancelled) setError("Failed to load enrollments");
+          if (!cancelled) setError(t("superadmin.training.failedToLoadEnrollments"));
           return;
         }
         const data = await res.json();
@@ -65,7 +67,7 @@ export function TrainingAdminClient() {
           setEnrollmentsTotal(data.total ?? 0);
         }
       } catch {
-        if (!cancelled) setError("Failed to load enrollments");
+        if (!cancelled) setError(t("superadmin.training.failedToLoadEnrollments"));
       } finally {
         if (!cancelled) setLoadingEnrollments(false);
       }
@@ -85,12 +87,12 @@ export function TrainingAdminClient() {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Training programs</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.programs")}</h2>
         </div>
         {loadingPrograms ? (
-          <div className="p-8 text-center text-sm text-gray-500">Loading programs...</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
         ) : programs.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">No programs yet</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("superadmin.training.noProgramsYet")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -125,12 +127,12 @@ export function TrainingAdminClient() {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <Users className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Enrollments</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.enrollments")}</h2>
         </div>
         {loadingEnrollments ? (
-          <div className="p-8 text-center text-sm text-gray-500">Loading enrollments...</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
         ) : enrollments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">No enrollments yet</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("superadmin.training.noEnrollmentsYet")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Globe, Plus, Pencil } from "lucide-react";
+import { Globe, Plus } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 export default function CountriesPage() {
+  const t = useT();
   const [countries, setCountries] = useState<any[]>([]);
   const [newForm, setNewForm] = useState({ code: "", name: "" });
   const [adding, setAdding] = useState(false);
@@ -41,12 +43,12 @@ export default function CountriesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Countries</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("admin.countries.title")}</h1>
         <button
           onClick={() => setShowAdd(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
         >
-          <Plus className="w-4 h-4" /> Add Country
+          <Plus className="w-4 h-4" /> {t("admin.countries.add")}
         </button>
       </div>
 
@@ -67,7 +69,7 @@ export default function CountriesPage() {
                 onClick={() => toggle(c.id, c.isActive)}
                 className={`px-2 py-1 rounded text-xs font-medium ${c.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
               >
-                {c.isActive ? "Active" : "Inactive"}
+                {c.isActive ? t("admin.countries.active") : t("admin.countries.inactive")}
               </button>
             </div>
           </div>
@@ -77,34 +79,34 @@ export default function CountriesPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
-            <h3 className="font-semibold text-lg mb-4">Add Country</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("admin.countries.modalTitle")}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country Code (ISO2)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.countries.code")}</label>
                 <input
                   type="text"
                   maxLength={2}
                   value={newForm.code}
                   onChange={(e) => setNewForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
-                  placeholder="e.g., MX"
+                  placeholder={t("admin.countries.codePlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.countries.countryName")}</label>
                 <input
                   type="text"
                   value={newForm.name}
                   onChange={(e) => setNewForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g., Mexico"
+                  placeholder={t("admin.countries.namePlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
               <button onClick={addCountry} disabled={adding} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm">
-                {adding ? "Adding..." : "Add"}
+                {adding ? t("admin.countries.adding") : t("common.add")}
               </button>
             </div>
           </div>

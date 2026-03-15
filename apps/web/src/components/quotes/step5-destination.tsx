@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import { useT } from "@/lib/i18n/context";
 
 interface Props {
   state: QuoteWizardState;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function Step5Destination({ state, update }: Props) {
+  const t = useT();
   const [countries, setCountries] = useState<any[]>([]);
   const [freightProfiles, setFreightProfiles] = useState<any[]>([]);
   const [taxRuleSets, setTaxRuleSets] = useState<any[]>([]);
@@ -77,13 +79,13 @@ export function Step5Destination({ state, update }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800">Step 5: Destination & Costs</h2>
-        <p className="text-sm text-gray-500 mt-1">Select destination country, freight, and tax rules.</p>
+        <h2 className="text-lg font-semibold text-gray-800">{t("wizard.step5Title")}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t("wizard.step5Desc")}</p>
       </div>
 
       {/* Country */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Destination Country</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.destinationCountry")}</label>
         <select
           value={state.countryId ?? ""}
           onChange={(e) => {
@@ -94,7 +96,7 @@ export function Step5Destination({ state, update }: Props) {
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
         >
-          <option value="">Select country...</option>
+          <option value="">{t("wizard.selectCountry")}</option>
           {countries.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name} ({c.code})
@@ -106,11 +108,11 @@ export function Step5Destination({ state, update }: Props) {
       {/* Freight */}
       {state.countryId && (
         <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-          <h3 className="font-medium text-gray-700">Freight</h3>
+          <h3 className="font-medium text-gray-700">{t("wizard.freightLabel")}</h3>
 
           {freightProfiles.length > 0 && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Freight Profile</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.freightProfile")}</label>
               <select
                 value={state.freightProfileId ?? ""}
                 onChange={(e) => {
@@ -122,11 +124,11 @@ export function Step5Destination({ state, update }: Props) {
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
               >
-                <option value="">Manual entry</option>
+                <option value="">{t("wizard.manualEntry")}</option>
                 {freightProfiles.map((p: any) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} – {fmt(p.freightPerContainer)}/container
-                    {p.isDefault ? " (default)" : ""}
+                    {p.name} – {fmt(p.freightPerContainer)}{t("wizard.perContainerSuffix")}
+                    {p.isDefault ? t("wizard.defaultSuffix") : ""}
                   </option>
                 ))}
               </select>
@@ -140,8 +142,8 @@ export function Step5Destination({ state, update }: Props) {
                 if (exp >= today) return null;
                 return (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                    <p className="font-medium">This freight rate has expired ({exp.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}).</p>
-                    <p className="text-amber-700 text-xs mt-0.5">Consider re-quoting with the carrier. You can still continue with this quote.</p>
+                    <p className="font-medium">{t("wizard.freightExpired")} ({exp.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}).</p>
+                    <p className="text-amber-700 text-xs mt-0.5">{t("wizard.considerRequote")}</p>
                   </div>
                 );
               })()}
@@ -150,9 +152,9 @@ export function Step5Destination({ state, update }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Total Freight (USD){" "}
+              {t("wizard.totalFreightUsd")}{" "}
               {state.numContainers > 0 && (
-                <span className="text-gray-400 font-normal">for {state.numContainers} container(s)</span>
+                <span className="text-gray-400 font-normal">{t("wizard.forContainers", { count: state.numContainers })}</span>
               )}
             </label>
             <div className="relative">
@@ -171,7 +173,7 @@ export function Step5Destination({ state, update }: Props) {
           </div>
 
           <div className="flex justify-between pt-2 border-t text-sm">
-            <span className="text-gray-500">CIF = FOB + Freight</span>
+            <span className="text-gray-500">{t("wizard.cifFobFreight")}</span>
             <span className="font-semibold">{fmt(cif)}</span>
           </div>
         </div>
@@ -180,16 +182,16 @@ export function Step5Destination({ state, update }: Props) {
       {/* Tax Rules */}
       {state.countryId && taxRuleSets.length > 0 && (
         <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-          <h3 className="font-medium text-gray-700">Tax Rules</h3>
+          <h3 className="font-medium text-gray-700">{t("wizard.taxRules")}</h3>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rule Set</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.taxRuleSet")}</label>
             <select
               value={state.taxRuleSetId ?? ""}
               onChange={(e) => update({ taxRuleSetId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
             >
-              <option value="">No tax rules</option>
+              <option value="">{t("wizard.noTaxRules")}</option>
               {taxRuleSets.map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -201,24 +203,24 @@ export function Step5Destination({ state, update }: Props) {
           {/* Tax preview (excludes Local Margin; we add Commission (fixed); labels "per order" for totals) */}
           {(taxPreview.length > 0 || state.commissionFixed > 0) && (
             <div className="space-y-2">
-              <p className="text-xs text-gray-400 uppercase font-medium">Tax & Fees Preview</p>
-              {taxPreview.map((t, i) => {
-                const displayLabel = (t.label ?? "").replace(/\s*\(per container\)/gi, " (per order)");
+              <p className="text-xs text-gray-400 uppercase font-medium">{t("wizard.taxFeesPreview")}</p>
+              {taxPreview.map((tax, i) => {
+                const displayLabel = (tax.label ?? "").replace(/\s*\(per container\)/gi, " (per order)");
                 return (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-600">{displayLabel}</span>
-                    <span className="font-medium">{fmt(t.amount)}</span>
+                    <span className="font-medium">{fmt(tax.amount)}</span>
                   </div>
                 );
               })}
               {state.commissionFixed > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Commission (fixed, in taxes & fees)</span>
+                  <span className="text-gray-600">{t("wizard.commissionFixedTaxes")}</span>
                   <span className="font-medium">{fmt(state.commissionFixed)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-semibold pt-2 border-t">
-                <span className="text-gray-700">Total Taxes & Fees</span>
+                <span className="text-gray-700">{t("wizard.totalTaxesFees")}</span>
                 <span>{fmt(totalTaxes)}</span>
               </div>
             </div>
@@ -231,9 +233,9 @@ export function Step5Destination({ state, update }: Props) {
         <div className="bg-vbt-blue rounded-xl p-5">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-white/70 text-sm">Landed / DDP Total</p>
+              <p className="text-white/70 text-sm">{t("wizard.landedDdpTotal")}</p>
               <p className="text-white/50 text-xs mt-0.5">
-                CIF + all taxes & fees
+                {t("wizard.cifAllTaxes")}
               </p>
             </div>
             <p className="text-3xl font-bold text-white">{fmt(landedDdp)}</p>
@@ -243,12 +245,12 @@ export function Step5Destination({ state, update }: Props) {
 
       {/* Notes */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.notesOptional")}</label>
         <textarea
           rows={3}
           value={state.notes ?? ""}
           onChange={(e) => update({ notes: e.target.value })}
-          placeholder="Additional notes for this quote..."
+          placeholder={t("wizard.additionalNotesQuote")}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue resize-none"
         />
       </div>

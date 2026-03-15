@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, User } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 const ROLES = ["SUPERADMIN", "ADMIN", "SALES", "VIEWER"] as const;
 
+const ROLE_KEYS: Record<string, string> = {
+  SUPERADMIN: "admin.users.roleSuperadmin",
+  ADMIN: "admin.users.roleAdmin",
+  SALES: "admin.users.roleSales",
+  VIEWER: "admin.users.roleViewer",
+};
+const STATUS_KEYS: Record<string, string> = {
+  PENDING: "admin.users.statusPending",
+  ACTIVE: "admin.users.statusActive",
+  REJECTED: "admin.users.statusRejected",
+  SUSPENDED: "admin.users.statusSuspended",
+};
+
 export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
+  const t = useT();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
@@ -65,20 +80,24 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
     VIEWER: "bg-gray-100 text-gray-600",
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading...</div>;
+  const tableHeaders = [t("admin.users.user"), t("admin.users.status"), t("admin.users.role"), t("admin.users.joined"), t("admin.users.actions")];
+  const statusLabel = (status: string) => t(STATUS_KEYS[status] ?? status);
+  const roleLabel = (role: string) => (role === "—" ? "—" : t(ROLE_KEYS[role] ?? role));
+
+  if (loading) return <div className="p-8 text-center text-gray-400">{t("common.loading")}</div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-500 text-sm mt-0.5">{users.filter(u => u.status === "PENDING").length} pending approvals</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("admin.users.title")}</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{users.filter(u => u.status === "PENDING").length} {t("admin.users.pending")}</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {["User", "Status", "Role", "Joined", "Actions"].map((h) => (
+              {tableHeaders.map((h) => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -102,7 +121,7 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[u.status] ?? "bg-gray-100 text-gray-600"}`}>
-                      {u.status}
+                      {statusLabel(u.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -114,12 +133,12 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
                         className={`text-xs px-2 py-1 rounded-full font-medium border-0 cursor-pointer ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-600"}`}
                       >
                         {ROLES.map((r) => (
-                          <option key={r} value={r}>{r}</option>
+                          <option key={r} value={r}>{t(ROLE_KEYS[r])}</option>
                         ))}
                       </select>
                     ) : (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-600"}`}>
-                        {role}
+                        {roleLabel(role)}
                       </span>
                     )}
                   </td>
@@ -133,13 +152,13 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
                           onClick={() => approve(u.id)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                         >
-                          <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          <CheckCircle className="w-3.5 h-3.5" /> {t("admin.users.approve")}
                         </button>
                         <button
                           onClick={() => reject(u.id)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
                         >
-                          <XCircle className="w-3.5 h-3.5" /> Reject
+                          <XCircle className="w-3.5 h-3.5" /> {t("admin.users.reject")}
                         </button>
                       </div>
                     )}

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useT } from "@/lib/i18n/context";
 
 type InviteInfo = {
   partnerName: string;
@@ -14,6 +15,7 @@ type InviteInfo = {
 function InviteAcceptContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useT();
   const token = searchParams.get("token");
 
   const [invite, setInvite] = useState<InviteInfo | null>(null);
@@ -28,15 +30,15 @@ function InviteAcceptContent() {
 
   useEffect(() => {
     if (!token?.trim()) {
-      setError("Missing invitation link.");
+      setError(t("auth.inviteMissingLink"));
       setLoading(false);
       return;
     }
     fetch(`/api/auth/invite-by-token?token=${encodeURIComponent(token)}`)
       .then((r) => {
         if (!r.ok) {
-          if (r.status === 404) setError("This invitation is invalid or has expired.");
-          else setError("Could not load invitation.");
+          if (r.status === 404) setError(t("auth.inviteInvalid"));
+          else setError(t("auth.inviteLoadError"));
           return null;
         }
         return r.json();
@@ -46,10 +48,10 @@ function InviteAcceptContent() {
         setLoading(false);
       })
       .catch(() => {
-        setError("Could not load invitation.");
+        setError(t("auth.inviteLoadError"));
         setLoading(false);
       });
-  }, [token]);
+  }, [token, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,13 +70,14 @@ function InviteAcceptContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitError(data.error ?? "Something went wrong.");
+        setSubmitError(data.error ?? t("auth.errorGeneric"));
         return;
       }
       setSuccess(true);
-      setTimeout(() => router.push("/login?message=Account+created.+Sign+in+now."), 2000);
+      const msg = encodeURIComponent(t("auth.inviteMessageCreated"));
+      setTimeout(() => router.push(`/login?message=${msg}`), 2000);
     } catch {
-      setSubmitError("Something went wrong. Please try again.");
+      setSubmitError(t("auth.errorGeneric"));
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +87,7 @@ function InviteAcceptContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <p className="text-gray-600">Loading invitation...</p>
+          <p className="text-gray-600">{t("auth.inviteLoading")}</p>
         </div>
       </div>
     );
@@ -94,9 +97,9 @@ function InviteAcceptContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <p className="text-red-600 mb-4">{error ?? "Invalid invitation."}</p>
+          <p className="text-red-600 mb-4">{error ?? t("auth.inviteInvalidShort")}</p>
           <Link href="/login" className="text-vbt-orange hover:underline font-medium">
-            Go to sign in
+            {t("auth.inviteGoSignIn")}
           </Link>
         </div>
       </div>
@@ -107,8 +110,8 @@ function InviteAcceptContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <p className="text-green-700 font-medium">Account created successfully.</p>
-          <p className="text-gray-600 text-sm mt-2">Redirecting you to sign in...</p>
+          <p className="text-green-700 font-medium">{t("auth.inviteAccountCreated")}</p>
+          <p className="text-gray-600 text-sm mt-2">{t("auth.inviteRedirecting")}</p>
         </div>
       </div>
     );
@@ -127,15 +130,15 @@ function InviteAcceptContent() {
               className="h-14 w-auto object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white">Join {invite.partnerName}</h1>
-          <p className="text-slate-300 mt-1 text-sm">Create your account to access the partner portal</p>
+          <h1 className="text-3xl font-bold text-white">{t("auth.inviteJoin", { name: invite.partnerName })}</h1>
+          <p className="text-slate-300 mt-1 text-sm">{t("auth.inviteSubtitle")}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <p className="text-sm text-gray-600 mb-4">
-            You were invited as <strong>{invite.role}</strong>. Complete the form below to create your account.
+            {t("auth.inviteInvitedAs")} <strong>{invite.role}</strong>. {t("auth.inviteCompleteForm")}
           </p>
-          <p className="text-sm text-gray-500 mb-6">Email: <strong>{invite.email}</strong></p>
+          <p className="text-sm text-gray-500 mb-6">{t("auth.inviteEmailLabel")} <strong>{invite.email}</strong></p>
 
           {submitError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -145,25 +148,25 @@ function InviteAcceptContent() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.inviteFullName")}</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Smith"
+                placeholder={t("auth.placeholderName")}
                 required
                 minLength={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("auth.invitePasswordLabel")}</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 8 characters, 1 uppercase, 1 number"
+                  placeholder={t("auth.invitePasswordPlaceholder")}
                   required
                   minLength={8}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
@@ -173,7 +176,7 @@ function InviteAcceptContent() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
                   tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 >
                   {showPassword ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,15 +196,15 @@ function InviteAcceptContent() {
               disabled={submitting}
               className="w-full bg-vbt-orange hover:bg-orange-600 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
             >
-              {submitting ? "Creating account..." : "Create account"}
+              {submitting ? t("auth.inviteCreating") : t("auth.inviteCreateAccount")}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Already have an account?{" "}
+              {t("auth.alreadyAccount")}{" "}
               <Link href="/login" className="text-vbt-orange hover:underline font-medium">
-                Sign in
+                {t("auth.signInLink")}
               </Link>
             </p>
           </div>
@@ -211,15 +214,20 @@ function InviteAcceptContent() {
   );
 }
 
+function InviteAcceptFallback() {
+  const t = useT();
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+        <p className="text-gray-600">{t("common.loading")}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function InviteAcceptPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-vbt-blue to-slate-800 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<InviteAcceptFallback />}>
       <InviteAcceptContent />
     </Suspense>
   );

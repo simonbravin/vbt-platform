@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n/context"
 
 export type CostMethod = "CSV" | "M2_BY_SYSTEM"
 export type UOM = "M" | "FT"
@@ -68,24 +69,20 @@ interface Warehouse {
   countryCode: string
 }
 
-const METHOD_OPTIONS: { value: CostMethod; label: string; description: string }[] = [
-  {
-    value: "CSV",
-    label: "CSV / Revit Import",
-    description: "Upload a Revit wall schedule CSV to compute costs per wall type and area.",
-  },
-  {
-    value: "M2_BY_SYSTEM",
-    label: "M\u00b2 by System",
-    description: "Enter wall area (m\u00b2) per panel system (VBT 80mm / VBT 150mm / VBT 200mm) and apply system rates.",
-  },
-]
-
 export default function Step1Method({ state, update }: Step1Props) {
+  const t = useT()
   const [projects, setProjects] = React.useState<Project[]>([])
   const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
   const [loadingProjects, setLoadingProjects] = React.useState(true)
   const [loadingWarehouses, setLoadingWarehouses] = React.useState(true)
+
+  const METHOD_OPTIONS: { value: CostMethod; label: string; description: string }[] = React.useMemo(
+    () => [
+      { value: "CSV" as CostMethod, label: t("wizard.csvRevitLabel"), description: t("wizard.csvRevitDesc") },
+      { value: "M2_BY_SYSTEM" as CostMethod, label: t("wizard.m2BySystemLabel"), description: t("wizard.m2BySystemDesc") },
+    ],
+    [t]
+  )
 
   React.useEffect(() => {
     setLoadingProjects(true)
@@ -137,7 +134,7 @@ export default function Step1Method({ state, update }: Step1Props) {
 
       {/* Costing method cards */}
       <div className="space-y-2">
-        <Label>Costing Method</Label>
+        <Label>{t("wizard.costingMethod")}</Label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {METHOD_OPTIONS.map((opt) => (
             <button
@@ -155,7 +152,7 @@ export default function Step1Method({ state, update }: Step1Props) {
                 <span className="font-medium text-sm">{opt.label}</span>
                 {state.costMethod === opt.value && (
                   <Badge variant="default" className="text-xs shrink-0">
-                    Selected
+                    {t("wizard.selected")}
                   </Badge>
                 )}
               </div>
@@ -167,7 +164,7 @@ export default function Step1Method({ state, update }: Step1Props) {
 
       {/* UOM selector */}
       <div className="space-y-2">
-        <Label htmlFor="uom-select">Unit of Measure</Label>
+        <Label htmlFor="uom-select">{t("wizard.unitOfMeasure")}</Label>
         <Select
           value={state.uom}
           onValueChange={(v) => update({ uom: v as UOM })}
@@ -176,22 +173,22 @@ export default function Step1Method({ state, update }: Step1Props) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="M">Meters (M)</SelectItem>
-            <SelectItem value="FT">Feet (FT)</SelectItem>
+            <SelectItem value="M">{t("wizard.metersM")}</SelectItem>
+            <SelectItem value="FT">{t("wizard.feetFT")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Warehouse selector */}
       <div className="space-y-2">
-        <Label htmlFor="warehouse-select">Origin Warehouse</Label>
+        <Label htmlFor="warehouse-select">{t("wizard.originWarehouse")}</Label>
         <Select
           value={state.warehouseId}
           onValueChange={(v) => update({ warehouseId: v })}
           disabled={loadingWarehouses}
         >
           <SelectTrigger id="warehouse-select" className="w-full sm:w-80">
-            <SelectValue placeholder={loadingWarehouses ? "Loading warehouses..." : "Select warehouse"} />
+            <SelectValue placeholder={loadingWarehouses ? t("wizard.loadingWarehouses") : t("wizard.selectWarehouse")} />
           </SelectTrigger>
           <SelectContent>
             {warehouses.map((w) => (
@@ -211,7 +208,7 @@ export default function Step1Method({ state, update }: Step1Props) {
           onCheckedChange={(v) => update({ reserveStock: v })}
         />
         <Label htmlFor="reserve-stock" className="cursor-pointer">
-          Reserve stock upon quote approval
+          {t("wizard.reserveStock")}
         </Label>
       </div>
     </div>

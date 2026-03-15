@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  const userWithId = session.user as { id?: string };
   const client = await prisma.client.create({
     data: {
       organizationId,
@@ -80,6 +82,14 @@ export async function POST(req: Request) {
       website: parsed.data.website ?? null,
       notes: parsed.data.notes ?? null,
     },
+  });
+  await createActivityLog({
+    organizationId,
+    userId: userWithId.id,
+    action: "client_created",
+    entityType: "client",
+    entityId: client.id,
+    metadata: { name: client.name },
   });
   return NextResponse.json(client, { status: 201 });
 }

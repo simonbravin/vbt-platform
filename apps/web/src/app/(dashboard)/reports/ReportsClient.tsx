@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart3, Download, Package, Mail, ShoppingCart } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Country = { id: string; name: string; code: string };
 type Project = {
@@ -51,6 +52,7 @@ type PiecesData = { byQty: PieceRow[]; byKg: PieceRow[]; byM2: PieceRow[] };
 type Client = { id: string; name: string };
 
 export function ReportsClient({ countries, clients, canSendReport = true }: { countries: Country[]; clients: Client[]; canSendReport?: boolean }) {
+  const t = useT();
   const [projects, setProjects] = useState<Project[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [total, setTotal] = useState(0);
@@ -163,10 +165,10 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
         setEmailSubject("");
         setTimeout(() => { setEmailOpen(false); setEmailMessage(null); }, 2000);
       } else {
-        setEmailMessage({ type: "error", text: data.error ?? "Failed to send" });
+        setEmailMessage({ type: "error", text: data.error ?? t("partner.reports.failedToSend") });
       }
     } catch {
-      setEmailMessage({ type: "error", text: "Failed to send email" });
+      setEmailMessage({ type: "error", text: t("partner.sales.failedToSendEmail") });
     } finally {
       setEmailSending(false);
     }
@@ -507,9 +509,9 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           </div>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-gray-500">{t("partner.reports.loading")}</div>
         ) : projects.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No projects match the filters.</div>
+          <div className="p-8 text-center text-gray-500">{t("partner.reports.noProjectsMatch")}</div>
         ) : (
           <>
             <div className="overflow-x-auto">

@@ -15,7 +15,6 @@ import {
   ChevronDown,
   ChevronRight,
   FileBarChart,
-  UserCheck,
   Users,
   Building,
   Warehouse,
@@ -36,7 +35,6 @@ interface NavItem {
 
 const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
-  { labelKey: "nav.superadmin.pendingApprovals", href: "/superadmin/admin/users", icon: UserCheck },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
   { labelKey: "nav.superadmin.analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { labelKey: "nav.superadmin.reports", href: "/superadmin/reports", icon: FileBarChart },
@@ -81,8 +79,8 @@ export function SuperadminSidebar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <div className="w-64 bg-vbt-blue flex flex-col h-full shadow-xl flex-shrink-0">
-      <div className="px-3 py-4 border-b border-white/10 flex items-center">
+    <div className="w-64 bg-header flex flex-col h-full shadow-xl flex-shrink-0">
+      <div className="px-3 py-4 border-b border-header-foreground/10 flex items-center">
         <Image
           src="/logo-vbt-white-horizontal.png"
           alt="Vision Latam"
@@ -92,7 +90,7 @@ export function SuperadminSidebar() {
         />
       </div>
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
-        <p className="px-3 py-1.5 text-xs font-medium text-white/50 uppercase tracking-wider">
+        <p className="px-3 py-1.5 text-xs font-medium text-header-foreground/50 uppercase tracking-wider">
           Platform
         </p>
         {superadminNavigation.map((item) => {
@@ -109,8 +107,8 @@ export function SuperadminSidebar() {
                   className={cn(
                     "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
                     hasActiveChild
-                      ? "text-white bg-white/10"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
+                      ? "text-header-foreground bg-header-foreground/10"
+                      : "text-header-foreground/70 hover:text-header-foreground hover:bg-header-foreground/10"
                   )}
                 >
                   <item.icon className="w-4 h-4 flex-shrink-0" />
@@ -122,7 +120,7 @@ export function SuperadminSidebar() {
                   )}
                 </button>
                 {isOpen && (
-                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
+                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-header-foreground/10 pl-3">
                     {item.children.map((child) => (
                       <Link
                         key={child.href}
@@ -130,8 +128,8 @@ export function SuperadminSidebar() {
                         className={cn(
                           "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
                           child.href && isActive(child.href)
-                            ? "text-white bg-white/10"
-                            : "text-white/60 hover:text-white hover:bg-white/10"
+                            ? "text-header-foreground bg-header-foreground/10"
+                            : "text-header-foreground/60 hover:text-header-foreground hover:bg-header-foreground/10"
                         )}
                       >
                         <child.icon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -150,8 +148,8 @@ export function SuperadminSidebar() {
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
                 isActive(item.href!)
-                  ? "text-white bg-white/15 font-medium"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
+                  ? "text-header-foreground bg-header-foreground/15 font-medium"
+                  : "text-header-foreground/70 hover:text-header-foreground hover:bg-header-foreground/10"
               )}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
@@ -160,8 +158,8 @@ export function SuperadminSidebar() {
           );
         })}
       </nav>
-      <div className="px-4 py-3 border-t border-white/10">
-        <p className="text-white/30 text-xs text-center">Superadmin Portal</p>
+      <div className="px-4 py-3 border-t border-header-foreground/10">
+        <p className="text-header-foreground/30 text-xs text-center">Superadmin Portal</p>
       </div>
     </div>
   );

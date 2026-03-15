@@ -18,10 +18,10 @@ export function PendingContent({ supportEmail }: { supportEmail: string }) {
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{t("auth.pendingTitle")}</h2>
         <p className="text-gray-500 mb-6">{t("auth.pendingMsg")}</p>
         <p className="text-sm text-gray-500 mb-4">
-          Your account is pending assignment to an organization. Once an administrator assigns you to a partner, you will be able to access the platform.
+          {t("auth.pendingAssignment")}
         </p>
         <p className="text-sm text-gray-400 mb-6">
-          Need urgent access? Contact{" "}
+          {t("auth.needUrgentAccess")}{" "}
           <a href={`mailto:${supportEmail}`} className="text-vbt-orange hover:underline">
             {supportEmail}
           </a>

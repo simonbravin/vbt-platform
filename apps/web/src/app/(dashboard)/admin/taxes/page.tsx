@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Pencil, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type TaxBase = "CIF" | "FOB" | "BASE_IMPONIBLE" | "FIXED_PER_CONTAINER" | "FIXED_TOTAL";
 
@@ -14,14 +15,6 @@ interface TaxRule {
   note?: string;
 }
 
-const BASE_LABELS: Record<TaxBase, string> = {
-  CIF: "% of CIF",
-  FOB: "% of FOB",
-  BASE_IMPONIBLE: "% of Base Imponible",
-  FIXED_PER_CONTAINER: "Fixed per Container",
-  FIXED_TOTAL: "Fixed Total",
-};
-
 const IS_PCT: Record<TaxBase, boolean> = {
   CIF: true,
   FOB: true,
@@ -31,6 +24,17 @@ const IS_PCT: Record<TaxBase, boolean> = {
 };
 
 export default function TaxesPage() {
+  const t = useT();
+  const BASE_LABELS: Record<TaxBase, string> = useMemo(
+    () => ({
+      CIF: t("admin.taxes.baseCif"),
+      FOB: t("admin.taxes.baseFob"),
+      BASE_IMPONIBLE: t("admin.taxes.baseBaseImponible"),
+      FIXED_PER_CONTAINER: t("admin.taxes.baseFixedPerContainer"),
+      FIXED_TOTAL: t("admin.taxes.baseFixedTotal"),
+    }),
+    [t]
+  );
   const [taxSets, setTaxSets] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -113,20 +117,20 @@ export default function TaxesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tax Rule Sets</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Configure taxes & fees per destination country</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("admin.taxes.title")}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{t("admin.taxes.subtitle")}</p>
         </div>
         <button
           onClick={openAdd}
           className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
         >
-          <Plus className="w-4 h-4" /> Add Rule Set
+          <Plus className="w-4 h-4" /> {t("admin.taxes.add")}
         </button>
       </div>
 
       <div className="space-y-3">
         {taxSets.length === 0 && (
-          <p className="text-gray-400 text-center py-8">No tax rule sets yet</p>
+          <p className="text-gray-400 text-center py-8">{t("admin.taxes.noRuleSetsYet")}</p>
         )}
         {taxSets.map((ts) => (
           <div key={ts.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -137,7 +141,7 @@ export default function TaxesPage() {
               <div>
                 <p className="font-semibold text-gray-800">{ts.name}</p>
                 <p className="text-gray-400 text-sm">
-                  {ts.country?.name ?? "No country"} · {(ts.rules ?? []).length} rules
+                  {ts.country?.name ?? t("admin.taxes.noCountry")} · {(ts.rules ?? []).length} {t("admin.taxes.rules")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -158,9 +162,9 @@ export default function TaxesPage() {
                   <thead>
                     <tr className="text-left text-xs text-gray-500 uppercase">
                       <th className="pb-2 w-6">#</th>
-                      <th className="pb-2 pr-4">Label</th>
-                      <th className="pb-2 pr-4">Base</th>
-                      <th className="pb-2 text-right">Amount</th>
+                      <th className="pb-2 pr-4">{t("admin.taxes.label")}</th>
+                      <th className="pb-2 pr-4">{t("admin.taxes.base")}</th>
+                      <th className="pb-2 text-right">{t("admin.taxes.amount")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -177,7 +181,7 @@ export default function TaxesPage() {
                       </tr>
                     ))}
                     {(ts.rules ?? []).length === 0 && (
-                      <tr><td colSpan={4} className="py-3 text-gray-400">No rules defined</td></tr>
+                      <tr><td colSpan={4} className="py-3 text-gray-400">{t("admin.taxes.noRules")}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -191,28 +195,28 @@ export default function TaxesPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-gray-100">
-              <h3 className="font-semibold text-lg">{editSet ? "Edit Rule Set" : "Add Rule Set"}</h3>
+              <h3 className="font-semibold text-lg">{editSet ? t("admin.taxes.editRuleSetTitle") : t("admin.taxes.addRuleSetTitle")}</h3>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.taxes.nameLabel")}</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="e.g., Argentina 2024"
+                    placeholder={t("admin.taxes.namePlaceholder")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.taxes.countryLabel")}</label>
                   <select
                     value={form.countryId}
                     onChange={(e) => setForm(p => ({ ...p, countryId: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                   >
-                    <option value="">— Select —</option>
+                    <option value="">{t("admin.taxes.selectOption")}</option>
                     {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
@@ -220,12 +224,12 @@ export default function TaxesPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">Rules (applied in order)</label>
+                  <label className="text-sm font-medium text-gray-700">{t("admin.taxes.rulesAppliedInOrder")}</label>
                   <button
                     onClick={addRule}
                     className="text-xs text-vbt-blue hover:underline inline-flex items-center gap-1"
                   >
-                    <Plus className="w-3 h-3" /> Add Rule
+                    <Plus className="w-3 h-3" /> {t("admin.taxes.addRule")}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -236,7 +240,7 @@ export default function TaxesPage() {
                         type="text"
                         value={rule.label}
                         onChange={(e) => updateRule(i, "label", e.target.value)}
-                        placeholder="Label (e.g., Import Duty)"
+                        placeholder={t("admin.taxes.labelPlaceholder")}
                         className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-vbt-blue"
                       />
                       <select
@@ -279,19 +283,19 @@ export default function TaxesPage() {
                     </div>
                   ))}
                   {form.rules.length === 0 && (
-                    <p className="text-gray-400 text-sm">No rules yet. Click "Add Rule" to add one.</p>
+                    <p className="text-gray-400 text-sm">{t("admin.taxes.noRulesYetClickAdd")}</p>
                   )}
                 </div>
               </div>
             </div>
             <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
               <button
                 onClick={save}
                 disabled={saving || !form.name || !form.countryId}
                 className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, ExternalLink } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Doc = {
   id: string;
@@ -13,6 +14,7 @@ type Doc = {
 };
 
 export function DocumentsPartnerClient() {
+  const t = useT();
   const [documents, setDocuments] = useState<Doc[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,12 +30,12 @@ export function DocumentsPartnerClient() {
           setTotal(data.total ?? 0);
         }
       })
-      .catch(() => { if (!cancelled) setError("Failed to load documents"); })
+      .catch(() => { if (!cancelled) setError(t("partner.documents.failedToLoad")); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
-  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Loading...</div>;
+  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>;
   if (error) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
 
   return (
@@ -41,7 +43,7 @@ export function DocumentsPartnerClient() {
       {documents.length === 0 ? (
         <div className="p-12 text-center">
           <FileText className="mx-auto h-12 w-12 text-gray-300" />
-          <p className="mt-2 text-sm font-medium text-gray-900">No documents available</p>
+          <p className="mt-2 text-sm font-medium text-gray-900">{t("partner.documents.noDocuments")}</p>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">

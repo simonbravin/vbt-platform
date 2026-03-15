@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 
 type LogEntry = {
   id: string;
@@ -12,13 +13,13 @@ type LogEntry = {
   userName: string | null;
 };
 
-const actionLabels: Record<string, string> = {
-  PROJECT_CREATED: "Created",
-  PROJECT_UPDATED: "Updated",
-  PROJECT_DELETED: "Deleted (archived)",
-};
-
 export function ProjectLogsClient() {
+  const t = useT();
+  const actionLabels: Record<string, string> = {
+    PROJECT_CREATED: t("projects.logCreated"),
+    PROJECT_UPDATED: t("projects.logUpdated"),
+    PROJECT_DELETED: t("projects.logDeleted"),
+  };
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -47,19 +48,19 @@ export function ProjectLogsClient() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       {loading ? (
-        <div className="p-8 text-center text-gray-500">Loading...</div>
+        <div className="p-8 text-center text-gray-500">{t("common.loading")}</div>
       ) : logs.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">No project activity yet</div>
+        <div className="p-8 text-center text-gray-500">{t("projects.noLogsYet")}</div>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Action</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Project</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsDate")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsAction")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.project")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsUser")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">

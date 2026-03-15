@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,21 +10,22 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/context";
 import { Locale } from "@/lib/i18n/translations";
 
-const schema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "At least 8 characters")
-      .regex(/[A-Z]/, "At least one uppercase letter")
-      .regex(/[0-9]/, "At least one number"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type FormData = z.infer<typeof schema>;
+function getResetSchema(t: (key: string) => string) {
+  return z
+    .object({
+      password: z
+        .string()
+        .min(8, t("auth.passwordMin8"))
+        .regex(/[A-Z]/, t("auth.passwordUppercase"))
+        .regex(/[0-9]/, t("auth.passwordNumber")),
+      confirmPassword: z.string(),
+    })
+    .refine((d) => d.password === d.confirmPassword, {
+      message: t("auth.passwordMismatch"),
+      path: ["confirmPassword"],
+    });
+}
+type FormData = z.infer<ReturnType<typeof getResetSchema>>;
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -36,13 +37,14 @@ function ResetPasswordForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { locale, setLocale, t } = useLanguage();
 
+  const schema = useMemo(() => getResetSchema(t), [t]);
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   useEffect(() => {
-    if (!token) setError("Missing reset link. Request a new one from the forgot password page.");
-  }, [token]);
+    if (!token) setError(t("auth.missingResetLink"));
+  }, [token, t]);
 
   async function onSubmit(data: FormData) {
     if (!token) return;
@@ -56,13 +58,13 @@ function ResetPasswordForm() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Something went wrong. Try again.");
+        setError(json.error ?? t("auth.errorGeneric"));
         return;
       }
       router.push("/login?reset=success");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred.");
+      setError(t("auth.errorUnexpected"));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ function ResetPasswordForm() {
       <div className="bg-slate-800/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 ring-1 ring-white/10">
         <p className="text-red-200 text-sm mb-4">{error}</p>
         <Link href="/forgot-password" className="text-vbt-orange hover:underline font-medium">
-          Request reset link
+          {t("auth.requestResetLink")}
         </Link>
       </div>
     );
@@ -105,7 +107,7 @@ function ResetPasswordForm() {
               onClick={() => setShowPassword((v) => !v)}
               className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
               tabIndex={-1}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
             >
               {showPassword ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,7 +140,7 @@ function ResetPasswordForm() {
               onClick={() => setShowConfirmPassword((v) => !v)}
               className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
               tabIndex={-1}
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              aria-label={showConfirmPassword ? t("auth.hidePassword") : t("auth.showPassword")}
             >
               {showConfirmPassword ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,7 +176,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
-  const { locale, setLocale } = useLanguage();
+  const { locale, setLocale, t } = useLanguage();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -198,8 +200,8 @@ export default function ResetPasswordPage() {
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(hsl(var(--auth-grid-overlay)) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--auth-grid-overlay)) 1px, transparent 1px)`,
           backgroundSize: "48px 48px",
         }}
       />
@@ -217,13 +219,13 @@ export default function ResetPasswordPage() {
               className="h-16 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">VBT Cost Calculator</h1>
-          <p className="text-white/70 mt-1.5 text-sm">Vision Building Technologies</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">{t("topbar.title")}</h1>
+          <p className="text-white/70 mt-1.5 text-sm">{t("auth.appSubtitle")}</p>
         </div>
 
         <Suspense fallback={
           <div className="bg-slate-800/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 text-center text-white/70">
-            Loading...
+            {t("common.loading")}
           </div>
         }>
           <ResetPasswordForm />

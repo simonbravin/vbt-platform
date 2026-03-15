@@ -51,7 +51,7 @@ export default async function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-muted overflow-hidden">
       <Sidebar role={safeUser.role} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar user={safeUser} activeOrgName={safeUser.activeOrgName} />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FolderOpen, FileText, ExternalLink } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Request = {
   id: string;
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
+  const t = useT();
   const [request, setRequest] = useState<Request | null>(initialRequest ?? null);
   const [loading, setLoading] = useState(!initialRequest);
   const [error, setError] = useState<string | null>(null);
@@ -41,13 +43,13 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
       .then((data) => {
         if (!cancelled) setRequest(data);
       })
-      .catch(() => { if (!cancelled) setError("Failed to load"); })
+      .catch(() => { if (!cancelled) setError(t("partner.engineering.failedToLoad")); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [requestId, initialRequest]);
+  }, [requestId, initialRequest, t]);
 
-  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Loading...</div>;
-  if (error || !request) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error ?? "Not found"}</div>;
+  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>;
+  if (error || !request) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error ?? t("partner.engineering.notFound")}</div>;
 
   return (
     <div className="space-y-6">

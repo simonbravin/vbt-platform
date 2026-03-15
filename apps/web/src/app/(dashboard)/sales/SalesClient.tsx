@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
 import { Plus, ShoppingCart, Bell, Download } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Sale = {
   id: string;
@@ -39,6 +40,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export function SalesClient() {
+  const t = useT();
   const [sales, setSales] = useState<Sale[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -108,13 +110,13 @@ export function SalesClient() {
           </Link>
           <Link
             href="/sales/statements"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
           >
             Statements
           </Link>
           <a
             href={`/api/sales/export?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(status && { status }), ...(clientId && { clientId }), ...(projectId && { projectId }) }).toString()}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -137,12 +139,12 @@ export function SalesClient() {
           placeholder="Search by sale #, client, project..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-56"
+          className="px-3 py-1.5 border border-border rounded-lg text-sm w-56"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+          className="px-3 py-1.5 border border-border rounded-lg text-sm"
         >
           <option value="">All statuses</option>
           {Object.entries(statusLabel).map(([v, l]) => (
@@ -152,7 +154,7 @@ export function SalesClient() {
         <select
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
         >
           <option value="">All clients</option>
           {clients.map((c) => (
@@ -162,24 +164,24 @@ export function SalesClient() {
         <select
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
         >
           <option value="">All projects</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{(p as any).name}</option>
           ))}
         </select>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" placeholder="From" />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" placeholder="To" />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="From" />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="To" />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>
         ) : sales.length === 0 ? (
           <div className="p-12 text-center">
-            <ShoppingCart className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No sales found</p>
+            <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No sales found</p>
             <Link href="/sales/new" className="text-vbt-orange text-sm hover:underline mt-2 block">
               Create your first sale →
             </Link>
@@ -187,40 +189,40 @@ export function SalesClient() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/80">
-                <th className="text-left px-4 py-2 font-medium text-gray-700">Sale #</th>
-                <th className="text-left px-4 py-2 font-medium text-gray-700">Client</th>
-                <th className="text-left px-4 py-2 font-medium text-gray-700">Project</th>
-                <th className="text-center px-2 py-2 font-medium text-gray-700">Qty</th>
-                <th className="text-right px-2 py-2 font-medium text-gray-700">Price</th>
-                <th className="text-center px-2 py-2 font-medium text-gray-700">Sales condition</th>
-                <th className="text-left px-2 py-2 font-medium text-gray-700">Status</th>
-                <th className="text-left px-4 py-2 font-medium text-gray-700">Actions</th>
+              <tr className="border-b border-border bg-muted/80">
+                <th className="text-left px-4 py-2 font-medium text-foreground">Sale #</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">Client</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">Project</th>
+                <th className="text-center px-2 py-2 font-medium text-foreground">Qty</th>
+                <th className="text-right px-2 py-2 font-medium text-foreground">Price</th>
+                <th className="text-center px-2 py-2 font-medium text-foreground">Sales condition</th>
+                <th className="text-left px-2 py-2 font-medium text-foreground">Status</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {sales.map((s) => (
-                <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50/50">
-                  <td className="px-4 py-2 font-medium text-vbt-blue">
+                <tr key={s.id} className="border-b border-border hover:bg-muted/50">
+                  <td className="px-4 py-2 font-medium text-primary">
                     <Link href={`/sales/${s.id}`} className="hover:underline">
                       {s.saleNumber ?? s.id.slice(0, 8)}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-gray-700">{s.client.name}</td>
-                  <td className="px-4 py-2 text-gray-700">
-                    <Link href={`/projects/${s.projectId}`} className="text-vbt-blue hover:underline">
+                  <td className="px-4 py-2 text-foreground">{s.client.name}</td>
+                  <td className="px-4 py-2 text-foreground">
+                    <Link href={`/projects/${s.projectId}`} className="text-primary hover:underline">
                       {s.project.name}
                     </Link>
                   </td>
-                  <td className="px-2 py-2 text-center text-gray-700">{s.quantity}</td>
-                  <td className="px-2 py-2 text-right font-medium text-gray-900">{formatCurrency(getInvoicedAmount(s))}</td>
-                  <td className="px-2 py-2 text-center text-gray-700 font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
+                  <td className="px-2 py-2 text-center text-foreground">{s.quantity}</td>
+                  <td className="px-2 py-2 text-right font-medium text-foreground">{formatCurrency(getInvoicedAmount(s))}</td>
+                  <td className="px-2 py-2 text-center text-foreground font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
                   <td className="px-2 py-2">
                     <span
                       className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
                         s.status === "PAID" ? "bg-green-100 text-green-700" :
                         s.status === "DUE" ? "bg-amber-100 text-amber-800" :
-                        s.status === "CANCELLED" ? "bg-gray-100 text-gray-600" :
+                        s.status === "CANCELLED" ? "bg-muted text-muted-foreground" :
                         s.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" :
                         "bg-blue-100 text-blue-700"
                       }`}
@@ -229,7 +231,7 @@ export function SalesClient() {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <Link href={`/sales/${s.id}`} className="text-vbt-blue hover:underline text-sm">
+                    <Link href={`/sales/${s.id}`} className="text-primary hover:underline text-sm">
                       View
                     </Link>
                   </td>
@@ -246,18 +248,18 @@ export function SalesClient() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
           >
             Previous
           </button>
-          <span className="py-1.5 text-sm text-gray-600">
+          <span className="py-1.5 text-sm text-muted-foreground">
             Page {page} of {Math.ceil(total / limit)}
           </span>
           <button
             type="button"
             disabled={page >= Math.ceil(total / limit)}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
           >
             Next
           </button>

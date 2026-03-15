@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/context";
 
 const PARTNER_TYPES = [
   { value: "commercial_partner", label: "Commercial partner" },
@@ -33,6 +34,7 @@ export function EditPartnerForm({
   partnerId: string;
   initial: Initial;
 }) {
+  const t = useT();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,13 +62,13 @@ export function EditPartnerForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error?.message ?? data?.error ?? "Failed to update partner");
+        setError(data?.error?.message ?? data?.error ?? t("superadmin.partners.failedToUpdatePartner"));
         return;
       }
       router.push(`/superadmin/partners/${partnerId}`);
       router.refresh();
     } catch {
-      setError("Failed to update partner");
+      setError(t("superadmin.partners.failedToUpdatePartner"));
     } finally {
       setSaving(false);
     }

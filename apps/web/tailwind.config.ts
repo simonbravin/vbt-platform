@@ -50,11 +50,24 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // VBT brand
+        // VBT brand (from CSS vars for theme support)
         vbt: {
-          blue: "#1a3a5c",
-          orange: "#e87722",
-          light: "#f0f4f8",
+          blue: "hsl(var(--primary))",
+          orange: "hsl(var(--vbt-orange))",
+          light: "hsl(var(--muted))",
+        },
+        // Header/sidebar chrome
+        header: {
+          DEFAULT: "hsl(var(--header))",
+          foreground: "hsl(var(--header-foreground))",
+        },
+        alert: {
+          warning: "hsl(var(--alert-warning-bg))",
+          warningBorder: "hsl(var(--alert-warning-border))",
+          success: "hsl(var(--alert-success-bg))",
+          successBorder: "hsl(var(--alert-success-border))",
+          error: "hsl(var(--alert-error-bg))",
+          errorBorder: "hsl(var(--alert-error-border))",
         },
       },
       borderRadius: {

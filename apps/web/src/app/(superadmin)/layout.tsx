@@ -33,7 +33,7 @@ export default async function SuperadminLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-muted overflow-hidden">
       <SuperadminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar user={safeUser} showContextSwitcher />

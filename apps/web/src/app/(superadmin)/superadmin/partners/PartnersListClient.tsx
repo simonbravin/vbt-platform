@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Building2, MapPin, Mail } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Partner = {
   id: string;
@@ -19,6 +20,7 @@ type Partner = {
 };
 
 export function PartnersListClient() {
+  const t = useT();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export function PartnersListClient() {
       try {
         const res = await fetch("/api/saas/partners?limit=100");
         if (!res.ok) {
-          setError("Failed to load partners");
+          setError(t("superadmin.partners.failedToLoad"));
           return;
         }
         const data = await res.json();
@@ -39,7 +41,7 @@ export function PartnersListClient() {
           setTotal(data.total ?? 0);
         }
       } catch {
-        if (!cancelled) setError("Failed to load partners");
+        if (!cancelled) setError(t("superadmin.partners.failedToLoad"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -60,24 +62,24 @@ export function PartnersListClient() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-gray-500">
-          {total} partner{total !== 1 ? "s" : ""}
+          {total} {total !== 1 ? t("superadmin.partners.countPlural") : t("superadmin.partners.count")}
         </p>
         <Link
           href="/superadmin/partners/new"
           className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90"
         >
           <Plus className="h-4 w-4" />
-          New partner
+          {t("superadmin.partners.newPartner")}
         </Link>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-sm text-gray-500">Loading partners...</div>
+          <div className="p-12 text-center text-sm text-gray-500">{t("superadmin.partners.loading")}</div>
         ) : partners.length === 0 ? (
           <div className="p-12 text-center">
             <Building2 className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">No partners yet</p>
+            <p className="mt-2 text-sm font-medium text-gray-900">{t("superadmin.partners.noPartnersYet")}</p>
             <p className="mt-1 text-sm text-gray-500">Create your first partner organization.</p>
             <Link
               href="/superadmin/partners/new"

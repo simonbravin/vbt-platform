@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Package, ArrowDown, ArrowUp, RefreshCw, Plus, LayoutGrid, List, Search, ChevronDown, ChevronRight, ChevronUp, Download, ScrollText } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type MoveType = "IN" | "OUT" | "ADJUST";
 
@@ -9,11 +10,6 @@ const SYSTEM_COLORS: Record<string, string> = {
   S80: "bg-blue-100 text-blue-700",
   S150: "bg-purple-100 text-purple-700",
   S200: "bg-green-100 text-green-700",
-};
-const SYSTEM_LABELS: Record<string, string> = {
-  S80: "VBT 80mm",
-  S150: "VBT 150mm",
-  S200: "VBT 200mm",
 };
 
 // Linear meters for an item (qtyOnHand = units when heightMm is set)
@@ -25,6 +21,15 @@ function linearM(item: any): number {
 }
 
 export default function InventoryPage() {
+  const t = useT();
+  const SYSTEM_LABELS: Record<string, string> = useMemo(
+    () => ({
+      S80: t("admin.inventory.s80"),
+      S150: t("admin.inventory.s150"),
+      S200: t("admin.inventory.s200"),
+    }),
+    [t]
+  );
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouseId, setWarehouseId] = useState("");
   const [items, setItems] = useState<any[]>([]);
@@ -125,7 +130,7 @@ export default function InventoryPage() {
       map.get(key)!.push(item);
     }
     return map;
-  }, [items, filterText, showInStockOnly]);
+  }, [items, filterText, showInStockOnly, SYSTEM_LABELS]);
 
   const totalDisplayLinearM = useMemo(() => {
     let sum = 0;
@@ -238,9 +243,9 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("admin.inventory.title")}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            {grouped.size} piece{grouped.size !== 1 ? "s" : ""} · {totalDisplayLinearM.toFixed(1)} linear m total
+            {grouped.size} {grouped.size !== 1 ? t("admin.inventory.piecesCountPlural") : t("admin.inventory.piecesCount")} · {totalDisplayLinearM.toFixed(1)} {t("admin.inventory.linearMTotal")}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -252,22 +257,22 @@ export default function InventoryPage() {
             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
           <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
-            <span className="px-2.5 py-1.5 text-gray-500">View:</span>
-            <button onClick={() => setView("table")} title="Table view" className={`p-2 ${view === "table" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><List className="w-4 h-4" /></button>
-            <button onClick={() => setView("cards")} title="Card view" className={`p-2 ${view === "cards" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><LayoutGrid className="w-4 h-4" /></button>
+            <span className="px-2.5 py-1.5 text-gray-500">{t("admin.inventory.view")}</span>
+            <button onClick={() => setView("table")} title={t("admin.inventory.tableView")} className={`p-2 ${view === "table" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><List className="w-4 h-4" /></button>
+            <button onClick={() => setView("cards")} title={t("admin.inventory.cardView")} className={`p-2 ${view === "cards" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}><LayoutGrid className="w-4 h-4" /></button>
           </div>
           <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
             <input type="checkbox" checked={showInStockOnly} onChange={e => setShowInStockOnly(e.target.checked)} className="rounded border-gray-300 text-vbt-blue focus:ring-vbt-blue" />
-            In stock only
+            {t("admin.inventory.inStockOnly")}
           </label>
           <button onClick={exportCsv} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <Download className="w-4 h-4" /> Export
+            <Download className="w-4 h-4" /> {t("admin.inventory.export")}
           </button>
           <button onClick={() => { setLogsModal(true); setMovementLogs([]); setLogsLoading(true); fetch(`/api/inventory/logs?warehouseId=${warehouseId || ""}&limit=100`).then(r => r.json()).then(d => { setMovementLogs(d.logs ?? []); setLogsLoading(false); }).catch(() => setLogsLoading(false)); }} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <ScrollText className="w-4 h-4" /> Logs
+            <ScrollText className="w-4 h-4" /> {t("admin.inventory.logs")}
           </button>
           <button onClick={openAddDialog} className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900">
-            <Plus className="w-4 h-4" /> Add Item
+            <Plus className="w-4 h-4" /> {t("admin.inventory.addItem")}
           </button>
         </div>
       </div>
@@ -277,7 +282,7 @@ export default function InventoryPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Filter by piece or system..."
+          placeholder={t("admin.inventory.filterPlaceholder")}
           value={filterText}
           onChange={e => setFilterText(e.target.value)}
           className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
@@ -293,26 +298,26 @@ export default function InventoryPage() {
                 <tr>
                   <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
-                      <span>Piece</span>
+                      <span>{t("admin.inventory.piece")}</span>
                       {grouped.size > 0 && (
                         <div className="flex items-center rounded border border-gray-200 overflow-hidden">
-                          <button type="button" onClick={() => expandCollapseAll(true)} title="Expand all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronDown className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={() => expandCollapseAll(false)} title="Collapse all" className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronUp className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => expandCollapseAll(true)} title={t("admin.inventory.expandAll")} className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronDown className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => expandCollapseAll(false)} title={t("admin.inventory.collapseAll")} className="p-0.5 text-gray-500 hover:bg-gray-100"><ChevronUp className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </div>
                   </th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Matrix</th>
-                  {["System", "Height", "Units", "Linear m", "Reserved", "Available", "Actions"].map(h => (
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{t("admin.inventory.matrix")}</th>
+                  {[t("admin.inventory.system"), t("admin.inventory.height"), t("admin.inventory.units"), t("admin.inventory.linearM"), t("admin.inventory.reserved"), t("admin.inventory.available"), t("admin.catalog.actions")].map(h => (
                     <th key={h} className="text-center px-4 py-2 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("common.loading")}</td></tr>
                 ) : grouped.size === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No inventory items. Use "Add Item" to create stock.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("admin.inventory.noItemsAddOne")}</td></tr>
                 ) : (
                   Array.from(grouped.entries()).map(([pieceKey, pieceItems]) => {
                     const piece = pieceItems[0].piece;
@@ -329,7 +334,7 @@ export default function InventoryPage() {
                           <tr className="bg-gray-50 border-t border-gray-200">
                             <td className="px-4 py-2 font-semibold text-gray-800">
                               <div className="flex items-center gap-1.5">
-                                <button type="button" onClick={() => toggleGroup(pieceKey)} className="p-0.5 rounded hover:bg-gray-200 text-gray-500" aria-label={expanded ? "Collapse" : "Expand"}>
+                                <button type="button" onClick={() => toggleGroup(pieceKey)} className="p-0.5 rounded hover:bg-gray-200 text-gray-500" aria-label={expanded ? t("admin.inventory.collapse") : t("admin.inventory.expand")}>
                                   {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                 </button>
                                 <Package className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -413,11 +418,11 @@ export default function InventoryPage() {
       {view === "cards" && (
         <div>
           {loading ? (
-            <p className="text-gray-400 text-sm">Loading...</p>
+            <p className="text-gray-400 text-sm">{t("common.loading")}</p>
           ) : grouped.size === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
               <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No inventory items. Use "Add Item" to create stock.</p>
+              <p className="text-gray-500">{t("admin.inventory.noItemsAddOne")}</p>
             </div>
           ) : (
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -457,7 +462,7 @@ export default function InventoryPage() {
                       ))}
                     </div>
                     <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm">
-                      <span className="text-gray-500">{totalUnits} units total</span>
+                      <span className="text-gray-500">{totalUnits} {t("admin.inventory.unitsTotal")}</span>
                       <span className="font-bold text-gray-800">{totalLm.toFixed(1)} m lin.</span>
                     </div>
                   </div>
@@ -473,16 +478,16 @@ export default function InventoryPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
             <h3 className="font-semibold text-lg mb-1">
-              {moveForm.type === "IN" ? "Receive Stock" : moveForm.type === "OUT" ? "Dispatch Stock" : "Adjust Stock"}
+              {moveForm.type === "IN" ? t("admin.inventory.receive") : moveForm.type === "OUT" ? t("admin.inventory.dispatch") : t("admin.inventory.adjust")}
             </h3>
             <p className="text-gray-500 text-sm mb-1 truncate">{moveDialog.piece?.canonicalName}</p>
             {moveDialog.heightMm && (
-              <p className="text-gray-400 text-xs mb-4">Height: {(moveDialog.heightMm / 1000).toFixed(2)} m</p>
+              <p className="text-gray-400 text-xs mb-4">{t("admin.inventory.heightLabel")} {(moveDialog.heightMm / 1000).toFixed(2)} m</p>
             )}
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantity (units) *
+                  {t("admin.inventory.quantityUnits")}
                 </label>
                 <input
                   type="number" min="1" step="1"
@@ -491,23 +496,23 @@ export default function InventoryPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
                 {moveDialog.heightMm > 0 && moveForm.qty > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">= {(moveForm.qty * moveDialog.heightMm / 1000).toFixed(2)} linear m</p>
+                  <p className="text-xs text-gray-400 mt-1">{t("admin.inventory.linearMEquals", { value: (moveForm.qty * moveDialog.heightMm / 1000).toFixed(2) })}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.inventory.note")}</label>
                 <input
                   type="text" value={moveForm.note}
                   onChange={e => setMoveForm(p => ({ ...p, note: e.target.value }))}
-                  placeholder="e.g., PO#12345"
+                  placeholder={t("admin.inventory.notePlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setMoveDialog(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setMoveDialog(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
               <button onClick={submitMove} disabled={saving || moveForm.qty <= 0} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving..." : "Confirm"}
+                {saving ? t("common.saving") : t("admin.inventory.confirm")}
               </button>
             </div>
           </div>
@@ -518,24 +523,24 @@ export default function InventoryPage() {
       {logsModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col m-4">
-            <h3 className="font-semibold text-lg mb-4">Inventory movement logs</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("admin.inventory.movementLogs")}</h3>
             {logsLoading ? (
-              <p className="text-gray-500 text-sm py-8 text-center">Loading...</p>
+              <p className="text-gray-500 text-sm py-8 text-center">{t("common.loading")}</p>
             ) : (
               <div className="overflow-y-auto flex-1 border border-gray-100 rounded-lg">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
                     <tr>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">User</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Date / time</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Piece</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Warehouse</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Change</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{t("admin.inventory.user")}</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{t("admin.inventory.dateTime")}</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{t("admin.inventory.piece")}</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{t("admin.inventory.warehouse")}</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{t("admin.inventory.change")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {movementLogs.length === 0 ? (
-                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No movement logs.</td></tr>
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t("admin.inventory.noMovementLogs")}</td></tr>
                     ) : (
                       movementLogs.map((log) => (
                         <tr key={log.id} className="border-t border-gray-50 hover:bg-gray-50/50">
@@ -552,7 +557,7 @@ export default function InventoryPage() {
               </div>
             )}
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setLogsModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+              <button onClick={() => setLogsModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">{t("admin.inventory.close")}</button>
             </div>
           </div>
         </div>
@@ -562,20 +567,20 @@ export default function InventoryPage() {
       {addDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-1">Add Inventory Item</h3>
-            <p className="text-gray-400 text-sm mb-5">Select a piece, enter the wall height and quantity.</p>
+            <h3 className="font-semibold text-lg mb-1">{t("admin.inventory.addInventoryItem")}</h3>
+            <p className="text-gray-400 text-sm mb-5">{t("admin.inventory.addItemDescription")}</p>
 
             <div className="space-y-4">
               {/* Step 1: search piece */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  1. Search Piece *
+                  1. {t("admin.inventory.searchPiece")}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Type piece name or code..."
+                    placeholder={t("admin.inventory.searchPiecePlaceholder")}
                     value={catalogSearch}
                     onChange={e => {
                       setCatalogSearch(e.target.value);
@@ -616,7 +621,7 @@ export default function InventoryPage() {
                         <p className="text-xs text-blue-500">{SYSTEM_LABELS[selectedPiece.systemCode] ?? selectedPiece.systemCode}</p>
                       )}
                     </div>
-                    <button onClick={() => { setSelectedPiece(null); setCatalogSearch(""); }} className="text-xs text-blue-400 hover:text-blue-600">Change</button>
+                    <button onClick={() => { setSelectedPiece(null); setCatalogSearch(""); }} className="text-xs text-blue-400 hover:text-blue-600">{t("admin.inventory.changeButton")}</button>
                   </div>
                 )}
               </div>
@@ -624,11 +629,11 @@ export default function InventoryPage() {
               {/* Step 2: height */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  2. Wall Height (m) *
+                  2. {t("admin.inventory.wallHeightM")}
                 </label>
                 <input
                   type="number" min="0.1" step="0.05"
-                  placeholder="e.g. 3.00"
+                  placeholder={t("admin.inventory.wallHeightPlaceholder")}
                   value={addForm.heightM || ""}
                   onChange={e => setAddForm(p => ({ ...p, heightM: parseFloat(e.target.value) || 0 }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
@@ -638,11 +643,11 @@ export default function InventoryPage() {
               {/* Step 3: units */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  3. Quantity (units / panels) *
+                  3. {t("admin.inventory.quantityUnitsPanels")}
                 </label>
                 <input
                   type="number" min="1" step="1"
-                  placeholder="e.g. 15"
+                  placeholder={t("admin.inventory.quantityPlaceholder")}
                   value={addForm.units || ""}
                   onChange={e => setAddForm(p => ({ ...p, units: parseInt(e.target.value) || 0 }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
@@ -653,21 +658,21 @@ export default function InventoryPage() {
               {computedLinearM && (
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
                   <span className="text-sm text-gray-600">
-                    {addForm.units} units × {addForm.heightM} m
+                    {addForm.units} {t("admin.inventory.unitsWord")} × {addForm.heightM} m
                   </span>
-                  <span className="font-bold text-gray-800 text-base">= {computedLinearM} linear m</span>
+                  <span className="font-bold text-gray-800 text-base">= {computedLinearM} {t("admin.inventory.linearM")}</span>
                 </div>
               )}
             </div>
 
             <div className="flex gap-3 justify-end mt-5">
-              <button onClick={() => setAddDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setAddDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
               <button
                 onClick={submitAddItem}
                 disabled={addSaving || !selectedPiece || addForm.units <= 0 || addForm.heightM <= 0}
                 className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                {addSaving ? "Adding..." : "Add to Inventory"}
+                {addSaving ? t("admin.inventory.adding") : t("admin.inventory.addToInventory")}
               </button>
             </div>
           </div>

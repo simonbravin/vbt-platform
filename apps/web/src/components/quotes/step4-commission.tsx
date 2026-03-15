@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import { useT } from "@/lib/i18n/context";
 
 // Packing capacity: m² of wall panels per 40ft HC container
 const CAP_S80 = 650;
@@ -15,6 +16,7 @@ interface Props {
 
 // CSV / Step 3 always yield cost for one kit; total factory = perKit × totalKits (school, 150 houses, etc.).
 export function Step4Commission({ state, update }: Props) {
+  const t = useT();
   const factoryCostPerKit = state.factoryCostUsd ?? 0;
   const totalKits = Math.max(1, state.totalKits || 0);
   const totalFactoryCost = factoryCostPerKit * totalKits;
@@ -70,16 +72,16 @@ export function Step4Commission({ state, update }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800">Step 4: Logistics & Commission</h2>
-        <p className="text-sm text-gray-500 mt-1">Set container logistics first, then apply VBT commission.</p>
+        <h2 className="text-lg font-semibold text-gray-800">{t("wizard.step4Title")}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t("wizard.step4Desc")}</p>
       </div>
 
       {/* ── 1. Container Logistics ───────────────────────────────────────────── */}
       <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-        <h3 className="font-medium text-gray-700">Container Logistics</h3>
+        <h3 className="font-medium text-gray-700">{t("wizard.containerLogistics")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Kits</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.totalKitsLabel")}</label>
             <input
               type="number"
               min="0"
@@ -100,7 +102,7 @@ export function Step4Commission({ state, update }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Kits per Container</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.kitsPerContainer")}</label>
             <input
               type="number"
               min="0"
@@ -118,7 +120,7 @@ export function Step4Commission({ state, update }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Containers</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.containersLabel")}</label>
             <input
               type="number"
               min="1"
@@ -145,12 +147,12 @@ export function Step4Commission({ state, update }: Props) {
 
       {/* ── 2. Commission ────────────────────────────────────────────────────── */}
       <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-        <h3 className="font-medium text-gray-700">Commission (Vision Latam)</h3>
+        <h3 className="font-medium text-gray-700">{t("wizard.commissionVisionLatam")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Commission % */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Commission %</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.commissionPct")}</label>
             <div className="relative">
               <input
                 type="number"
@@ -170,7 +172,7 @@ export function Step4Commission({ state, update }: Props) {
 
           {/* Fixed per Order — source of truth; editing this updates per-kit */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fixed per Order (USD)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.fixedPerOrder")}</label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
               <input
@@ -196,7 +198,7 @@ export function Step4Commission({ state, update }: Props) {
 
           {/* Fixed per Kit — editing this updates per-order */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fixed per Kit (USD)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("wizard.fixedPerKit")}</label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
               <input
@@ -223,37 +225,39 @@ export function Step4Commission({ state, update }: Props) {
         {/* FOB and commission summary */}
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Factory cost (EXW)</span>
+            <span className="text-gray-500">{t("wizard.factoryCostExw")}</span>
             <span className="font-medium">{fmt(totalFactoryCost)}</span>
           </div>
           {totalKits > 1 && (
             <p className="text-xs text-gray-500">
-              {fmt(factoryCostPerKit)}/kit × {totalKits} kits = {fmt(totalFactoryCost)}
+              {fmt(factoryCostPerKit)}/kit × {totalKits} {t("quotes.kits")} = {fmt(totalFactoryCost)}
             </p>
           )}
           <div className="flex justify-between text-base font-semibold pt-2 border-t">
-            <span className="text-vbt-blue">FOB (factory + % commission)</span>
+            <span className="text-vbt-blue">{t("wizard.fobFactoryCommission")}</span>
             <span className="text-vbt-blue">{fmt(fob)}</span>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Fixed commission is applied in taxes & fees in the next step.</p>
+          <p className="text-xs text-gray-500 mt-1">{t("wizard.fixedInNextStep")}</p>
           {commissionAmount > 0 && (
             <>
               {commissionPctAmount > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Commission {state.commissionPct}%</span>
+                  <span className="text-gray-500">{t("wizard.commissionPctLabel", { pct: state.commissionPct })}</span>
                   <span className="font-medium">{fmt(commissionPctAmount)}</span>
                 </div>
               )}
               {state.commissionFixed > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">
-                    Fixed ({state.totalKits > 0 ? `${fmt(state.commissionFixedPerKit)}/kit × ${state.totalKits}` : "per order"})
+                    {state.totalKits > 0
+                      ? t("wizard.perKitLabel", { amount: fmt(state.commissionFixedPerKit) }) + ` × ${state.totalKits}`
+                      : t("wizard.fixedPerOrderLabel")}
                   </span>
                   <span className="font-medium">{fmt(state.commissionFixed)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Total commission (in taxes & fees)</span>
+                <span className="text-gray-500">{t("wizard.totalCommissionTaxes")}</span>
                 <span className="font-medium">{fmt(commissionAmount)}</span>
               </div>
             </>
@@ -265,13 +269,13 @@ export function Step4Commission({ state, update }: Props) {
       {fob > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-4 bg-white rounded-xl border border-gray-200">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">FOB per Container</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">{t("wizard.fobPerContainer")}</p>
             <p className="text-xl font-bold text-gray-800 mt-1">
               {fmt(numContainers > 0 ? fob / numContainers : 0)}
             </p>
           </div>
           <div className="text-center p-4 bg-white rounded-xl border border-gray-200">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">FOB per Kit</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">{t("wizard.fobPerKit")}</p>
             <p className="text-xl font-bold text-gray-800 mt-1">
               {fmt(state.totalKits > 0 ? fob / state.totalKits : 0)}
             </p>

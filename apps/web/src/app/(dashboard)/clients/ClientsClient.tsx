@@ -153,7 +153,7 @@ export function ClientsClient({
 
   const saveNew = async () => {
     if (!form.name.trim()) {
-      setError("Name is required");
+      setError(t("clients.nameRequired"));
       return;
     }
     setSaving(true);
@@ -180,13 +180,13 @@ export function ClientsClient({
       setNewOpen(false);
       refreshList();
     } else {
-      setError(data.error ?? "Failed to create client");
+      setError(data.error ?? t("clients.failedToCreate"));
     }
   };
 
   const saveEdit = async () => {
     if (!editId || !form.name.trim()) {
-      setError("Name is required");
+      setError(t("clients.nameRequired"));
       return;
     }
     setSaving(true);
@@ -213,47 +213,47 @@ export function ClientsClient({
       setEditId(null);
       refreshList();
     } else {
-      setError(data.error ?? "Failed to update client");
+      setError(data.error ?? t("clients.failedToUpdate"));
     }
   };
 
   const modalForm = (
     <div className="space-y-3 text-sm">
       <div>
-        <label className="block text-gray-600 mb-1">Name *</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.nameLabel")}</label>
         <input
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
-          placeholder="Company name"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+          placeholder={t("clients.companyNamePlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Legal name</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.legalName")}</label>
         <input
           value={form.legalName}
           onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          placeholder="Legal name"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
+          placeholder={t("clients.legalNamePlaceholder")}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">Tax ID</label>
+          <label className="block text-muted-foreground mb-1">{t("clients.taxId")}</label>
           <input
             value={form.taxId}
             onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">Country</label>
+          <label className="block text-muted-foreground mb-1">{t("clients.country")}</label>
           <select
             value={form.countryId}
             onChange={(e) => setForm((f) => ({ ...f, countryId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           >
-            <option value="">— None —</option>
+            <option value="">{t("clients.noneOption")}</option>
             {countries.map((co) => (
               <option key={co.id} value={co.id}>{co.name}</option>
             ))}
@@ -261,56 +261,56 @@ export function ClientsClient({
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Address</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.address")}</label>
         <input
           value={form.address}
           onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          placeholder="Street, number"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
+          placeholder={t("clients.addressPlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">City</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.city")}</label>
         <input
           value={form.city}
           onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">Phone</label>
+          <label className="block text-muted-foreground mb-1">{t("clients.phone")}</label>
           <input
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">Email</label>
+          <label className="block text-muted-foreground mb-1">{t("clients.email")}</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Website</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.website")}</label>
         <input
           value={form.website}
           onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          placeholder="https://"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
+          placeholder={t("clients.websitePlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Notes</label>
+        <label className="block text-muted-foreground mb-1">{t("clients.notes")}</label>
         <textarea
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue min-h-[60px]"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary min-h-[60px]"
         />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -321,13 +321,13 @@ export function ClientsClient({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("clients.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{total} {t("clients.clientsCount")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("clients.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{total} {t("clients.clientsCount")}</p>
         </div>
         <button
           type="button"
           onClick={openNew}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
         >
           <Plus className="w-4 h-4" /> {t("clients.newClient")}
         </button>
@@ -336,26 +336,26 @@ export function ClientsClient({
       {/* KPI cards */}
       {stats && (stats.topByProjects.length > 0 || stats.topBySold.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{t("clients.kpiTopByProjects")}</h3>
+          <div className="bg-card rounded-xl shadow-sm border border-border p-4">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t("clients.kpiTopByProjects")}</h3>
             <ul className="space-y-1 text-sm">
               {stats.topByProjects.slice(0, 5).map((s) => (
                 <li key={s.clientId} className="flex justify-between">
                   <Link href={`/clients/${s.clientId}`} className="text-vbt-blue hover:underline truncate mr-2">
                     {s.clientName}
                   </Link>
-                  <span className="font-medium text-gray-700">{s.projectCount}</span>
+                  <span className="font-medium text-foreground">{s.projectCount}</span>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">{t("clients.kpiTopBySold")}</h3>
+          <div className="bg-card rounded-xl shadow-sm border border-border p-4">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t("clients.kpiTopBySold")}</h3>
             <ul className="space-y-1 text-sm">
               {stats.topBySold.slice(0, 5).map((s) => (
                 <li key={s.clientId} className="flex justify-between gap-2">
-                  <span className="text-gray-700 truncate">{s.clientName ?? "—"}</span>
-                  <span className="font-medium text-gray-900 whitespace-nowrap">{formatCurrency(s.totalSold)}</span>
+                  <span className="text-foreground truncate">{s.clientName ?? "—"}</span>
+                  <span className="font-medium text-foreground whitespace-nowrap">{formatCurrency(s.totalSold)}</span>
                 </li>
               ))}
             </ul>
@@ -372,29 +372,29 @@ export function ClientsClient({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
         <button
           type="button"
           onClick={runSearch}
           disabled={searching}
-          className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
         >
           {searching ? "..." : t("common.search")}
         </button>
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex rounded-lg border border-border overflow-hidden">
           <button
             onClick={() => setView("cards")}
-            title="Card view"
-            className={`p-2 transition-colors ${view === "cards" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+            title={t("clients.cardView")}
+            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-gray-50"}`}
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setView("table")}
-            title="Table view"
-            className={`p-2 transition-colors ${view === "table" ? "bg-vbt-blue text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+            title={t("clients.tableView")}
+            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-gray-50"}`}
           >
             <List className="w-4 h-4" />
           </button>
@@ -404,15 +404,15 @@ export function ClientsClient({
       {clients.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
           <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No clients yet</p>
-          <p className="text-gray-400 text-sm mt-1">Create a client from the button above or when creating a project.</p>
+          <p className="text-muted-foreground">{t("clients.noClientsYet")}</p>
+          <p className="text-gray-400 text-sm mt-1">{t("clients.noClientsHint")}</p>
         </div>
       ) : view === "cards" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {clients.map((c) => (
             <div
               key={c.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow flex flex-col"
+              className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow flex flex-col"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -422,7 +422,7 @@ export function ClientsClient({
                   type="button"
                   onClick={() => openEdit(c)}
                   className="p-1.5 text-gray-400 hover:text-vbt-blue rounded"
-                  title="Edit"
+                  title={t("clients.edit")}
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -431,10 +431,10 @@ export function ClientsClient({
                 {c.name}
               </Link>
               {c.legalName && c.legalName !== c.name && (
-                <p className="text-xs text-gray-500 mt-0.5">{c.legalName}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{c.legalName}</p>
               )}
-              {c.country && <p className="text-sm text-gray-500 mt-1">{c.country.name}</p>}
-              <div className="mt-2 space-y-0.5 text-sm text-gray-500">
+              {c.country && <p className="text-sm text-muted-foreground mt-1">{c.country.name}</p>}
+              <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
                 {c.email && (
                   <div className="flex items-center gap-1.5 truncate">
                     <Mail className="w-3.5 h-3.5 flex-shrink-0" /> {c.email}
@@ -446,22 +446,22 @@ export function ClientsClient({
                   </div>
                 )}
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-muted-foreground">
                 {c._count.projects} project{c._count.projects !== 1 ? "s" : ""}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Legal name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Country</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Contact</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Projects</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Legal name</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Country</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Contact</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Projects</th>
                 <th className="w-10 px-4 py-3"></th>
               </tr>
             </thead>
@@ -473,9 +473,9 @@ export function ClientsClient({
                       {c.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{c.legalName ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.country?.name ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td className="px-4 py-3 text-muted-foreground">{c.legalName ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.country?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
                     {[c.email, c.phone].filter(Boolean).join(" · ") || "—"}
                   </td>
                   <td className="px-4 py-3 text-center">{c._count.projects}</td>
@@ -484,7 +484,7 @@ export function ClientsClient({
                       type="button"
                       onClick={() => openEdit(c)}
                       className="p-1.5 text-gray-400 hover:text-vbt-blue rounded"
-                      title="Edit"
+                      title={t("clients.edit")}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -504,13 +504,13 @@ export function ClientsClient({
               className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">New client</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">New client</h2>
               {modalForm}
               <div className="flex gap-2 mt-4 justify-end">
                 <button
                   type="button"
                   onClick={() => setNewOpen(false)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-foreground hover:bg-gray-50"
                 >
                   {t("common.cancel")}
                 </button>
@@ -518,7 +518,7 @@ export function ClientsClient({
                   type="button"
                   onClick={saveNew}
                   disabled={saving}
-                  className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
                 >
                   {saving ? t("common.saving") : t("common.save")}
                 </button>
@@ -536,13 +536,13 @@ export function ClientsClient({
               className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit client</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Edit client</h2>
               {modalForm}
               <div className="flex gap-2 mt-4 justify-end">
                 <button
                   type="button"
                   onClick={() => setEditId(null)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-foreground hover:bg-gray-50"
                 >
                   {t("common.cancel")}
                 </button>
@@ -550,7 +550,7 @@ export function ClientsClient({
                   type="button"
                   onClick={saveEdit}
                   disabled={saving}
-                  className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
                 >
                   {saving ? t("common.saving") : t("common.save")}
                 </button>

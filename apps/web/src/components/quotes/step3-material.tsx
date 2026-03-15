@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import { useT } from "@/lib/i18n/context";
 
 interface Props {
   state: QuoteWizardState;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function Step3MaterialCost({ state, update }: Props) {
+  const t = useT();
   const [settings, setSettings] = useState<any>(null);
   const [importData, setImportData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -96,11 +98,11 @@ export function Step3MaterialCost({ state, update }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800">Step 3: Material Cost</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{t("wizard.step3Title")}</h2>
         <p className="text-sm text-gray-500 mt-1">
           {state.costMethod === "CSV"
-            ? "Review computed wall areas from your CSV import."
-            : "Enter wall area per system and review rates."}
+            ? t("wizard.reviewCsvAreas")
+            : t("wizard.enterWallArea")}
         </p>
       </div>
 
@@ -108,19 +110,19 @@ export function Step3MaterialCost({ state, update }: Props) {
       {state.costMethod === "CSV" && (
         <div className="space-y-4">
           {loading ? (
-            <p className="text-gray-400 text-sm">Loading import data...</p>
+            <p className="text-gray-400 text-sm">{t("wizard.loadingImportData")}</p>
           ) : importData ? (
             <>
               {/* Wall area KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: "VBT 80mm",  value: state.m2S80,  color: "blue"   },
-                  { label: "VBT 150mm", value: state.m2S150, color: "purple" },
-                  { label: "VBT 200mm", value: state.m2S200, color: "green"  },
-                  { label: "Total",     value: state.m2S80 + state.m2S150 + state.m2S200, color: "orange" },
+                  { label: t("wizard.vbt80"),  value: state.m2S80,  color: "blue"   },
+                  { label: t("wizard.vbt150"), value: state.m2S150, color: "purple" },
+                  { label: t("wizard.vbt200"), value: state.m2S200, color: "green"  },
+                  { label: t("quotes.totalLabel"), value: state.m2S80 + state.m2S150 + state.m2S200, color: "orange" },
                 ].map((s) => (
                   <div key={s.label} className={`p-4 bg-${s.color}-50 rounded-lg border border-${s.color}-100`}>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">{s.label} Wall Area</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{s.label} {t("wizard.wallArea")}</p>
                     <p className={`text-xl font-bold text-${s.color}-700 mt-1`}>{s.value.toFixed(1)} m²</p>
                   </div>
                 ))}
@@ -139,11 +141,11 @@ export function Step3MaterialCost({ state, update }: Props) {
                 return (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 uppercase">Total Panel Weight (cored)</p>
+                      <p className="text-xs text-gray-500 uppercase">{t("wizard.totalPanelWeight")}</p>
                       <p className="text-lg font-semibold mt-1">{totalWeight.toFixed(1)} kg</p>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 uppercase">Total Panel Volume</p>
+                      <p className="text-xs text-gray-500 uppercase">{t("wizard.totalPanelVolume")}</p>
                       <p className="text-lg font-semibold mt-1">{totalVolume.toFixed(2)} m³</p>
                     </div>
                   </div>
@@ -152,21 +154,20 @@ export function Step3MaterialCost({ state, update }: Props) {
 
               {/* Factory cost (EXW) */}
               {usingM2Fallback && settings ? (
-                // No piece prices → show M² rate breakdown as fallback
                 <div className="space-y-3">
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-amber-800 font-medium text-sm">
-                      Piece prices not configured — using M² system rates as estimate
+                      {t("wizard.piecePricesNotConfigured")}
                     </p>
                     <p className="text-amber-600 text-xs mt-0.5">
-                      Set prices in the Piece Catalog to get an exact per-piece cost.
+                      {t("wizard.setPricesCatalog")}
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { label: "VBT 80mm",  m2: state.m2S80,  rate: settings.rateS80  ?? 37 },
-                      { label: "VBT 150mm", m2: state.m2S150, rate: settings.rateS150 ?? 67 },
-                      { label: "VBT 200mm", m2: state.m2S200, rate: settings.rateS200 ?? 85 },
+                      { label: t("wizard.vbt80"),  m2: state.m2S80,  rate: settings.rateS80  ?? 37 },
+                      { label: t("wizard.vbt150"), m2: state.m2S150, rate: settings.rateS150 ?? 67 },
+                      { label: t("wizard.vbt200"), m2: state.m2S200, rate: settings.rateS200 ?? 85 },
                     ].filter(s => s.m2 > 0).map((s) => (
                       <div key={s.label} className="p-3 bg-white border border-gray-200 rounded-lg">
                         <p className="text-xs text-gray-500">{s.label}</p>
@@ -178,26 +179,26 @@ export function Step3MaterialCost({ state, update }: Props) {
                     ))}
                   </div>
                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-                    <p className="text-blue-800 font-medium">Estimated Factory cost (EXW)</p>
+                    <p className="text-blue-800 font-medium">{t("wizard.estimatedFactoryExw")}</p>
                     <p className="text-2xl font-bold text-blue-700">{fmt(state.factoryCostUsd ?? 0)}</p>
                   </div>
                 </div>
               ) : (state.factoryCostUsd ?? 0) > 0 ? (
                 <div className="p-4 bg-green-50 border border-green-100 rounded-lg flex items-center justify-between">
-                  <p className="text-green-800 font-medium">Factory cost (EXW) – CSV piece prices</p>
+                  <p className="text-green-800 font-medium">{t("wizard.factoryCostCsv")}</p>
                   <p className="text-2xl font-bold text-green-700">{fmt(state.factoryCostUsd ?? 0)}</p>
                 </div>
               ) : (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-amber-800 font-medium text-sm">⚠ No piece costs or M² rates available</p>
+                  <p className="text-amber-800 font-medium text-sm">⚠ {t("wizard.noPieceCosts")}</p>
                   <p className="text-amber-600 text-xs mt-1">
-                    Configure piece prices in the Catalog or system rates in Admin settings.
+                    {t("wizard.configureCatalogRates")}
                   </p>
                 </div>
               )}
             </>
           ) : (
-            <p className="text-red-500 text-sm">Could not load import data.</p>
+            <p className="text-red-500 text-sm">{t("wizard.couldNotLoadImport")}</p>
           )}
         </div>
       )}
@@ -207,13 +208,13 @@ export function Step3MaterialCost({ state, update }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { key: "m2S80"  as const, label: "VBT 80mm",  rate: settings.rateS80  },
-              { key: "m2S150" as const, label: "VBT 150mm", rate: settings.rateS150 },
-              { key: "m2S200" as const, label: "VBT 200mm", rate: settings.rateS200 },
+              { key: "m2S80"  as const, label: t("wizard.vbt80"),  rate: settings.rateS80  },
+              { key: "m2S150" as const, label: t("wizard.vbt150"), rate: settings.rateS150 },
+              { key: "m2S200" as const, label: t("wizard.vbt200"), rate: settings.rateS200 },
             ].map((sys) => (
               <div key={sys.key} className="p-4 border border-gray-200 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {sys.label} Wall Area (m²)
+                  {sys.label} {t("wizard.wallAreaM2")}
                 </label>
                 <input
                   type="number"
@@ -223,7 +224,7 @@ export function Step3MaterialCost({ state, update }: Props) {
                   onChange={(e) => update({ [sys.key]: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
-                <p className="text-xs text-gray-400 mt-1">Rate: {fmt(sys.rate)}/m²</p>
+                <p className="text-xs text-gray-400 mt-1">{t("wizard.ratePerM2")}: {fmt(sys.rate)}/m²</p>
                 <p className="text-sm font-semibold text-gray-700 mt-1">
                   = {fmt(state[sys.key] * sys.rate)}
                 </p>
@@ -231,7 +232,7 @@ export function Step3MaterialCost({ state, update }: Props) {
             ))}
           </div>
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-            <p className="text-blue-800 font-medium">Total Factory cost (EXW)</p>
+            <p className="text-blue-800 font-medium">{t("wizard.totalFactoryExw")}</p>
             <p className="text-2xl font-bold text-blue-700">{fmt(state.factoryCostUsd ?? 0)}</p>
           </div>
         </div>

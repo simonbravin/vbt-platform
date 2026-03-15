@@ -2,6 +2,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/lib/i18n/context"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -40,6 +41,7 @@ interface ImportLine {
 }
 
 export default function Step2CSV({ state, update }: Step2Props) {
+  const t = useT()
   const [file, setFile] = React.useState<File | null>(state.csvFile)
   const [uploading, setUploading] = React.useState(false)
   const [result, setResult] = React.useState<ImportResult | null>(null)
@@ -61,7 +63,7 @@ export default function Step2CSV({ state, update }: Step2Props) {
   const handleUpload = async () => {
     if (!file) return
     if (!state.projectId) {
-      setError("Please select a project in Step 1 before uploading.")
+      setError(t("wizard.selectProjectStep1"))
       return
     }
     setUploading(true)
@@ -73,7 +75,7 @@ export default function Step2CSV({ state, update }: Step2Props) {
       const res = await fetch("/api/import/csv", { method: "POST", body: formData })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? ("Upload failed (" + res.status + ")"))
+        throw new Error(body.error ?? (t("wizard.uploadFailed") + " (" + res.status + ")"))
       }
       const data: ImportResult = await res.json()
       setResult(data)
@@ -84,7 +86,7 @@ export default function Step2CSV({ state, update }: Step2Props) {
         .then((imp: { lines?: ImportLine[] }) => setImportLines(imp?.lines ?? []))
         .catch(() => setImportLines([]))
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Upload failed")
+      setError(err instanceof Error ? err.message : t("wizard.uploadFailed"))
     } finally {
       setUploading(false)
     }
@@ -141,10 +143,9 @@ export default function Step2CSV({ state, update }: Step2Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-1">Step 2: CSV / Revit Import</h2>
+        <h2 className="text-xl font-semibold mb-1">{t("wizard.step2Title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Upload a Revit wall schedule CSV. The system will match rows to the product catalog
-          automatically. Unmatched rows can be manually mapped or ignored.
+          {t("wizard.step2Desc")}
         </p>
       </div>
       {error && (
@@ -153,15 +154,15 @@ export default function Step2CSV({ state, update }: Step2Props) {
         </Alert>
       )}
       <div className="space-y-2">
-        <Label htmlFor="csv-file">Revit Wall Schedule CSV</Label>
+        <Label htmlFor="csv-file">{t("wizard.revitCsvLabel")}</Label>
         <div className="flex items-center gap-3">
           <Input id="csv-file" type="file" accept=".csv" onChange={handleFileChange} className="max-w-sm" />
           <Button type="button" onClick={handleUpload} disabled={!file || uploading}>
-            {uploading ? "Uploading..." : "Upload & Parse"}
+            {uploading ? t("wizard.uploading") : t("wizard.uploadParse")}
           </Button>
         </div>
         {file && !result && (
-          <p className="text-xs text-muted-foreground">Selected: {file.name}</p>
+          <p className="text-xs text-muted-foreground">{t("wizard.selectedFile")}: {file.name}</p>
         )}
       </div>
       {uploading && (
@@ -174,25 +175,25 @@ export default function Step2CSV({ state, update }: Step2Props) {
       {result && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Badge variant="default">Total rows: {result.totalRows}</Badge>
-            <Badge variant="secondary">Matched: {result.matchedCount}</Badge>
+            <Badge variant="default">{t("wizard.totalRows")}: {result.totalRows}</Badge>
+            <Badge variant="secondary">{t("wizard.matched")}: {result.matchedCount}</Badge>
             <Badge variant={unmatchedActive.length > 0 ? "destructive" : "outline"}>
-              Unmatched: {unmatchedActive.length}
+              {t("wizard.unmatched")}: {unmatchedActive.length}
             </Badge>
           </div>
           {importLines.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-medium text-sm">Interpreted data (same as CSV, parsed)</h3>
+              <h3 className="font-medium text-sm">{t("wizard.interpretedData")}</h3>
               <div className="rounded-md border overflow-x-auto max-h-80 overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Type / Piece</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Height (mm)</TableHead>
-                      <TableHead className="text-right">Linear (m)</TableHead>
+                      <TableHead>{t("wizard.typePiece")}</TableHead>
+                      <TableHead className="text-right">{t("quotes.qty")}</TableHead>
+                      <TableHead className="text-right">{t("wizard.heightMm")}</TableHead>
+                      <TableHead className="text-right">{t("wizard.linearM")}</TableHead>
                       <TableHead className="text-right">m²</TableHead>
-                      <TableHead>Match</TableHead>
+                      <TableHead>{t("wizard.matchColumn")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -213,17 +214,17 @@ export default function Step2CSV({ state, update }: Step2Props) {
           )}
           {result.unmatchedRows.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-medium text-sm">Unmatched Rows</h3>
+              <h3 className="font-medium text-sm">{t("wizard.unmatchedRows")}</h3>
               <div className="rounded-md border overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Revit Family</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Area (m&sup2;)</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("wizard.revitFamily")}</TableHead>
+                      <TableHead>{t("wizard.type")}</TableHead>
+                      <TableHead className="text-right">{t("quotes.qty")}</TableHead>
+                      <TableHead className="text-right">{t("wizard.areaM2")}</TableHead>
+                      <TableHead>{t("wizard.status")}</TableHead>
+                      <TableHead className="text-right">{t("wizard.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -235,18 +236,18 @@ export default function Step2CSV({ state, update }: Step2Props) {
                         <TableCell className="text-right">{row.area.toFixed(2)}</TableCell>
                         <TableCell>
                           {row.ignored ? (
-                            <Badge variant="outline">Ignored</Badge>
+                            <Badge variant="outline">{t("wizard.ignored")}</Badge>
                           ) : row.mappedCatalogId ? (
-                            <Badge variant="secondary">Mapped</Badge>
+                            <Badge variant="secondary">{t("wizard.mapped")}</Badge>
                           ) : (
-                            <Badge variant="destructive">Unmatched</Badge>
+                            <Badge variant="destructive">{t("wizard.unmatched")}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           {!row.ignored && !row.mappedCatalogId && (
                             <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => openMapDialog(row)}>Map</Button>
-                              <Button size="sm" variant="ghost" onClick={() => handleIgnore(row.rowIndex)}>Ignore</Button>
+                              <Button size="sm" variant="outline" onClick={() => openMapDialog(row)}>{t("wizard.map")}</Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleIgnore(row.rowIndex)}>{t("wizard.ignore")}</Button>
                             </div>
                           )}
                         </TableCell>
@@ -259,7 +260,7 @@ export default function Step2CSV({ state, update }: Step2Props) {
           )}
           {unmatchedActive.length === 0 && (
             <Alert>
-              <AlertDescription>All rows are matched or resolved. You can proceed to the next step.</AlertDescription>
+              <AlertDescription>{t("wizard.allRowsMatched")}</AlertDescription>
             </Alert>
           )}
         </div>
@@ -267,19 +268,19 @@ export default function Step2CSV({ state, update }: Step2Props) {
       <Dialog open={!!mappingRow} onOpenChange={(open) => !open && setMappingRow(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Map to Catalog Item</DialogTitle>
+            <DialogTitle>{t("wizard.mapToCatalog")}</DialogTitle>
           </DialogHeader>
           {mappingRow && (
             <div className="space-y-4">
               <div className="rounded-md bg-muted p-3 text-sm">
-                <p><span className="font-medium">Family:</span> {mappingRow.revitFamily}</p>
-                <p><span className="font-medium">Type:</span> {mappingRow.revitType}</p>
+                <p><span className="font-medium">{t("wizard.family")}:</span> {mappingRow.revitFamily}</p>
+                <p><span className="font-medium">{t("wizard.typeLabel")}:</span> {mappingRow.revitType}</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="catalog-search">Search catalog</Label>
+                <Label htmlFor="catalog-search">{t("wizard.searchCatalog")}</Label>
                 <Input
                   id="catalog-search"
-                  placeholder="Type SKU or description..."
+                  placeholder={t("wizard.typeSkuDesc")}
                   value={catalogSearch}
                   onChange={(e) => setCatalogSearch(e.target.value)}
                 />
@@ -296,8 +297,8 @@ export default function Step2CSV({ state, update }: Step2Props) {
                     <TableHeader>
                       <TableRow>
                         <TableHead>SKU</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>System</TableHead>
+                        <TableHead>{t("quotes.description")}</TableHead>
+                        <TableHead>{t("quotes.system")}</TableHead>
                         <TableHead />
                       </TableRow>
                     </TableHeader>
@@ -308,7 +309,7 @@ export default function Step2CSV({ state, update }: Step2Props) {
                           <TableCell className="text-sm">{item.description}</TableCell>
                           <TableCell><Badge variant="outline">{item.systemType}</Badge></TableCell>
                           <TableCell>
-                            <Button size="sm" onClick={() => handleMapSelect(item)}>Select</Button>
+                            <Button size="sm" onClick={() => handleMapSelect(item)}>{t("wizard.select")}</Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -317,12 +318,12 @@ export default function Step2CSV({ state, update }: Step2Props) {
                 </div>
               )}
               {!searchLoading && catalogSearch.trim().length >= 2 && catalogItems.length === 0 && (
-                <p className="text-sm text-muted-foreground">No catalog items found.</p>
+                <p className="text-sm text-muted-foreground">{t("wizard.noCatalogItems")}</p>
               )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMappingRow(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setMappingRow(null)}>{t("common.cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

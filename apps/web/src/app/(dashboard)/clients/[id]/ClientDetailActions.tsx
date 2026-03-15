@@ -69,7 +69,7 @@ export function ClientDetailActions({
 
   const saveEdit = async () => {
     if (!form.name.trim()) {
-      setError("Name is required");
+      setError(t("clients.nameRequired"));
       return;
     }
     setSaving(true);
@@ -97,14 +97,14 @@ export function ClientDetailActions({
       setEditOpen(false);
       router.refresh();
     } else {
-      setError(data.error ?? "Failed to update");
+      setError(data.error ?? t("clients.failedToUpdate"));
     }
   };
 
   const modalForm = (
     <div className="space-y-3 text-sm">
       <div>
-        <label className="block text-gray-600 mb-1">Name *</label>
+        <label className="block text-gray-600 mb-1">{t("clients.nameLabel")}</label>
         <input
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -112,7 +112,7 @@ export function ClientDetailActions({
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Legal name</label>
+        <label className="block text-gray-600 mb-1">{t("clients.legalName")}</label>
         <input
           value={form.legalName}
           onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
@@ -121,7 +121,7 @@ export function ClientDetailActions({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">Tax ID</label>
+          <label className="block text-gray-600 mb-1">{t("clients.taxId")}</label>
           <input
             value={form.taxId}
             onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))}
@@ -129,13 +129,13 @@ export function ClientDetailActions({
           />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">Country</label>
+          <label className="block text-gray-600 mb-1">{t("clients.country")}</label>
           <select
             value={form.countryId}
             onChange={(e) => setForm((f) => ({ ...f, countryId: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
           >
-            <option value="">— None —</option>
+            <option value="">{t("clients.noneOption")}</option>
             {countries.map((co) => (
               <option key={co.id} value={co.id}>{co.name}</option>
             ))}
@@ -143,7 +143,7 @@ export function ClientDetailActions({
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Address</label>
+        <label className="block text-gray-600 mb-1">{t("clients.address")}</label>
         <input
           value={form.address}
           onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
@@ -151,7 +151,7 @@ export function ClientDetailActions({
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">City</label>
+        <label className="block text-gray-600 mb-1">{t("clients.city")}</label>
         <input
           value={form.city}
           onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
@@ -160,7 +160,7 @@ export function ClientDetailActions({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">Phone</label>
+          <label className="block text-gray-600 mb-1">{t("clients.phone")}</label>
           <input
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -168,7 +168,7 @@ export function ClientDetailActions({
           />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">Email</label>
+          <label className="block text-gray-600 mb-1">{t("clients.email")}</label>
           <input
             type="email"
             value={form.email}
@@ -178,7 +178,7 @@ export function ClientDetailActions({
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Website</label>
+        <label className="block text-gray-600 mb-1">{t("clients.website")}</label>
         <input
           value={form.website}
           onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
@@ -186,7 +186,7 @@ export function ClientDetailActions({
         />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">Notes</label>
+        <label className="block text-gray-600 mb-1">{t("clients.notes")}</label>
         <textarea
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

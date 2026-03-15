@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,17 +10,18 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/context";
 import { Locale } from "@/lib/i18n/translations";
 
-const schema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
-  confirmPassword: z.string(),
-}).refine((d) => d.password === d.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-type FormData = z.infer<typeof schema>;
+function getSignupSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(2),
+    email: z.string().email(),
+    password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
+    confirmPassword: z.string(),
+  }).refine((d) => d.password === d.confirmPassword, {
+    message: t("auth.passwordMismatch"),
+    path: ["confirmPassword"],
+  });
+}
+type FormData = z.infer<ReturnType<typeof getSignupSchema>>;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { locale, setLocale, t } = useLanguage();
+  const schema = useMemo(() => getSignupSchema(t), [t]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -45,20 +47,20 @@ export default function SignupPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Signup failed. Please try again.");
+        setError(json.error ?? t("auth.signupFailed"));
         return;
       }
       router.push("/pending");
     } catch {
-      setError("An unexpected error occurred.");
+      setError(t("auth.errorUnexpected"));
     } finally {
       setLoading(false);
     }
   }
 
   const textFields = [
-    { id: "name" as const, labelKey: "auth.fullName", type: "text" as const, placeholder: "John Smith" },
-    { id: "email" as const, labelKey: "auth.email", type: "email" as const, placeholder: "you@company.com" },
+    { id: "name" as const, labelKey: "auth.fullName", type: "text" as const, placeholderKey: "auth.placeholderName" as const },
+    { id: "email" as const, labelKey: "auth.email", type: "email" as const, placeholderKey: "auth.placeholderEmailCompany" as const },
   ];
 
   return (
@@ -91,8 +93,8 @@ export default function SignupPage() {
               className="h-14 w-auto object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white">VBT Cotizador</h1>
-          <p className="text-slate-300 mt-1 text-sm">Vision Building Technologies</p>
+          <h1 className="text-3xl font-bold text-white">{t("topbar.title")}</h1>
+          <p className="text-slate-300 mt-1 text-sm">{t("auth.appSubtitle")}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -106,7 +108,7 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {textFields.map(({ id, labelKey, type, placeholder }) => (
+            {textFields.map(({ id, labelKey, type, placeholderKey }) => (
               <div key={id}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t(labelKey)}
@@ -114,7 +116,7 @@ export default function SignupPage() {
                 <input
                   {...register(id)}
                   type={type}
-                  placeholder={placeholder}
+                  placeholder={t(placeholderKey)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
                 />
                 {errors[id] && (
@@ -129,7 +131,7 @@ export default function SignupPage() {
                 <input
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min 8 chars"
+                  placeholder={t("auth.passwordPlaceholder")}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
                 />
                 <button
@@ -137,7 +139,7 @@ export default function SignupPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
                   tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 >
                   {showPassword ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +162,7 @@ export default function SignupPage() {
                 <input
                   {...register("confirmPassword")}
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Repeat password"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
                 />
                 <button
@@ -168,7 +170,7 @@ export default function SignupPage() {
                   onClick={() => setShowConfirmPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
                   tabIndex={-1}
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={showConfirmPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 >
                   {showConfirmPassword ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -37,12 +37,12 @@ export default function ForgotPasswordPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Something went wrong. Try again.");
+        setError(json.error ?? t("auth.errorGeneric"));
         return;
       }
       setSuccess(true);
     } catch {
-      setError("An unexpected error occurred.");
+      setError(t("auth.errorUnexpected"));
     } finally {
       setLoading(false);
     }
@@ -70,8 +70,8 @@ export default function ForgotPasswordPage() {
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(hsl(var(--auth-grid-overlay)) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--auth-grid-overlay)) 1px, transparent 1px)`,
           backgroundSize: "48px 48px",
         }}
       />
@@ -89,8 +89,8 @@ export default function ForgotPasswordPage() {
               className="h-16 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">VBT Cost Calculator</h1>
-          <p className="text-white/70 mt-1.5 text-sm">Vision Building Technologies</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">{t("topbar.title")}</h1>
+          <p className="text-white/70 mt-1.5 text-sm">{t("auth.appSubtitle")}</p>
         </div>
 
         <div className="bg-slate-800/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 ring-1 ring-white/10">

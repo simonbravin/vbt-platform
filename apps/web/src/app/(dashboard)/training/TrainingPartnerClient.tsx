@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { BookOpen, CheckCircle, UserPlus } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Program = {
   id: string;
@@ -21,6 +22,7 @@ type Enrollment = {
 };
 
 export function TrainingPartnerClient() {
+  const t = useT();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,10 @@ export function TrainingPartnerClient() {
   useEffect(() => {
     let cancelled = false;
     fetchData()
-      .catch(() => { if (!cancelled) setError("Failed to load"); })
+      .catch(() => { if (!cancelled) setError(t("partner.training.failedToLoad")); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [fetchData]);
+  }, [fetchData, t]);
 
   const isEnrolled = (programId: string) => enrollments.some((e) => e.trainingProgram?.id === programId);
 
@@ -61,7 +63,7 @@ export function TrainingPartnerClient() {
     }
   };
 
-  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Loading...</div>;
+  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>;
   if (error) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
 
   return (

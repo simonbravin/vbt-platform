@@ -6,11 +6,13 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import { STATIC_COUNTRIES } from "@/lib/countries";
+import { useT } from "@/lib/i18n/context";
 
 type Country = { id: string; name: string; code: string };
 type Client = { id: string; name: string; legalName?: string | null };
 
 export default function NewProjectPage() {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export default function NewProjectPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.projectName.trim()) { setError("Project name is required."); return; }
+    if (!form.projectName.trim()) { setError(t("projects.projectNameRequired")); return; }
     setLoading(true);
     setError(null);
     try {
@@ -106,9 +108,9 @@ export default function NewProjectPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed to create project"); return; }
+      if (!res.ok) { setError(data.error ?? t("projects.failedCreate")); return; }
       router.push(`/projects/${data.id}`);
-    } catch { setError("An unexpected error occurred."); }
+    } catch { setError(t("auth.errorUnexpected")); }
     finally { setLoading(false); }
   }
 
@@ -118,7 +120,7 @@ export default function NewProjectPage() {
         <Link href="/projects" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">New Project</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("projects.newProjectTitle")}</h1>
       </div>
 
       <form onSubmit={submit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
@@ -127,25 +129,25 @@ export default function NewProjectPage() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("projects.projectNameLabel")}</label>
           <input
             type="text"
             value={form.projectName}
             onChange={(e) => update("projectName", e.target.value)}
-            placeholder="e.g., Residencial Las Palmas"
+            placeholder={t("projects.projectNamePlaceholder")}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("projects.client")}</label>
           <div className="flex gap-2">
             <select
               value={form.clientId}
               onChange={(e) => update("clientId", e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue bg-white"
             >
-              <option value="">— None —</option>
+              <option value="">{t("projects.noneOption")}</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -155,19 +157,19 @@ export default function NewProjectPage() {
               onClick={() => setNewClientOpen(true)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
             >
-              <Plus className="w-4 h-4" /> New client
+              <Plus className="w-4 h-4" /> {t("clients.newClient")}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.country")}</label>
           <select
             value={form.countryCode}
             onChange={(e) => update("countryCode", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue bg-white"
           >
-            <option value="">— Select country —</option>
+            <option value="">{t("projects.selectCountry")}</option>
             {countries.map((c) => (
               <option key={c.id} value={c.code ?? ""}>{c.name} ({c.code})</option>
             ))}
@@ -175,23 +177,23 @@ export default function NewProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("projects.city")}</label>
           <input
             type="text"
             value={form.city}
             onChange={(e) => update("city", e.target.value)}
-            placeholder="City"
+            placeholder={t("projects.city")}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("projects.address")}</label>
           <input
             type="text"
             value={form.address}
             onChange={(e) => update("address", e.target.value)}
-            placeholder="Street, number"
+            placeholder={t("projects.addressPlaceholder")}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
           />
         </div>
@@ -210,26 +212,26 @@ export default function NewProjectPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("projects.description")}</label>
           <textarea
             rows={3}
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
-            placeholder="Optional project description..."
+            placeholder={t("projects.descriptionPlaceholder")}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue resize-none"
           />
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
           <Link href="/projects" className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-            Cancel
+            {t("common.cancel")}
           </Link>
           <button
             type="submit"
             disabled={loading}
             className="px-5 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Project"}
+            {loading ? t("projects.creating") : t("projects.createProject")}
           </button>
         </div>
       </form>
@@ -244,18 +246,18 @@ export default function NewProjectPage() {
               className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-3"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-gray-900">New client</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("projects.newClientModalTitle")}</h2>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Name *</label>
+                <label className="block text-sm text-gray-600 mb-1">{t("common.name")} *</label>
                 <input
                   value={newClientForm.name}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-                  placeholder="Company name"
+                  placeholder={t("projects.companyNamePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Legal name</label>
+                <label className="block text-sm text-gray-600 mb-1">{t("projects.legalName")}</label>
                 <input
                   value={newClientForm.legalName}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, legalName: e.target.value }))}
@@ -263,20 +265,20 @@ export default function NewProjectPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Country</label>
+                <label className="block text-sm text-gray-600 mb-1">{t("common.country")}</label>
                 <select
                   value={newClientForm.countryId}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, countryId: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
                 >
-                  <option value="">— None —</option>
+                  <option value="">{t("projects.noneOption")}</option>
                   {countries.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Email</label>
+                <label className="block text-sm text-gray-600 mb-1">{t("auth.email")}</label>
                 <input
                   type="email"
                   value={newClientForm.email}
@@ -285,7 +287,7 @@ export default function NewProjectPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Phone</label>
+                <label className="block text-sm text-gray-600 mb-1">{t("common.phone")}</label>
                 <input
                   value={newClientForm.phone}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))}
@@ -298,7 +300,7 @@ export default function NewProjectPage() {
                   onClick={() => setNewClientOpen(false)}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -306,7 +308,7 @@ export default function NewProjectPage() {
                   disabled={savingClient || !newClientForm.name.trim()}
                   className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
                 >
-                  {savingClient ? "Saving..." : "Create client"}
+                  {savingClient ? t("common.saving") : t("projects.createClient")}
                 </button>
               </div>
             </div>

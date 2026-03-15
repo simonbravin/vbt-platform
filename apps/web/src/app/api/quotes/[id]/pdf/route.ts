@@ -4,7 +4,16 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { QuotePdfDocument, type QuotePdfData } from "@/components/pdf/quote-pdf";
+import { LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
+import type { Locale } from "@/lib/i18n/translations";
 import React from "react";
+
+function getLocaleFromRequest(req: Request): Locale {
+  const cookie = req.headers.get("cookie") ?? "";
+  const match = cookie.match(new RegExp(`${LOCALE_COOKIE_NAME}=([^;]+)`));
+  const value = match?.[1];
+  return value === "es" ? "es" : "en";
+}
 
 export async function GET(
   req: Request,
@@ -19,6 +28,7 @@ export async function GET(
   const isPlatformSuperadmin = !!user.isPlatformSuperadmin;
 
   const url = new URL(req.url);
+  const locale = getLocaleFromRequest(req);
   const includeAlerts = url.searchParams.get("includeAlerts") === "1" || url.searchParams.get("includeAlerts") === "true";
   const includeMaterialLines = url.searchParams.get("includeMaterialLines") !== "0" && url.searchParams.get("includeMaterialLines") !== "false";
   const showUnitPrice = url.searchParams.get("showUnitPrice") !== "0" && url.searchParams.get("showUnitPrice") !== "false";
@@ -109,7 +119,7 @@ export async function GET(
       quotedByName: (quote as { preparedByUser?: { fullName?: string } }).preparedByUser?.fullName ?? undefined,
     };
 
-    const pdfOptions = { includeAlerts, includeMaterialLines, showUnitPrice };
+    const pdfOptions = { includeAlerts, includeMaterialLines, showUnitPrice, locale };
     const buffer = await renderToBuffer(
       React.createElement(QuotePdfDocument, { data: pdfData, options: pdfOptions }) as any
     );

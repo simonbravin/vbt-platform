@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus, FileText, Pencil, ExternalLink } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type DocumentCategory = { id: string; name: string; code: string };
 type DocumentItem = {
@@ -18,6 +19,7 @@ type DocumentItem = {
 const VISIBILITY_OPTIONS = ["public", "partners_only", "internal"] as const;
 
 export function DocumentsAdminClient() {
+  const t = useT();
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -54,18 +56,18 @@ export function DocumentsAdminClient() {
     try {
       const res = await fetch(`/api/saas/documents?${params}`);
       if (!res.ok) {
-        setError("Failed to load documents");
+        setError(t("superadmin.documents.failedToLoad"));
         return;
       }
       const data = await res.json();
       setDocuments(data.documents ?? []);
       setTotal(data.total ?? 0);
     } catch {
-      setError("Failed to load documents");
+      setError(t("superadmin.documents.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, [filters.categoryId, filters.visibility]);
+  }, [filters.categoryId, filters.visibility, t]);
 
   useEffect(() => {
     fetchCategories();
@@ -129,7 +131,7 @@ export function DocumentsAdminClient() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          setFormError(err?.error ?? "Update failed");
+          setFormError(err?.error ?? t("superadmin.documents.updateFailed"));
           return;
         }
       } else {
@@ -145,14 +147,14 @@ export function DocumentsAdminClient() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          setFormError(err?.error ?? "Create failed");
+          setFormError(err?.error ?? t("superadmin.documents.createFailed"));
           return;
         }
       }
       closeForm();
       fetchDocuments();
     } catch {
-      setFormError("Request failed");
+      setFormError(t("superadmin.documents.requestFailed"));
     } finally {
       setSaving(false);
     }
@@ -167,7 +169,7 @@ export function DocumentsAdminClient() {
             onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value }))}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[160px]"
           >
-            <option value="">All categories</option>
+            <option value="">{t("superadmin.documents.allCategories")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -177,7 +179,7 @@ export function DocumentsAdminClient() {
             onChange={(e) => setFilters((f) => ({ ...f, visibility: e.target.value }))}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[140px]"
           >
-            <option value="">All visibility</option>
+            <option value="">{t("superadmin.documents.allVisibility")}</option>
             {VISIBILITY_OPTIONS.map((v) => (
               <option key={v} value={v}>{v}</option>
             ))}
@@ -189,14 +191,14 @@ export function DocumentsAdminClient() {
           className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
         >
           <Plus className="h-4 w-4" />
-          New document
+          {t("superadmin.documents.newDocumentButton")}
         </button>
       </div>
 
       {(formOpen === "new" || editingId) && (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingId ? "Edit document" : "New document"}
+            {editingId ? t("superadmin.documents.editDocument") : t("superadmin.documents.newDocument")}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
             {formError && (
@@ -293,12 +295,12 @@ export function DocumentsAdminClient() {
           <div className="p-4 bg-amber-50 text-amber-800 text-sm">{error}</div>
         )}
         {loading ? (
-          <div className="p-12 text-center text-sm text-gray-500">Loading documents...</div>
+          <div className="p-12 text-center text-sm text-gray-500">{t("superadmin.documents.loadingDocuments")}</div>
         ) : documents.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">No documents yet</p>
-            <p className="text-sm text-gray-500 mt-1">Add a document to get started.</p>
+            <p className="mt-2 text-sm font-medium text-gray-900">{t("superadmin.documents.noDocumentsYet")}</p>
+            <p className="text-sm text-gray-500 mt-1">{t("superadmin.documents.addDocumentHint")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

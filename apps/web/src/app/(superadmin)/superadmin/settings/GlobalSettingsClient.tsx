@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { DollarSign, Eye, Building2, Lock, Loader2 } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Config = {
   pricing?: {
@@ -15,13 +16,14 @@ type Config = {
 };
 
 const MODULE_KEYS = [
-  { key: "engineering", label: "Engineering" },
-  { key: "documents", label: "Documents" },
-  { key: "training", label: "Training" },
-  { key: "reports", label: "Reports" },
+  { key: "engineering", labelKey: "superadmin.settings.engineering" },
+  { key: "documents", labelKey: "superadmin.settings.documents" },
+  { key: "training", labelKey: "superadmin.settings.training" },
+  { key: "reports", labelKey: "superadmin.settings.reports" },
 ];
 
 export function GlobalSettingsClient() {
+  const t = useT();
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +40,7 @@ export function GlobalSettingsClient() {
     async function load() {
       try {
         const res = await fetch("/api/saas/platform-config");
-        if (!res.ok) throw new Error("Failed to load config");
+        if (!res.ok) throw new Error(t("superadmin.settings.failedToLoad"));
         const data = await res.json();
         if (cancelled) return;
         setConfig(data);
@@ -48,7 +50,7 @@ export function GlobalSettingsClient() {
         setVisionLatamCommissionPct(String(data?.pricing?.visionLatamCommissionPct ?? "20"));
         setVisibility((data?.moduleVisibility as Record<string, boolean>) ?? {});
       } catch (e) {
-        if (!cancelled) setMessage({ type: "error", text: "Failed to load configuration" });
+        if (!cancelled) setMessage({ type: "error", text: t("superadmin.settings.failedToLoadConfig") });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -79,13 +81,13 @@ export function GlobalSettingsClient() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error ?? "Failed to save");
+        throw new Error(err?.error ?? t("superadmin.settings.saveFailed"));
       }
       const data = await res.json();
       setConfig(data);
-      setMessage({ type: "success", text: "Settings saved." });
+      setMessage({ type: "success", text: t("superadmin.settings.saved") });
     } catch (e) {
-      setMessage({ type: "error", text: e instanceof Error ? e.message : "Failed to save" });
+      setMessage({ type: "error", text: e instanceof Error ? e.message : t("superadmin.settings.saveFailed") });
     } finally {
       setSaving(false);
     }
@@ -94,7 +96,7 @@ export function GlobalSettingsClient() {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-gray-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading...
+        <Loader2 className="h-5 w-5 animate-spin" /> {t("common.loading")}
       </div>
     );
   }
@@ -118,7 +120,7 @@ export function GlobalSettingsClient() {
               <DollarSign className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Pricing defaults</h2>
+              <h2 className="font-semibold text-gray-900">{t("superadmin.settings.pricing")}</h2>
               <p className="text-sm text-gray-500">Default margin and fees. Partners inherit or override.</p>
             </div>
           </div>
@@ -183,12 +185,12 @@ export function GlobalSettingsClient() {
               <Eye className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Module visibility</h2>
+              <h2 className="font-semibold text-gray-900">{t("superadmin.settings.moduleVisibility")}</h2>
               <p className="text-sm text-gray-500">Which modules partners see by default.</p>
             </div>
           </div>
           <div className="mt-4 space-y-2">
-            {MODULE_KEYS.map(({ key, label }) => (
+            {MODULE_KEYS.map(({ key, labelKey }) => (
               <label key={key} className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -196,7 +198,7 @@ export function GlobalSettingsClient() {
                   onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <span className="text-sm text-gray-700">{label}</span>
+                <span className="text-sm text-gray-700">{t(labelKey)}</span>
               </label>
             ))}
           </div>
@@ -239,7 +241,7 @@ export function GlobalSettingsClient() {
           className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Save changes
+          {t("superadmin.settings.save")}
         </button>
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
   UserPlus,
   Target,
 } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Territory = {
   id: string;
@@ -85,6 +86,7 @@ export function PartnerDetailClient({
   initialPartner: Partner;
   inviteSent?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["id"]>("overview");
   const [dismissInviteBanner, setDismissInviteBanner] = useState(false);
@@ -122,14 +124,14 @@ export function PartnerDetailClient({
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data?.error?.message ?? "Failed to update");
+        setError(data?.error?.message ?? t("superadmin.partners.failedToUpdate"));
         return;
       }
       setOnboardingState(state);
       await refreshPartner();
       router.refresh();
     } catch {
-      setError("Failed to update onboarding state");
+      setError(t("superadmin.partners.failedToUpdateOnboarding"));
     } finally {
       setSaving(false);
     }
@@ -353,6 +355,7 @@ type OrgMemberRow = {
 };
 
 function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerName: string }) {
+  const t = useT();
   const [members, setMembers] = useState<OrgMemberRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -397,7 +400,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
       });
       const data = await res.json();
       if (!res.ok) {
-        setInviteError(data?.error ?? "Failed to invite");
+        setInviteError(data?.error ?? t("superadmin.partners.failedToInvite"));
         return;
       }
       setInviteEmail("");
@@ -407,10 +410,10 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
         setInviteSuccess(data.message ?? "Invitation sent. They will receive an email to create their account.");
       } else {
         setMembers((prev) => [...prev, { ...data, user: data.user ?? { id: data.userId, fullName: null, email: inviteEmail.trim() } }]);
-        setTotal((t) => t + 1);
+        setTotal((prev) => prev + 1);
       }
     } catch {
-      setInviteError("Failed to invite");
+      setInviteError(t("superadmin.partners.failedToInvite"));
     } finally {
       setSubmitting(false);
     }
@@ -492,9 +495,9 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
         </div>
       )}
       {loading ? (
-        <p className="text-sm text-gray-500">Loading members...</p>
+        <p className="text-sm text-gray-500">{t("superadmin.partners.loadingMembers")}</p>
       ) : members.length === 0 ? (
-        <p className="text-sm text-gray-500">No members yet. Invite someone by email.</p>
+        <p className="text-sm text-gray-500">{t("superadmin.partners.noMembersYetInvite")}</p>
       ) : (
         <ul className="divide-y divide-gray-200">
           {members.map((m) => (
@@ -539,6 +542,7 @@ function TerritoriesSection({
   onUpdate: () => void;
   setTerritories: (t: Territory[]) => void;
 }) {
+  const t = useT();
   const [adding, setAdding] = useState(false);
   const [countryCode, setCountryCode] = useState("");
   const [region, setRegion] = useState("");
@@ -566,7 +570,7 @@ function TerritoriesSection({
       });
       const data = await res.json();
       if (!res.ok) {
-        setErr(data?.error?.message ?? "Failed to add territory");
+        setErr(data?.error?.message ?? t("superadmin.partners.failedToAddTerritory"));
         return;
       }
       setTerritories([...territories, data]);
@@ -575,7 +579,7 @@ function TerritoriesSection({
       setAdding(false);
       onUpdate();
     } catch {
-      setErr("Failed to add territory");
+      setErr(t("superadmin.partners.failedToAddTerritory"));
     } finally {
       setSubmitting(false);
     }
@@ -710,6 +714,7 @@ function ParametersSection({
   partner: Partner;
   onSaved: () => void;
 }) {
+  const t = useT();
   const profile = partner.partnerProfile;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -778,12 +783,12 @@ function ParametersSection({
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data?.error ?? "Failed to save");
+        setError(data?.error ?? t("superadmin.partners.failedToSave"));
         return;
       }
       onSaved();
     } catch {
-      setError("Failed to save parameters");
+      setError(t("superadmin.partners.failedToSaveParameters"));
     } finally {
       setSaving(false);
     }

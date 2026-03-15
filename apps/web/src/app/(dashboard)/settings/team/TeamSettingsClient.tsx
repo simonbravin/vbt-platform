@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, User, Mail } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 type Member = {
   id: string;
@@ -13,6 +14,7 @@ type Member = {
 const ROLES = ["owner", "admin", "sales", "engineer", "viewer"];
 
 export function TeamSettingsClient() {
+  const t = useT();
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -31,9 +33,9 @@ export function TeamSettingsClient() {
         if (data) {
           setMembers(data.members ?? []);
           setTotal(data.total ?? 0);
-        } else setError("Failed to load members");
+        } else setError(t("partner.team.failedToLoadMembers"));
       })
-      .catch(() => setError("Failed to load members"))
+      .catch(() => setError(t("partner.team.failedToLoadMembers")))
       .finally(() => setLoading(false));
   };
 
@@ -46,7 +48,7 @@ export function TeamSettingsClient() {
     setInviteError(null);
     const email = inviteEmail.trim();
     if (!email) {
-      setInviteError("Email is required");
+      setInviteError(t("partner.team.emailRequired"));
       return;
     }
     setInviting(true);
@@ -58,14 +60,14 @@ export function TeamSettingsClient() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setInviteError(data?.error ?? "Invite failed");
+        setInviteError(data?.error ?? t("partner.team.inviteFailed"));
         return;
       }
       setInviteEmail("");
       setInviteRole("viewer");
       fetchMembers();
     } catch {
-      setInviteError("Request failed");
+      setInviteError(t("partner.team.requestFailed"));
     } finally {
       setInviting(false);
     }
@@ -75,7 +77,7 @@ export function TeamSettingsClient() {
     <div className="space-y-6">
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">Invite by email</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.inviteByEmail")}</h2>
         </div>
         <form onSubmit={handleInvite} className="p-5 flex flex-wrap items-end gap-3">
           {inviteError && <p className="w-full text-sm text-red-600">{inviteError}</p>}
@@ -115,16 +117,16 @@ export function TeamSettingsClient() {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Members</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.members")}</h2>
         </div>
         {error && <div className="p-4 text-sm text-amber-800 bg-amber-50">{error}</div>}
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
         ) : members.length === 0 ? (
           <div className="p-12 text-center">
             <User className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">No members yet</p>
-            <p className="text-sm text-gray-500 mt-1">Invite someone by email above.</p>
+            <p className="mt-2 text-sm font-medium text-gray-900">{t("partner.team.noMembersYet")}</p>
+            <p className="text-sm text-gray-500 mt-1">{t("partner.team.inviteSomeoneAbove")}</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-100">

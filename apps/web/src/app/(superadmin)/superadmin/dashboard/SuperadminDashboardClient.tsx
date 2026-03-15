@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Building2, FileText, FolderOpen, TrendingUp, ArrowRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useT } from "@/lib/i18n/context";
 
 type Overview = {
   projects_total: number;
@@ -23,6 +24,7 @@ type LeaderboardEntry = {
 };
 
 export function SuperadminDashboardClient() {
+  const t = useT();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export function SuperadminDashboardClient() {
           fetch("/api/saas/analytics/leaderboard?limit=10"),
         ]);
         if (!overviewRes.ok || !leaderboardRes.ok) {
-          setError("Failed to load dashboard data");
+          setError(t("superadmin.dashboard.failedToLoad"));
           return;
         }
         const [overviewJson, leaderboardJson] = await Promise.all([
@@ -49,7 +51,7 @@ export function SuperadminDashboardClient() {
           setLeaderboard(Array.isArray(leaderboardJson) ? leaderboardJson : leaderboardJson?.entries ?? []);
         }
       } catch (e) {
-        if (!cancelled) setError("Failed to load dashboard data");
+        if (!cancelled) setError(t("superadmin.dashboard.failedToLoad"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -73,7 +75,7 @@ export function SuperadminDashboardClient() {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
         <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1">Check that you are logged in as a platform superadmin. If the problem continues, try again later or contact support.</p>
+        <p className="text-sm mt-1">{t("superadmin.dashboard.checkSuperadmin")}</p>
       </div>
     );
   }
@@ -87,7 +89,7 @@ export function SuperadminDashboardClient() {
               <FolderOpen className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Projects</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.totalProjects")}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {overview?.projects_total ?? 0}
               </p>
@@ -100,7 +102,7 @@ export function SuperadminDashboardClient() {
               <FileText className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Quotes</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.totalQuotes")}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {overview?.quotes_total ?? 0}
               </p>
@@ -113,7 +115,7 @@ export function SuperadminDashboardClient() {
               <TrendingUp className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Pipeline Value</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.pipelineValue")}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {formatCurrency(overview?.quotes_pipeline_value ?? 0)}
               </p>
@@ -126,7 +128,7 @@ export function SuperadminDashboardClient() {
               <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Won Value</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.dashboard.wonValue")}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {formatCurrency(overview?.quotes_won_value ?? 0)}
               </p>
@@ -137,12 +139,12 @@ export function SuperadminDashboardClient() {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Partner Leaderboard</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.dashboard.partnerLeaderboard")}</h2>
           <Link
             href="/superadmin/analytics"
             className="text-sm font-medium text-vbt-blue hover:underline flex items-center gap-1"
           >
-            View analytics <ArrowRight className="h-4 w-4" />
+            {t("superadmin.dashboard.viewAnalytics")} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="overflow-x-auto">
@@ -150,22 +152,22 @@ export function SuperadminDashboardClient() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Partner
+                  {t("superadmin.dashboard.partner")}
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Projects
+                  {t("superadmin.dashboard.projects")}
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quotes
+                  {t("superadmin.dashboard.quotes")}
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Won
+                  {t("superadmin.dashboard.won")}
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Revenue
+                  {t("superadmin.dashboard.revenue")}
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Conversion
+                  {t("superadmin.dashboard.conversion")}
                 </th>
               </tr>
             </thead>
@@ -173,7 +175,7 @@ export function SuperadminDashboardClient() {
               {leaderboard.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500">
-                    No partner data yet
+                    {t("superadmin.dashboard.noPartnerDataYet")}
                   </td>
                 </tr>
               ) : (

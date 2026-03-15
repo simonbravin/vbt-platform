@@ -4,12 +4,21 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight, Pencil, Activity, ShoppingCart } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
+const STATUS_KEYS: Record<string, string> = {
+  DRAFT: "quotes.draft",
+  SENT: "quotes.sent",
+  ARCHIVED: "quotes.archived",
+  CANCELLED: "quotes.cancelled",
+};
+
 export default function QuoteDetailPage() {
+  const t = useT();
   const params = useParams();
   const router = useRouter();
   const [quote, setQuote] = useState<any>(null);
@@ -73,12 +82,12 @@ export default function QuoteDetailPage() {
     const data = await res.json();
     setSending(false);
     if (res.ok) {
-      setSendResult("Email sent successfully!");
+      setSendResult("__success__");
       setEmailDialog(false);
       setQuote((prev: any) => ({ ...prev, status: "SENT" }));
       fetchAudit();
     } else {
-      setSendResult(data.error ?? "Failed to send email");
+      setSendResult(data.error ?? t("auth.errorGeneric"));
     }
   };
 
@@ -128,16 +137,16 @@ export default function QuoteDetailPage() {
   };
 
   const formatQuoteAction = (action: string, meta: { changed?: string[] } | null) => {
-    if (action === "QUOTE_CREATED") return "Quote created";
-    if (action === "QUOTE_ARCHIVED") return "Archived";
-    if (action === "QUOTE_UPDATED" && meta?.changed?.length) return `Updated: ${meta.changed.join(", ")}`;
-    if (action === "QUOTE_DELETED") return "Deleted";
-    if (action === "QUOTE_SENT") return "Email sent";
+    if (action === "QUOTE_CREATED") return t("quotes.quoteCreated");
+    if (action === "QUOTE_ARCHIVED") return t("quotes.archivedAction");
+    if (action === "QUOTE_UPDATED" && meta?.changed?.length) return t("quotes.updatedAction", { fields: meta.changed.join(", ") });
+    if (action === "QUOTE_DELETED") return t("quotes.deletedAction");
+    if (action === "QUOTE_SENT") return t("quotes.emailSentAction");
     return action.replace(/_/g, " ").toLowerCase();
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading...</div>;
-  if (!quote || quote.error) return <div className="p-8 text-center text-red-500">Quote not found</div>;
+  if (loading) return <div className="p-8 text-center text-gray-400">{t("common.loading")}</div>;
+  if (!quote || quote.error) return <div className="p-8 text-center text-red-500">{t("quotes.quoteNotFound")}</div>;
 
   const snapshot = (quote.snapshot as any) || {};
 
@@ -174,38 +183,38 @@ export default function QuoteDetailPage() {
               href={`/sales/new?quoteId=${quote.id}&projectId=${quote.projectId}&clientId=${(quote.project as any)?.clientId ?? ""}`}
               className="inline-flex items-center gap-2 px-3 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
             >
-              <ShoppingCart className="w-4 h-4" /> Create sale
+              <ShoppingCart className="w-4 h-4" /> {t("quotes.createSale")}
             </Link>
           )}
           <button
             onClick={openEdit}
             className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> {t("common.edit")}
           </button>
           <button
             onClick={() => setPdfDialog(true)}
             className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
           >
-            <Download className="w-4 h-4" /> PDF
+            <Download className="w-4 h-4" /> {t("quotes.pdf")}
           </button>
           <button
             onClick={() => setEmailDialog(true)}
             className="inline-flex items-center gap-2 px-3 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900"
           >
-            <Mail className="w-4 h-4" /> Send Email
+            <Mail className="w-4 h-4" /> {t("quotes.sendEmail")}
           </button>
           <button
             onClick={() => setArchiveDialog(true)}
             className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-            title="Archivar"
+            title={t("quotes.archive")}
           >
             <Archive className="w-4 h-4" />
           </button>
           <button
             onClick={() => setDeleteDialog(true)}
             className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
-            title="Eliminar definitivamente"
+            title={t("quotes.deleteTitle")}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -213,8 +222,8 @@ export default function QuoteDetailPage() {
       </div>
 
       {sendResult && (
-        <div className={`p-3 rounded-lg text-sm ${sendResult.includes("success") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-          {sendResult}
+        <div className={`p-3 rounded-lg text-sm ${sendResult === "__success__" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+          {sendResult === "__success__" ? t("quotes.emailSent") : sendResult}
         </div>
       )}
 
@@ -226,26 +235,26 @@ export default function QuoteDetailPage() {
         return (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase">S80 Wall Area</p>
-              <p className="text-xl font-bold text-gray-800 mt-1">{(Number(quote.wallAreaM2S80) || 0).toFixed(1)} m²</p>
+            <p className="text-xs text-gray-400 uppercase">{t("quotes.s80WallArea")}</p>
+            <p className="text-xl font-bold text-gray-800 mt-1">{(Number(quote.wallAreaM2S80) || 0).toFixed(1)} m²</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase">S150 Wall Area</p>
+              <p className="text-xs text-gray-400 uppercase">{t("quotes.s150WallArea")}</p>
               <p className="text-xl font-bold text-gray-800 mt-1">{(Number(quote.wallAreaM2S150) || 0).toFixed(1)} m²</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase">S200 Wall Area</p>
+              <p className="text-xs text-gray-400 uppercase">{t("quotes.s200WallArea")}</p>
               <p className="text-xl font-bold text-gray-800 mt-1">{(Number(quote.wallAreaM2S200) || 0).toFixed(1)} m²</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase">Total Wall Area</p>
+              <p className="text-xs text-gray-400 uppercase">{t("quotes.totalWallArea")}</p>
               {tk > 1 ? (
                 <>
-                  <p className="text-sm font-semibold text-gray-800 mt-1">Per kit: {totalM2PerKit.toFixed(1)} m²</p>
-                  <p className="text-lg font-bold text-gray-800">Total: {totalM2Total.toFixed(1)} m²</p>
+                  <p className="text-sm font-semibold text-gray-800 mt-1">{t("quotes.perKit")}: {totalM2PerKit.toFixed(1)} m²</p>
+                  <p className="text-lg font-bold text-gray-800">{t("quotes.totalLabel")}: {totalM2Total.toFixed(1)} m²</p>
                 </>
               ) : (
-                <p className="text-xl font-bold text-gray-800 mt-1">Total: {totalM2Total.toFixed(1)} m²</p>
+                <p className="text-xl font-bold text-gray-800 mt-1">{t("quotes.totalLabel")}: {totalM2Total.toFixed(1)} m²</p>
               )}
             </div>
           </div>
@@ -260,7 +269,7 @@ export default function QuoteDetailPage() {
             onClick={() => setMaterialLinesOpen((o) => !o)}
             className="w-full p-4 border-b border-gray-100 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
           >
-            <h2 className="font-semibold text-gray-800">Material Lines ({quote.lines.length})</h2>
+            <h2 className="font-semibold text-gray-800">{t("quotes.materialLinesCount", { count: quote.lines.length })}</h2>
             {materialLinesOpen ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
           </button>
           {materialLinesOpen && (
@@ -268,13 +277,13 @@ export default function QuoteDetailPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Description</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">System</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Qty</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Length (m)</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.description")}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.system")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.qty")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.lengthM")}</th>
                     <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">m²</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Total</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.unitPrice")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.total")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -299,20 +308,20 @@ export default function QuoteDetailPage() {
       {/* Financial Summary */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800">Cost Breakdown</h2>
+          <h2 className="font-semibold text-gray-800">{t("quotes.costBreakdown")}</h2>
           <div className="space-y-2 text-sm">
             {(() => {
               const showExw = quote.factoryCostUsd != null || quote.factoryCostTotal != null;
               const firstRow = showExw
-                ? { label: "EXW (Factory cost)", value: quote.factoryCostUsd ?? quote.factoryCostTotal, bold: false as boolean }
-                : { label: "Base price (Vision Latam)", value: quote.basePriceForPartner, bold: false as boolean };
+                ? { label: t("quotes.exwFactoryCost"), value: quote.factoryCostUsd ?? quote.factoryCostTotal, bold: false as boolean }
+                : { label: t("quotes.basePriceVisionLatam"), value: quote.basePriceForPartner, bold: false as boolean };
               const rows: { label: string; value: unknown; bold?: boolean }[] = [
                 firstRow,
-                { label: "FOB", value: quote.fobUsd, bold: true },
-                { label: `Freight (${quote.numContainers ?? 0} containers)`, value: quote.freightCostUsd },
-                { label: "CIF", value: quote.cifUsd, bold: true },
-                { label: "Total taxes & fees", value: quote.taxesFeesUsd ?? 0 },
-                { label: "Landed DDP", value: quote.landedDdpUsd, bold: true },
+                { label: t("quotes.fob"), value: quote.fobUsd, bold: true },
+                { label: t("quotes.freightContainers", { count: quote.numContainers ?? 0 }), value: quote.freightCostUsd },
+                { label: t("quotes.cif"), value: quote.cifUsd, bold: true },
+                { label: t("quotes.totalTaxesFees"), value: quote.taxesFeesUsd ?? 0 },
+                { label: t("quotes.landed"), value: quote.landedDdpUsd, bold: true },
               ];
               return rows;
             })().map((row) => (
@@ -326,7 +335,7 @@ export default function QuoteDetailPage() {
 
         {/* Tax Lines */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800">Taxes & Fees {quote.country && `(${quote.country.name})`}</h2>
+          <h2 className="font-semibold text-gray-800">{t("quotes.taxesFees")} {quote.country && `(${quote.country.name})`}</h2>
           {quote.taxLines?.length > 0 ? (
             <div className="space-y-2 text-sm">
               {quote.taxLines.map((tl: any) => {
@@ -341,12 +350,12 @@ export default function QuoteDetailPage() {
                 );
               })}
               <div className="flex justify-between font-semibold border-t pt-2">
-                <span>Total Taxes</span>
+                <span>{t("quotes.totalTaxesLabel")}</span>
                 <span>{fmt(Number(quote.taxesFeesUsd) || 0)}</span>
               </div>
             </div>
           ) : (
-            <p className="text-gray-400 text-sm">No tax rules applied</p>
+            <p className="text-gray-400 text-sm">{t("quotes.noTaxRules")}</p>
           )}
         </div>
       </div>
@@ -355,7 +364,7 @@ export default function QuoteDetailPage() {
       <div className="bg-vbt-blue rounded-xl p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white/70">Landed / DDP Total</p>
+            <p className="text-white/70">{t("quotes.landedDdpTotal")}</p>
             {(Number(quote.totalKits) || 0) > 0 && (
               <div className="text-white/50 text-sm mt-1 space-y-0.5">
                 <p>
@@ -374,7 +383,7 @@ export default function QuoteDetailPage() {
 
       {/* Informational — stored values are per kit (CSV = one kit); total = per kit × totalKits. Show "Por kit" only when totalKits > 1. */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Informational (not in cost)</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{t("quotes.informational")}</h2>
         {(() => {
           const tk = Math.max(Number(quote.totalKits) || 1, 1);
           const m2PerKit = Number(quote.wallAreaM2Total) || 0;
@@ -387,24 +396,24 @@ export default function QuoteDetailPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">Muros (m²)</p>
-                  {tk > 1 && <p className="font-semibold text-gray-800">Por kit: {m2PerKit.toLocaleString("en-US", { minimumFractionDigits: 2 })} m²</p>}
-                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>Total: {m2Total.toLocaleString("en-US", { minimumFractionDigits: 2 })} m²</p>
+                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">{t("quotes.wallsM2")}</p>
+                  {tk > 1 && <p className="font-semibold text-gray-800">{t("quotes.perKit")}: {m2PerKit.toLocaleString("en-US", { minimumFractionDigits: 2 })} m²</p>}
+                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>{t("quotes.totalLabel")}: {m2Total.toLocaleString("en-US", { minimumFractionDigits: 2 })} m²</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">Hormigón (m³)</p>
-                  {tk > 1 && <p className="font-semibold text-gray-800">Por kit: {m3PerKit.toLocaleString("en-US", { minimumFractionDigits: 2 })} m³</p>}
-                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>Total: {m3Total.toLocaleString("en-US", { minimumFractionDigits: 2 })} m³</p>
+                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">{t("quotes.concreteM3")}</p>
+                  {tk > 1 && <p className="font-semibold text-gray-800">{t("quotes.perKit")}: {m3PerKit.toLocaleString("en-US", { minimumFractionDigits: 2 })} m³</p>}
+                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>{t("quotes.totalLabel")}: {m3Total.toLocaleString("en-US", { minimumFractionDigits: 2 })} m³</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">Acero (kg)</p>
-                  {tk > 1 && <p className="font-semibold text-gray-800">Por kit: {kgPerKit.toLocaleString("en-US", { minimumFractionDigits: 1 })} kg</p>}
-                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>Total: {kgTotal.toLocaleString("en-US", { minimumFractionDigits: 1 })} kg</p>
+                  <p className="text-gray-500 text-xs font-medium uppercase mb-1">{t("quotes.steelKg")}</p>
+                  {tk > 1 && <p className="font-semibold text-gray-800">{t("quotes.perKit")}: {kgPerKit.toLocaleString("en-US", { minimumFractionDigits: 1 })} kg</p>}
+                  <p className={tk > 1 ? "text-gray-600" : "font-semibold text-gray-800"}>{t("quotes.totalLabel")}: {kgTotal.toLocaleString("en-US", { minimumFractionDigits: 1 })} kg</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t border-gray-100 pt-3">
-                <div><p className="text-gray-400 text-xs">Panel Weight</p><p className="font-semibold">{(Number(quote.totalWeightKg) || 0).toFixed(0)} kg</p></div>
-                <div><p className="text-gray-400 text-xs">Panel Volume</p><p className="font-semibold">{(Number(quote.totalVolumeM3) || 0).toFixed(2)} m³</p></div>
+                <div><p className="text-gray-400 text-xs">{t("quotes.panelWeight")}</p><p className="font-semibold">{(Number(quote.totalWeightKg) || 0).toFixed(0)} kg</p></div>
+                <div><p className="text-gray-400 text-xs">{t("quotes.panelVolume")}</p><p className="font-semibold">{(Number(quote.totalVolumeM3) || 0).toFixed(2)} m³</p></div>
               </div>
             </div>
           );
@@ -415,20 +424,20 @@ export default function QuoteDetailPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-5 border-b border-gray-100 flex items-center gap-2">
           <Activity className="w-5 h-5 text-gray-500" />
-          <h2 className="font-semibold text-gray-800">Activity</h2>
+          <h2 className="font-semibold text-gray-800">{t("quotes.activity")}</h2>
         </div>
         <div className="p-5">
           {loadingAudit ? (
-            <p className="text-gray-400 text-sm">Loading...</p>
+            <p className="text-gray-400 text-sm">{t("common.loading")}</p>
           ) : auditLog.length === 0 ? (
-            <p className="text-gray-400 text-sm">No activity yet</p>
+            <p className="text-gray-400 text-sm">{t("quotes.noActivityYet")}</p>
           ) : (
             <ul className="space-y-3">
               {auditLog.map((entry) => (
                 <li key={entry.id} className="flex items-center justify-between text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                   <span className="text-gray-700">{formatQuoteAction(entry.action, entry.meta)}</span>
                   <span className="text-gray-400 text-xs">
-                    {entry.userName ?? "System"} · {new Date(entry.createdAt).toLocaleString()}
+                    {entry.userName ?? t("projects.system")} · {new Date(entry.createdAt).toLocaleString()}
                   </span>
                 </li>
               ))}
@@ -441,29 +450,29 @@ export default function QuoteDetailPage() {
       {editOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-4">Edit quote</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("quotes.editQuote")}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.status")}</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="DRAFT">Draft</option>
-                  <option value="SENT">Sent</option>
-                  <option value="ARCHIVED">Archived</option>
-                  <option value="CANCELLED">Cancelled</option>
+                  <option value="DRAFT">{t("quotes.draft")}</option>
+                  <option value="SENT">{t("quotes.sent")}</option>
+                  <option value="ARCHIVED">{t("quotes.archived")}</option>
+                  <option value="CANCELLED">{t("quotes.cancelled")}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("quotes.notes")}</label>
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Internal notes..."
+                  placeholder={t("quotes.internalNotesPlaceholder")}
                 />
               </div>
             </div>
@@ -473,7 +482,7 @@ export default function QuoteDetailPage() {
                 onClick={() => setEditOpen(false)}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -481,7 +490,7 @@ export default function QuoteDetailPage() {
                 disabled={saving}
                 className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>
           </div>
@@ -492,7 +501,7 @@ export default function QuoteDetailPage() {
       {pdfDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-4">PDF options</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("quotes.pdfOptions")}</h3>
             <div className="space-y-3 text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -501,7 +510,7 @@ export default function QuoteDetailPage() {
                   onChange={(e) => setPdfOptions((o) => ({ ...o, includeMaterialLines: e.target.checked }))}
                   className="rounded border-gray-300"
                 />
-                Include Material Lines
+                {t("quotes.includeMaterialLinesPdf")}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -510,7 +519,7 @@ export default function QuoteDetailPage() {
                   onChange={(e) => setPdfOptions((o) => ({ ...o, showUnitPrice: e.target.checked }))}
                   className="rounded border-gray-300"
                 />
-                Show unit price (in Material Lines)
+                {t("quotes.showUnitPricePdf")}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -519,11 +528,11 @@ export default function QuoteDetailPage() {
                   onChange={(e) => setPdfOptions((o) => ({ ...o, includeAlerts: e.target.checked }))}
                   className="rounded border-gray-300"
                 />
-                Include below min run alerts
+                {t("quotes.includeMinRunAlerts")}
               </label>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setPdfDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={() => setPdfDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
               <a
                 href={`/api/quotes/${quote.id}/pdf?includeAlerts=${pdfOptions.includeAlerts ? "1" : "0"}&includeMaterialLines=${pdfOptions.includeMaterialLines ? "1" : "0"}&showUnitPrice=${pdfOptions.showUnitPrice ? "1" : "0"}`}
                 target="_blank"
@@ -531,7 +540,7 @@ export default function QuoteDetailPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900"
                 onClick={() => setPdfDialog(false)}
               >
-                <Download className="w-4 h-4" /> Download PDF
+                <Download className="w-4 h-4" /> {t("quotes.downloadPdf")}
               </a>
             </div>
           </div>
@@ -542,12 +551,12 @@ export default function QuoteDetailPage() {
       {archiveDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-2">Archivar cotización</h3>
-            <p className="text-gray-600 text-sm mb-6">¿Archivar esta cotización? Podrás verla en el listado con estado Archivada.</p>
+            <h3 className="font-semibold text-lg mb-2">{t("quotes.archiveQuoteTitle")}</h3>
+            <p className="text-gray-600 text-sm mb-6">{t("quotes.archiveQuoteMsg")}</p>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setArchiveDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+              <button type="button" onClick={() => setArchiveDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
               <button type="button" onClick={archive} disabled={archiving} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                {archiving ? "Archivando..." : "Archivar"}
+                {archiving ? t("quotes.archiving") : t("quotes.archive")}
               </button>
             </div>
           </div>
@@ -558,12 +567,12 @@ export default function QuoteDetailPage() {
       {deleteDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-2 text-red-700">Eliminar cotización</h3>
-            <p className="text-gray-600 text-sm mb-6">¿Eliminar esta cotización de forma permanente? Esta acción no se puede deshacer.</p>
+            <h3 className="font-semibold text-lg mb-2 text-red-700">{t("quotes.deleteQuoteTitle")}</h3>
+            <p className="text-gray-600 text-sm mb-6">{t("quotes.deleteQuoteMsg")}</p>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setDeleteDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+              <button type="button" onClick={() => setDeleteDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
               <button type="button" onClick={deletePermanently} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50">
-                {deleting ? "Eliminando..." : "Eliminar definitivamente"}
+                {deleting ? t("quotes.deleting") : t("quotes.deleteTitle")}
               </button>
             </div>
           </div>
@@ -574,39 +583,39 @@ export default function QuoteDetailPage() {
       {emailDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-4">Send Quote by Email</h3>
+            <h3 className="font-semibold text-lg mb-4">{t("quotes.sendQuoteEmail")}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("quotes.to")} *</label>
                 <input
                   type="email"
                   value={emailTo}
                   onChange={(e) => setEmailTo(e.target.value)}
-                  placeholder="client@example.com"
+                  placeholder={t("quotes.emailPlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("quotes.message")}</label>
                 <textarea
                   rows={3}
                   value={emailMsg}
                   onChange={(e) => setEmailMsg(e.target.value)}
-                  placeholder="Add a personal message..."
+                  placeholder={t("quotes.messagePlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
-              {sendResult && !sendResult.includes("success") && (
+              {sendResult && sendResult !== "__success__" && (
                 <p className="text-red-600 text-sm">{sendResult}</p>
               )}
               <div className="flex gap-3 justify-end">
-                <button onClick={() => setEmailDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+                <button onClick={() => setEmailDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
                 <button
                   onClick={sendEmail}
                   disabled={sending || !emailTo}
                   className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50"
                 >
-                  {sending ? "Sending..." : "Send"}
+                  {sending ? t("quotes.sending") : t("quotes.send")}
                 </button>
               </div>
             </div>

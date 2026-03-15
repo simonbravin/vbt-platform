@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 import {
   BarChart3,
   Building2,
@@ -41,6 +42,7 @@ type LeaderboardEntry = {
 };
 
 export function GlobalReportsClient() {
+  const t = useT();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -65,7 +67,7 @@ export function GlobalReportsClient() {
           fetch(`/api/saas/analytics/leaderboard?limit=50&sort=revenue${q ? `&${q}` : ""}`),
         ]);
         if (!overviewRes.ok || !pipelineRes.ok || !leaderboardRes.ok) {
-          setError("Failed to load report data.");
+          setError(t("superadmin.reports.failedToLoad"));
           return;
         }
         const [overviewJson, pipelineJson, leaderboardJson] = await Promise.all([
@@ -79,7 +81,7 @@ export function GlobalReportsClient() {
           setLeaderboard(Array.isArray(leaderboardJson) ? leaderboardJson : leaderboardJson?.entries ?? []);
         }
       } catch {
-        if (!cancelled) setError("Failed to load report data.");
+        if (!cancelled) setError(t("superadmin.reports.failedToLoad"));
       } finally {
         if (!cancelled) setLoading(false);
       }

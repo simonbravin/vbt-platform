@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Building2, FileText, TrendingUp, BarChart3, Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useT } from "@/lib/i18n/context";
 
 type Pipeline = {
   projects_total: number;
@@ -75,6 +76,7 @@ function buildQuery(params: { dateFrom?: string; dateTo?: string; partnerId?: st
 }
 
 export function AnalyticsHubClient() {
+  const t = useT();
   const [filters, setFilters] = useState({
     dateFrom: "",
     dateTo: "",
@@ -121,7 +123,7 @@ export function AnalyticsHubClient() {
       ]);
 
       if (!pipeRes.ok || !perfRes.ok || !quotesRes.ok || !leadRes.ok) {
-        setError("Failed to load analytics. Check that you are logged in as platform superadmin or try again later.");
+        setError(t("superadmin.analytics.failedToLoad"));
         return;
       }
 
@@ -137,11 +139,11 @@ export function AnalyticsHubClient() {
       setQuoteAnalytics(quotesJson);
       setLeaderboard(Array.isArray(leadJson) ? leadJson : leadJson?.entries ?? []);
     } catch {
-      setError("Failed to load analytics.");
+      setError(t("superadmin.analytics.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, [filters.dateFrom, filters.dateTo, filters.partnerId, filters.country, leaderboardSort]);
+  }, [filters.dateFrom, filters.dateTo, filters.partnerId, filters.country, leaderboardSort, t]);
 
   useEffect(() => {
     fetchPartners();

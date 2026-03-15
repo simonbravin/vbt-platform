@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 /** Only these statuses are editable; Paid / Partially paid / Due are set automatically by payments and due dates. */
 const statusOptions = ["DRAFT", "CONFIRMED", "CANCELLED"] as const;
@@ -30,6 +31,7 @@ function getMaxInvoiced(basis: string, exw: number, fob: number, cif: number, dd
 }
 
 export function EditSaleClient({ saleId }: { saleId: string }) {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [sale, setSale] = useState<any>(null);
@@ -142,8 +144,8 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
     }
   };
 
-  if (loading) return <div className="py-8 text-center text-gray-500">Loading...</div>;
-  if (!sale) return <div className="py-8 text-center text-gray-500">Sale not found</div>;
+  if (loading) return <div className="py-8 text-center text-gray-500">{t("partner.sales.loading")}</div>;
+  if (!sale) return <div className="py-8 text-center text-gray-500">{t("partner.sales.saleNotFound")}</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -204,7 +206,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
             [
               ["EXW", exwUsd, setExwUsd, true],
               ["Commission %", commissionPct, setCommissionPct, false],
-              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd, true],
+              [t("partner.sales.commissionAmount"), commissionAmountUsd, setCommissionAmountUsd, true],
               ["FOB", fobUsd, setFobUsd, true],
               ["Freight", freightUsd, setFreightUsd, true],
               ["CIF", cifUsd, setCifUsd, true],
@@ -335,7 +337,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
                   type="button"
                   onClick={() => setInvoices((prev) => prev.filter((_, i) => i !== idx))}
                   className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                  title="Remove line"
+                  title={t("partner.sales.removeLine")}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -347,7 +349,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
 
       <div className="flex gap-3">
         <button type="submit" disabled={saving} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50">
-          {saving ? "Saving..." : "Save changes"}
+          {saving ? t("common.saving") : t("partner.sales.saveChanges")}
         </button>
         <Link href={`/sales/${saleId}`} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
           Cancel

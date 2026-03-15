@@ -5,8 +5,9 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from "@react-pdf/renderer";
+import { getT } from "@/lib/i18n/translations";
+import type { Locale } from "@/lib/i18n/translations";
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
@@ -296,6 +297,8 @@ export interface QuotePdfOptions {
   includeAlerts?: boolean;
   includeMaterialLines?: boolean;
   showUnitPrice?: boolean;
+  /** Locale for PDF labels (en/es). Defaults to "en". */
+  locale?: Locale;
 }
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
@@ -349,6 +352,8 @@ function SumRow({
 const DEFAULT_CONTAINER_VOLUME_M3 = 70;
 
 export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; options?: QuotePdfOptions }) {
+  const locale: Locale = options?.locale === "es" ? "es" : "en";
+  const t = getT(locale);
   const hasCsvLines = data.costMethod === "CSV" && data.lines.length > 0;
   const belowMinRunLines = data.lines.filter((l) => l.isBelowMinRun);
   const includeAlerts = options.includeAlerts ?? false;
@@ -360,7 +365,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
   return (
     <Document
-      title={`Quote ${data.quoteNumber}`}
+      title={`${t("pdf.quote.quoteTitle")} ${data.quoteNumber}`}
       author="Vision Building Technologies"
     >
       <Page size="A4" style={styles.page}>
@@ -368,17 +373,15 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.companyName}>Vision Building Technologies</Text>
-            <Text style={styles.companyTagline}>
-              PVC Permanent Formwork Systems • VBT Cost Calculator
-            </Text>
+            <Text style={styles.companyTagline}>{t("pdf.quote.companyTagline")}</Text>
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.quoteTitle}>QUOTE</Text>
+            <Text style={styles.quoteTitle}>{t("pdf.quote.quoteTitle")}</Text>
             <Text style={styles.quoteNumber}>{data.quoteNumber}</Text>
             <Text style={styles.quoteStatus}>{data.status}</Text>
             {data.quotedByName && (
               <Text style={{ fontSize: 7, color: "#666", marginTop: 2 }}>
-                Quoted by: {data.quotedByName}
+                {t("pdf.quote.quotedBy")} {data.quotedByName}
               </Text>
             )}
             <Text style={{ fontSize: 7, color: "#888", marginTop: 4 }}>
@@ -389,28 +392,28 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
         {/* ── Project Info ──────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Project & Client</Text>
+          <Text style={styles.sectionTitle}>{t("pdf.quote.sectionProjectClient")}</Text>
           <View style={{ flexDirection: "row" }}>
             <View style={{ flex: 1 }}>
-              <InfoRow label="Project" value={data.project.name} />
+              <InfoRow label={t("pdf.quote.project")} value={data.project.name} />
               {data.project.client && (
-                <InfoRow label="Client" value={data.project.client} />
+                <InfoRow label={t("pdf.quote.client")} value={data.project.client} />
               )}
               {data.project.location && (
-                <InfoRow label="Location" value={data.project.location} />
+                <InfoRow label={t("pdf.quote.location")} value={data.project.location} />
               )}
             </View>
             <View style={{ flex: 1 }}>
               {data.country && (
                 <InfoRow
-                  label="Destination"
+                  label={t("pdf.quote.destination")}
                   value={`${data.country.name} (${data.country.code})`}
                 />
               )}
-              <InfoRow label="Cost Method" value={data.costMethod} />
-              <InfoRow label="Base UOM" value={data.baseUom} />
+              <InfoRow label={t("pdf.quote.costMethod")} value={data.costMethod} />
+              <InfoRow label={t("pdf.quote.baseUom")} value={data.baseUom} />
               <InfoRow
-                label="Containers"
+                label={t("pdf.quote.containers")}
                 value={`${data.numContainers} × ${data.kitsPerContainer} kits`}
               />
             </View>
@@ -419,28 +422,28 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
         {/* ── Wall Area Summary ─────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Wall Area Summary</Text>
+          <Text style={styles.sectionTitle}>{t("pdf.quote.sectionWallArea")}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxLabel}>S80 (80mm)</Text>
+              <Text style={styles.infoBoxLabel}>{t("pdf.quote.s80")}</Text>
               <Text style={styles.infoBoxValue}>
                 {safeFmtN(data.wallAreaM2S80)} m²
               </Text>
             </View>
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxLabel}>S150 (6in)</Text>
+              <Text style={styles.infoBoxLabel}>{t("pdf.quote.s150")}</Text>
               <Text style={styles.infoBoxValue}>
                 {safeFmtN(data.wallAreaM2S150)} m²
               </Text>
             </View>
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxLabel}>S200 (8in)</Text>
+              <Text style={styles.infoBoxLabel}>{t("pdf.quote.s200")}</Text>
               <Text style={styles.infoBoxValue}>
                 {safeFmtN(data.wallAreaM2S200)} m²
               </Text>
             </View>
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxLabel}>Total Wall Area</Text>
+              <Text style={styles.infoBoxLabel}>{t("pdf.quote.totalWallArea")}</Text>
               <Text style={styles.infoBoxValue}>
                 {safeFmtN(data.wallAreaM2Total)} m²
               </Text>
@@ -454,7 +457,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
             {belowMinRunLines.map((line, i) => (
               <View key={i} style={styles.alertBox}>
                 <Text style={styles.alertText}>
-                  ⚠ Below min run: {line.description} – markup applied:{" "}
+                  ⚠ {t("pdf.quote.belowMinRun")} {line.description} – {t("pdf.quote.markupApplied")}{" "}
                   {line.markupPct ?? 0}%
                 </Text>
               </View>
@@ -465,16 +468,16 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         {/* ── Material Lines (optional) ─────────────────────────────────── */}
         {includeMaterialLines && hasCsvLines && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Material Lines</Text>
+            <Text style={styles.sectionTitle}>{t("pdf.quote.sectionMaterialLines")}</Text>
             <View style={styles.table}>
               <View style={styles.tableHeader}>
-                <Text style={styles.colDesc}>Description</Text>
-                <Text style={styles.colSys}>Sys</Text>
-                <Text style={styles.colQty}>Qty</Text>
-                <Text style={styles.colLength}>Length (m)</Text>
+                <Text style={styles.colDesc}>{t("pdf.quote.description")}</Text>
+                <Text style={styles.colSys}>{t("pdf.quote.sys")}</Text>
+                <Text style={styles.colQty}>{t("pdf.quote.qty")}</Text>
+                <Text style={styles.colLength}>{t("pdf.quote.lengthM")}</Text>
                 <Text style={styles.colM2}>m²</Text>
-                {showUnitPrice && <Text style={styles.colPrice}>Unit</Text>}
-                <Text style={styles.colTotal}>Total</Text>
+                {showUnitPrice && <Text style={styles.colPrice}>{t("pdf.quote.unit")}</Text>}
+                <Text style={styles.colTotal}>{t("pdf.quote.total")}</Text>
               </View>
               {data.lines
                 .filter((l) => !l.isIgnored)
@@ -504,16 +507,16 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
         {/* ── Logistics (to CIF) ────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Logistics (to CIF)</Text>
+          <Text style={styles.sectionTitle}>{t("pdf.quote.sectionLogistics")}</Text>
           <View style={styles.summaryBox}>
             <SumRow
-              label="Containers"
-              value={`${data.numContainers} × ${data.kitsPerContainer} kits/container`}
+              label={t("pdf.quote.containers")}
+              value={`${data.numContainers} × ${data.kitsPerContainer} ${t("pdf.quote.kitsPerContainer")}`}
             />
             {occupancyPct != null && (
-              <SumRow label="Container occupancy (vol.)" value={`${safeFmtN(occupancyPct, 1)}%`} />
+              <SumRow label={t("pdf.quote.containerOccupancy")} value={`${safeFmtN(occupancyPct, 1)}%`} />
             )}
-            <SumRow label="Freight" value={safeFmt(data.freightCostUsd)} />
+            <SumRow label={t("pdf.quote.freight")} value={safeFmt(data.freightCostUsd)} />
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />
             <SumRow label="CIF" value={safeFmt(data.cifUsd)} bold />
           </View>
@@ -521,21 +524,21 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
         {/* ── Financial Summary (from FOB) ───────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Financial Summary</Text>
+          <Text style={styles.sectionTitle}>{t("pdf.quote.sectionFinancial")}</Text>
           <View style={styles.summaryBox}>
             {data.basePriceForPartner != null ? (
-              <SumRow label="Base price (Vision Latam)" value={safeFmt(data.basePriceForPartner)} />
+              <SumRow label={t("pdf.quote.basePriceVisionLatam")} value={safeFmt(data.basePriceForPartner)} />
             ) : (
-              <SumRow label="EXW (Factory cost)" value={safeFmt(data.factoryCostUsd)} />
+              <SumRow label={t("pdf.quote.exwFactoryCost")} value={safeFmt(data.factoryCostUsd)} />
             )}
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />
             <SumRow
-              label={`Freight (${data.numContainers} container${data.numContainers !== 1 ? "s" : ""})`}
+              label={`${t("pdf.quote.freight")} (${data.numContainers} ${data.numContainers !== 1 ? t("pdf.quote.containersLabelPlural") : t("pdf.quote.containersLabel")})`}
               value={safeFmt(data.freightCostUsd)}
             />
             <SumRow label="CIF" value={safeFmt(data.cifUsd)} bold />
-            <SumRow label="Total taxes & fees" value={safeFmt(data.taxesFeesUsd)} />
-            <SumRow label="Landed DDP" value={safeFmt(data.landedDdpUsd)} bold />
+            <SumRow label={t("pdf.quote.totalTaxesFees")} value={safeFmt(data.taxesFeesUsd)} />
+            <SumRow label={t("pdf.quote.landedDdp")} value={safeFmt(data.landedDdpUsd)} bold />
           </View>
         </View>
 
@@ -543,7 +546,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         {data.taxLines.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Taxes & Fees ({data.country?.name ?? "Destination"})
+              {t("pdf.quote.sectionTaxesFees")} ({data.country?.name ?? t("pdf.quote.destinationFallback")})
             </Text>
             <View style={styles.summaryBox}>
               {data.taxLines.map((tl, i) => (
@@ -555,7 +558,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
                 </View>
               ))}
               <SumRow
-                label="Total Taxes & Fees"
+                label={t("pdf.quote.totalTaxesFeesLabel")}
                 value={safeFmt(data.taxesFeesUsd)}
                 bold
               />
@@ -566,7 +569,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         {/* ── Total DDP ─────────────────────────────────────────────────── */}
         <View style={styles.summaryBox}>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>LANDED / DDP TOTAL</Text>
+            <Text style={styles.totalLabel}>{t("pdf.quote.landedDdpTotal")}</Text>
             <Text style={styles.totalValue}>{safeFmt(data.landedDdpUsd)}</Text>
           </View>
           {(Number(data.totalKits) || 0) > 0 && (
@@ -578,22 +581,20 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
               }}
             >
               <Text style={{ fontSize: 8, color: "#666" }}>
-                {data.totalKits} kits @ {data.kitsPerContainer}/container
+                {data.totalKits} kits @ {data.kitsPerContainer}{t("pdf.quote.perContainer")}
               </Text>
               <Text style={{ fontSize: 8, color: "#666" }}>
                 {safeFmt((Number(data.landedDdpUsd) || 0) / Math.max(Number(data.numContainers) || 1, 1))}
-                /container •{" "}
-                {safeFmt((Number(data.landedDdpUsd) || 0) / Math.max(Number(data.totalKits) || 1, 1))}/kit
+                {t("pdf.quote.perContainer")} •{" "}
+                {safeFmt((Number(data.landedDdpUsd) || 0) / Math.max(Number(data.totalKits) || 1, 1))}{t("pdf.quote.perKit")}
               </Text>
             </View>
           )}
         </View>
 
-        {/* ── Informational (stored = per kit; total = per kit × totalKits; show "Per kit" only when totalKits > 1) ────────────────────────────── */}
+        {/* ── Informational ────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Informational (not included in cost)
-          </Text>
+          <Text style={styles.sectionTitle}>{t("pdf.quote.sectionInformational")}</Text>
           {(() => {
             const tk = Math.max(Number(data.totalKits) || 1, 1);
             const m2PerKit = Number(data.wallAreaM2Total) || 0;
@@ -604,14 +605,14 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
             const kgTotal = kgPerKit * tk;
             return (
               <View style={styles.summaryBox}>
-                <SumRow label="Muros (m²)" value={tk > 1 ? `Per kit: ${safeFmtN(m2PerKit)} · Total: ${safeFmtN(m2Total)} m²` : `Total: ${safeFmtN(m2Total)} m²`} />
-                <SumRow label="Hormigón (m³)" value={tk > 1 ? `Per kit: ${safeFmtN(m3PerKit)} · Total: ${safeFmtN(m3Total)} m³` : `Total: ${safeFmtN(m3Total)} m³`} />
-                <SumRow label="Acero (kg)" value={tk > 1 ? `Per kit: ${safeFmtN(kgPerKit, 1)} · Total: ${safeFmtN(kgTotal, 1)} kg` : `Total: ${safeFmtN(kgTotal, 1)} kg`} />
+                <SumRow label={t("pdf.quote.wallsM2")} value={tk > 1 ? `${t("pdf.quote.perKitLabel")} ${safeFmtN(m2PerKit)} · ${t("pdf.quote.totalLabel")} ${safeFmtN(m2Total)} m²` : `${t("pdf.quote.totalLabel")} ${safeFmtN(m2Total)} m²`} />
+                <SumRow label={t("pdf.quote.concreteM3")} value={tk > 1 ? `${t("pdf.quote.perKitLabel")} ${safeFmtN(m3PerKit)} · ${t("pdf.quote.totalLabel")} ${safeFmtN(m3Total)} m³` : `${t("pdf.quote.totalLabel")} ${safeFmtN(m3Total)} m³`} />
+                <SumRow label={t("pdf.quote.steelKg")} value={tk > 1 ? `${t("pdf.quote.perKitLabel")} ${safeFmtN(kgPerKit, 1)} · ${t("pdf.quote.totalLabel")} ${safeFmtN(kgTotal, 1)} kg` : `${t("pdf.quote.totalLabel")} ${safeFmtN(kgTotal, 1)} kg`} />
                 {data.totalWeightKgCored != null && (
-                  <SumRow label="Panel weight (cored)" value={`${safeFmtN(data.totalWeightKgCored)} kg`} />
+                  <SumRow label={t("pdf.quote.panelWeightCored")} value={`${safeFmtN(data.totalWeightKgCored)} kg`} />
                 )}
                 {data.totalVolumeM3 != null && (
-                  <SumRow label="Panel volume" value={`${safeFmtN(data.totalVolumeM3, 2)} m³`} />
+                  <SumRow label={t("pdf.quote.panelVolume")} value={`${safeFmtN(data.totalVolumeM3, 2)} m³`} />
                 )}
               </View>
             );
@@ -621,7 +622,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         {/* ── Notes ────────────────────────────────────────────────────── */}
         {data.notes && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notes</Text>
+            <Text style={styles.sectionTitle}>{t("pdf.quote.sectionNotes")}</Text>
             <View style={styles.notesBox}>
               <Text style={styles.notesText}>{data.notes}</Text>
             </View>
@@ -630,11 +631,9 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <View style={styles.footer}>
+          <Text style={styles.footerText}>{t("pdf.quote.footerConfidential")}</Text>
           <Text style={styles.footerText}>
-            Vision Building Technologies • Confidential Quote
-          </Text>
-          <Text style={styles.footerText}>
-            Generated: {new Date().toLocaleDateString()} •{" "}
+            {t("pdf.quote.generated")} {new Date().toLocaleDateString(locale === "es" ? "es-ES" : "en-US")} •{" "}
             {data.quoteNumber}
           </Text>
         </View>

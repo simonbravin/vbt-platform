@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Warehouse, Plus, Pencil } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 export default function WarehousesPage() {
+  const t = useT();
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
@@ -53,14 +55,14 @@ export default function WarehousesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{warehouses.length} locations</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("admin.warehouses.title")}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{warehouses.length} {t("admin.warehouses.locationsCount")}</p>
         </div>
         <button
           onClick={openAdd}
           className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
         >
-          <Plus className="w-4 h-4" /> Add Warehouse
+          <Plus className="w-4 h-4" /> {t("admin.warehouses.add")}
         </button>
       </div>
 
@@ -76,7 +78,7 @@ export default function WarehousesPage() {
                   <p className="font-semibold text-gray-800">{w.name}</p>
                   {w.location && <p className="text-gray-400 text-sm">{w.location}</p>}
                   <p className="text-gray-400 text-xs mt-1">
-                    {w._count?.items ?? 0} SKUs · {w._count?.movesFrom ?? 0} moves
+                    {w._count?.items ?? 0} {t("admin.warehouses.skus")} · {w._count?.movesFrom ?? 0} {t("admin.warehouses.moves")}
                   </p>
                 </div>
               </div>
@@ -94,33 +96,33 @@ export default function WarehousesPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
-            <h3 className="font-semibold text-lg mb-4">{editItem ? "Edit Warehouse" : "Add Warehouse"}</h3>
+            <h3 className="font-semibold text-lg mb-4">{editItem ? t("admin.warehouses.editTitle") : t("admin.warehouses.addTitle")}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.nameLabel")}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g., Panama Main"
+                  placeholder={t("admin.warehouses.namePlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.locationLabel")}</label>
                 <input
                   type="text"
                   value={form.location}
                   onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))}
-                  placeholder="e.g., Panama City, PA"
+                  placeholder={t("admin.warehouses.locationPlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
               <button onClick={save} disabled={saving || !form.name} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>
           </div>
