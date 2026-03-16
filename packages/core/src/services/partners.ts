@@ -113,6 +113,10 @@ export type UpdatePartnerInput = {
   agreementStatus?: string | null;
   visionLatamCommissionPct?: number | null;
   visionLatamCommissionFixedUsd?: number | null;
+  /** Per-partner module visibility override; when set, overrides global default for this partner. */
+  moduleVisibility?: Record<string, boolean> | null;
+  /** Panel systems this partner can use: S80, S150, S200. Null = all enabled. */
+  enabledSystems?: string[] | null;
 };
 
 export async function updatePartner(
@@ -159,6 +163,8 @@ export async function updatePartner(
   }
   if (data.visionLatamCommissionPct !== undefined) profileUpdate.visionLatamCommissionPct = data.visionLatamCommissionPct;
   if (data.visionLatamCommissionFixedUsd !== undefined) profileUpdate.visionLatamCommissionFixedUsd = data.visionLatamCommissionFixedUsd;
+  if (data.moduleVisibility !== undefined) profileUpdate.moduleVisibility = data.moduleVisibility as object;
+  if (data.enabledSystems !== undefined) profileUpdate.enabledSystems = data.enabledSystems as object;
 
   const updated = await prisma.organization.update({
     where: { id: partnerId },

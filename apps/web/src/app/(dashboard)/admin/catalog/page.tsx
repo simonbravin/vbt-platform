@@ -170,7 +170,7 @@ export default function CatalogPage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-vbt-blue file:text-white hover:file:bg-blue-900"
             />
             {importResult && (

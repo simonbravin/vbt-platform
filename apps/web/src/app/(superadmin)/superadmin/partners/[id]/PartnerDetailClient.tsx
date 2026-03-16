@@ -49,6 +49,8 @@ type Partner = {
     agreementStartDate?: string | null;
     agreementEndDate?: string | null;
     agreementStatus?: string | null;
+    visionLatamCommissionPct?: number | null;
+    visionLatamCommissionFixedUsd?: number | null;
   } | null;
   territories: Territory[];
 };
@@ -75,6 +77,14 @@ const ONBOARDING_STATES = [
   "training_started",
   "training_completed",
   "active",
+] as const;
+
+const AGREEMENT_STATUS_OPTIONS = [
+  { value: "", labelKey: "—" },
+  { value: "active", labelKey: "superadmin.partners.agreementStatusActive" },
+  { value: "expired", labelKey: "superadmin.partners.agreementStatusExpired" },
+  { value: "pending", labelKey: "superadmin.partners.agreementStatusPending" },
+  { value: "suspended", labelKey: "superadmin.partners.agreementStatusSuspended" },
 ] as const;
 
 export function PartnerDetailClient({
@@ -251,6 +261,40 @@ export function PartnerDetailClient({
               <p className="mt-1 text-gray-900">
                 {partner.partnerProfile?.engineeringFeeMode ?? "—"}
               </p>
+            </div>
+          </div>
+
+          {/* Comisión Vision Latam: % sobre factory cost → el partner solo ve base = factory × (1 + %/100) */}
+          <div className="rounded-lg border border-gray-100 bg-amber-50/50 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Comisión Vision Latam (precio base para el partner)</h3>
+              <Link
+                href={`/superadmin/partners/${partnerId}/edit`}
+                className="text-sm text-vbt-blue hover:underline"
+              >
+                Editar
+              </Link>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              % sobre factory cost. El partner no ve el factory cost ni este %; solo ve el precio base resultante.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-4">
+              <div>
+                <p className="text-xs text-gray-500">Comisión %</p>
+                <p className="font-medium text-gray-900">
+                  {partner.partnerProfile?.visionLatamCommissionPct != null
+                    ? `${partner.partnerProfile.visionLatamCommissionPct}%`
+                    : "— (usa valor global)"}
+                </p>
+              </div>
+              {partner.partnerProfile?.visionLatamCommissionFixedUsd != null && partner.partnerProfile.visionLatamCommissionFixedUsd > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500">Comisión fija (USD)</p>
+                  <p className="font-medium text-gray-900">
+                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(partner.partnerProfile.visionLatamCommissionFixedUsd)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -700,6 +744,7 @@ const ENGINEERING_FEE_MODES = [
 type PlatformDefaults = {
   pricing?: {
     defaultMarginMinPct?: number;
+    defaultMarginMaxPct?: number;
     defaultEntryFeeUsd?: number;
     defaultTrainingFeeUsd?: number;
   };
@@ -718,6 +763,7 @@ function ParametersSection({
   const profile = partner.partnerProfile;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [defaults, setDefaults] = useState<PlatformDefaults | null>(null);
   const [entryFeeUsd, setEntryFeeUsd] = useState<string>(profile?.entryFeeUsd != null ? String(profile.entryFeeUsd) : "");
   const [trainingFeeUsd, setTrainingFeeUsd] = useState<string>(profile?.trainingFeeUsd != null ? String(profile.trainingFeeUsd) : "");
@@ -749,6 +795,7 @@ function ParametersSection({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setSaving(true);
     try {
       const body: Record<string, unknown> = {};
@@ -787,6 +834,8 @@ function ParametersSection({
         return;
       }
       onSaved();
+      setSuccessMessage(t("superadmin.partners.parametersSaved"));
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch {
       setError(t("superadmin.partners.failedToSaveParameters"));
     } finally {
@@ -801,6 +850,11 @@ function ParametersSection({
         Partner-specific variables and overrides. These override platform defaults when set.
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {successMessage && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {successMessage}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-3">Fees</h4>
@@ -855,7 +909,12 @@ function ParametersSection({
               <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Max margin (%)</label>
+              <label className="block text-xs font-medium text-gray-500">
+                Max margin (%)
+                {defaults?.pricing?.defaultMarginMaxPct != null && marginMaxPct === "" && (
+                  <span className="ml-1 font-normal text-gray-400">(Default: {defaults.pricing.defaultMarginMaxPct})</span>
+                )}
+              </label>
               <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div className="sm:col-span-2">
@@ -890,7 +949,11 @@ function ParametersSection({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">Status</label>
-              <input type="text" value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="e.g. active, expired" />
+              <select value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                {AGREEMENT_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value || "_empty"} value={opt.value}>{opt.value ? t(opt.labelKey) : opt.labelKey}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

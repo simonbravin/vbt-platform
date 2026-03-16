@@ -196,6 +196,8 @@ model Organization {
   trainingEnrollments  TrainingEnrollment[]
   activityLogs        ActivityLog[]
   warehouses          Warehouse[]
+  freightProfiles     FreightProfile[]
+  taxRuleSets         TaxRuleSet[]
 
   @@index([organizationType])
   @@index([status])
@@ -268,6 +270,8 @@ model PartnerProfile {
   agreementStatus       String?   @map("agreement_status")
   visionLatamCommissionPct Float? @map("vision_latam_commission_pct")
   visionLatamCommissionFixedUsd Float? @map("vision_latam_commission_fixed_usd")
+  moduleVisibility       Json?    @map("module_visibility") // override per partner; keys e.g. engineering, documents, training, reports
+  enabledSystems         Json?    @map("enabled_systems")   // ["S80","S150","S200"] — which panel systems this partner can use; null = all
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -679,6 +683,86 @@ model ActivityLog {
   @@index([entityId])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+// ─── Countries (platform-wide; only superadmin can add/edit) ──────────────────
+
+model Country {
+  id        String   @id @default(cuid())
+  code      String   @unique // ISO 2-letter
+  name      String
+  currency  String?  @default("USD")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  freightProfiles FreightProfile[]
+  taxRuleSets     TaxRuleSet[]
+
+  @@map("countries")
+}
+
+// ─── Freight rates: platform base (org null) + partner overrides ─────────────
+// Superadmin sets base; partners can add/edit their own if they don't use VL-quoted service.
+
+model FreightProfile {
+  id                  String    @id @default(cuid())
+  organizationId      String?   @map("organization_id") // null = Vision Latam base; set = partner override
+  name                String
+  countryId           String    @map("country_id")
+  freightPerContainer Float     @map("freight_per_container") // USD
+  isDefault           Boolean   @default(false) @map("is_default")
+  expiryDate          DateTime? @map("expiry_date")
+  notes               String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  country      Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([countryId])
+  @@map("freight_profiles")
+}
+
+// ─── Tax rule sets: platform base per country + partner overrides (% etc.) ────
+// Superadmin sets base per country; partners can override the % if they want.
+
+model TaxRuleSet {
+  id             String   @id @default(cuid())
+  organizationId String?  @map("organization_id") // null = Vision Latam base; set = partner override
+  name           String
+  countryId      String   @map("country_id")
+  rulesJson      Json     @map("rules_json") // [{ order, label, base, ratePct?, fixedAmount?, note? }]
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  country      Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([countryId])
+  @@map("tax_rule_sets")
+}
+
+// ─── Piece catalog (platform-wide; superadmin loads; partners see only enabled systems) ─
+
+model CatalogPiece {
+  id              String   @id @default(cuid())
+  dieNumber       String?  @map("die_number")
+  canonicalName   String   @map("canonical_name")
+  systemCode      String   @map("system_code")   // S80 | S150 | S200
+  usefulWidthMm   Float?   @map("useful_width_mm")
+  lbsPerMCored    Float?   @map("lbs_per_m_cored")
+  pricePerMCored  Float?   @map("price_per_m_cored") // factory cost $/m Cored
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([canonicalName, systemCode])
+  @@index([systemCode])
+  @@index([isActive])
+  @@map("catalog_pieces")
 }
 
 // ─── Platform config (global defaults, superadmin only) ───────────────────────

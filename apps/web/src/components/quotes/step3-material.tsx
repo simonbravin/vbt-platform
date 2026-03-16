@@ -16,11 +16,15 @@ export function Step3MaterialCost({ state, update }: Props) {
   const [loading, setLoading] = useState(false);
   const [usingM2Fallback, setUsingM2Fallback] = useState(false);
 
-  // Load org settings (rates)
+  // Load quote defaults (effective rates only — never raw factory $/m²; no hardcoded values)
   useEffect(() => {
-    fetch("/api/admin/settings")
-      .then((r) => r.json())
-      .then(setSettings);
+    fetch("/api/saas/quote-defaults")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => data && setSettings({
+        effectiveRateS80: data.effectiveRateS80 ?? 0,
+        effectiveRateS150: data.effectiveRateS150 ?? 0,
+        effectiveRateS200: data.effectiveRateS200 ?? 0,
+      }));
   }, []);
 
   // Load CSV import data → extract m2 areas
@@ -74,9 +78,9 @@ export function Step3MaterialCost({ state, update }: Props) {
     } else {
       // Fallback: estimate from M² system rates
       const fallback =
-        s80 * (settings.rateS80 ?? 37) +
-        s150 * (settings.rateS150 ?? 67) +
-        s200 * (settings.rateS200 ?? 85);
+        s80 * (settings.effectiveRateS80 ?? 0) +
+        s150 * (settings.effectiveRateS150 ?? 0) +
+        s200 * (settings.effectiveRateS200 ?? 0);
       setUsingM2Fallback(fallback > 0);
       update({ factoryCostUsd: fallback });
     }
@@ -86,9 +90,9 @@ export function Step3MaterialCost({ state, update }: Props) {
   useEffect(() => {
     if (state.costMethod !== "M2_BY_SYSTEM" || !settings) return;
     const cost =
-      state.m2S80 * (settings.rateS80 ?? 37) +
-      state.m2S150 * (settings.rateS150 ?? 67) +
-      state.m2S200 * (settings.rateS200 ?? 85);
+      state.m2S80 * (settings.effectiveRateS80 ?? 0) +
+      state.m2S150 * (settings.effectiveRateS150 ?? 0) +
+      state.m2S200 * (settings.effectiveRateS200 ?? 0);
     update({ factoryCostUsd: cost });
   }, [state.m2S80, state.m2S150, state.m2S200, settings, state.costMethod]);
 
@@ -165,9 +169,9 @@ export function Step3MaterialCost({ state, update }: Props) {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { label: t("wizard.vbt80"),  m2: state.m2S80,  rate: settings.rateS80  ?? 37 },
-                      { label: t("wizard.vbt150"), m2: state.m2S150, rate: settings.rateS150 ?? 67 },
-                      { label: t("wizard.vbt200"), m2: state.m2S200, rate: settings.rateS200 ?? 85 },
+                      { label: t("wizard.vbt80"),  m2: state.m2S80,  rate: settings.effectiveRateS80  ?? 0 },
+                      { label: t("wizard.vbt150"), m2: state.m2S150, rate: settings.effectiveRateS150 ?? 0 },
+                      { label: t("wizard.vbt200"), m2: state.m2S200, rate: settings.effectiveRateS200 ?? 0 },
                     ].filter(s => s.m2 > 0).map((s) => (
                       <div key={s.label} className="p-3 bg-white border border-gray-200 rounded-lg">
                         <p className="text-xs text-gray-500">{s.label}</p>
@@ -208,9 +212,9 @@ export function Step3MaterialCost({ state, update }: Props) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { key: "m2S80"  as const, label: t("wizard.vbt80"),  rate: settings.rateS80  },
-              { key: "m2S150" as const, label: t("wizard.vbt150"), rate: settings.rateS150 },
-              { key: "m2S200" as const, label: t("wizard.vbt200"), rate: settings.rateS200 },
+              { key: "m2S80"  as const, label: t("wizard.vbt80"),  rate: settings.effectiveRateS80  ?? 0 },
+              { key: "m2S150" as const, label: t("wizard.vbt150"), rate: settings.effectiveRateS150 ?? 0 },
+              { key: "m2S200" as const, label: t("wizard.vbt200"), rate: settings.effectiveRateS200 ?? 0 },
             ].map((sys) => (
               <div key={sys.key} className="p-4 border border-gray-200 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-1">

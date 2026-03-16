@@ -51,6 +51,8 @@ export default async function EditPartnerPage({ params }: PageProps) {
           status: partner.status ?? "active",
           visionLatamCommissionPct: partner.partnerProfile?.visionLatamCommissionPct != null ? String(partner.partnerProfile.visionLatamCommissionPct) : "",
           visionLatamCommissionFixedUsd: partner.partnerProfile?.visionLatamCommissionFixedUsd != null ? String(partner.partnerProfile.visionLatamCommissionFixedUsd) : "",
+          moduleVisibility: (partner.partnerProfile as { moduleVisibility?: Record<string, boolean> | null } | null)?.moduleVisibility ?? null,
+          enabledSystems: (partner.partnerProfile as { enabledSystems?: string[] | null } | null)?.enabledSystems ?? null,
         }}
       />
     </div>

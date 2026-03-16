@@ -1,18 +1,14 @@
 import { requireAuth } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { Truck, ArrowLeft } from "lucide-react";
-import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
-import type { Locale } from "@/lib/i18n/translations";
+import { ArrowLeft } from "lucide-react";
+import FreightPage from "@/app/(dashboard)/admin/freight/page";
 
 export default async function SettingsFreightPage() {
-  const cookieStore = await cookies();
-  const locale = (cookieStore.get(LOCALE_COOKIE_NAME)?.value === "es" ? "es" : "en") as Locale;
-  const t = getT(locale);
   try {
     await requireAuth();
-  } catch {
+  } catch (e) {
+    if ((e as Error)?.message === "NEXT_REDIRECT") throw e;
     redirect("/login");
   }
   return (
@@ -24,19 +20,11 @@ export default async function SettingsFreightPage() {
         >
           <ArrowLeft className="w-4 h-4 text-gray-600" />
         </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">{t("partner.settings.freightRates")}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("partner.settings.freightRatesDescription")}</p>
-        </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <Truck className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 text-sm">
-          {locale === "es"
-            ? "Configura las reglas de flete de tu organización. La configuración completa estará disponible cuando esté habilitada."
-            : "Configure your organization's freight rules. Full configuration will be available when enabled."}
-        </p>
-      </div>
+      <p className="text-sm text-gray-500">
+        Tarifas base de Vision Latam y las tuyas (si no usas los servicios cotizados por Vision Latam). Puedes agregar o editar solo tus propias tarifas.
+      </p>
+      <FreightPage />
     </div>
   );
 }

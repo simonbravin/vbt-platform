@@ -19,6 +19,7 @@ export default function FreightPage() {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/freight").then(r => r.json()).then(d => setProfiles(Array.isArray(d) ? d : []));
@@ -30,12 +31,14 @@ export default function FreightPage() {
   }, []);
 
   const openAdd = () => {
+    setSaveError(null);
     setForm({ name: "", countryId: "", freightPerContainer: 0, isDefault: false, expiryDate: "", notes: "" });
     setEditItem(null);
     setShowAdd(true);
   };
 
   const openEdit = (p: any) => {
+    setSaveError(null);
     setForm({
       name: p.name,
       countryId: p.countryId ?? "",
@@ -60,23 +63,30 @@ export default function FreightPage() {
   const save = async () => {
     if (!form.name || !form.countryId) return;
     setSaving(true);
+    setSaveError(null);
     const payload = { ...form, expiryDate: form.expiryDate ? form.expiryDate : (editItem ? null : undefined) };
-    if (editItem) {
-      await fetch(`/api/freight/${editItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/freight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      const res = editItem
+        ? await fetch(`/api/freight/${editItem.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/freight", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveError(data?.error ?? "Failed to save");
+        return;
+      }
+      setShowAdd(false);
+      load();
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowAdd(false);
-    load();
   };
 
   const fmt = (n: number) =>
@@ -156,6 +166,11 @@ export default function FreightPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
             <h3 className="font-semibold text-lg mb-4">{editItem ? t("admin.freight.editTitle") : t("admin.freight.addTitle")}</h3>
+            {saveError && (
+              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {saveError}
+              </div>
+            )}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">

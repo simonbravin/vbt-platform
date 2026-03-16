@@ -8,9 +8,16 @@ import { useT } from "@/lib/i18n/context";
 type Config = {
   pricing?: {
     defaultMarginMinPct?: number;
+    defaultMarginMaxPct?: number;
     defaultEntryFeeUsd?: number;
     defaultTrainingFeeUsd?: number;
     visionLatamCommissionPct?: number;
+    rateS80?: number;
+    rateS150?: number;
+    rateS200?: number;
+    rateGlobal?: number;
+    baseUom?: "M" | "FT";
+    minRunFt?: number;
   };
   moduleVisibility?: Record<string, boolean>;
 };
@@ -30,9 +37,13 @@ export function GlobalSettingsClient() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [marginMinPct, setMarginMinPct] = useState<string>("");
+  const [marginMaxPct, setMarginMaxPct] = useState<string>("");
   const [entryFeeUsd, setEntryFeeUsd] = useState<string>("");
   const [trainingFeeUsd, setTrainingFeeUsd] = useState<string>("");
   const [visionLatamCommissionPct, setVisionLatamCommissionPct] = useState<string>("20");
+  const [rateS80, setRateS80] = useState<string>("");
+  const [rateS150, setRateS150] = useState<string>("");
+  const [rateS200, setRateS200] = useState<string>("");
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -45,6 +56,7 @@ export function GlobalSettingsClient() {
         if (cancelled) return;
         setConfig(data);
         setMarginMinPct(String(data?.pricing?.defaultMarginMinPct ?? ""));
+        setMarginMaxPct(String(data?.pricing?.defaultMarginMaxPct ?? ""));
         setEntryFeeUsd(String(data?.pricing?.defaultEntryFeeUsd ?? ""));
         setTrainingFeeUsd(String(data?.pricing?.defaultTrainingFeeUsd ?? ""));
         setVisionLatamCommissionPct(String(data?.pricing?.visionLatamCommissionPct ?? "20"));
@@ -68,9 +80,13 @@ export function GlobalSettingsClient() {
       const body: Config = {
         pricing: {
           defaultMarginMinPct: marginMinPct === "" ? undefined : Number(marginMinPct),
+          defaultMarginMaxPct: marginMaxPct === "" ? undefined : Number(marginMaxPct),
           defaultEntryFeeUsd: entryFeeUsd === "" ? undefined : Number(entryFeeUsd),
           defaultTrainingFeeUsd: trainingFeeUsd === "" ? undefined : Number(trainingFeeUsd),
           visionLatamCommissionPct: visionLatamCommissionPct === "" ? undefined : Number(visionLatamCommissionPct),
+          rateS80: rateS80 === "" ? undefined : Number(rateS80),
+          rateS150: rateS150 === "" ? undefined : Number(rateS150),
+          rateS200: rateS200 === "" ? undefined : Number(rateS200),
         },
         moduleVisibility: visibility,
       };
@@ -126,7 +142,8 @@ export function GlobalSettingsClient() {
           </div>
           <div className="mt-4 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Min margin %</label>
+              <label className="block text-xs font-medium text-muted-foreground">Min margin % (base for all partners)</label>
+              <p className="mt-0.5 text-xs text-muted-foreground/80">Minimum margin % any partner can charge. Overridable per partner in Parameters.</p>
               <input
                 type="number"
                 min={0}
@@ -136,6 +153,20 @@ export function GlobalSettingsClient() {
                 onChange={(e) => setMarginMinPct(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder="e.g. 15"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground">Max margin % (base for all partners)</label>
+              <p className="mt-0.5 text-xs text-muted-foreground/80">Maximum margin % any partner can charge. Overridable per partner in Parameters.</p>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={marginMaxPct}
+                onChange={(e) => setMarginMaxPct(e.target.value)}
+                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                placeholder="e.g. 20"
               />
             </div>
             <div>
@@ -175,6 +206,47 @@ export function GlobalSettingsClient() {
                 placeholder="20"
               />
               <p className="mt-0.5 text-xs text-muted-foreground">Partners never see factory cost; they see base price = factory + this commission.</p>
+            </div>
+            <div className="border-t border-border pt-3 mt-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Factory cost USD/m² by system (server-only; never sent to partners)</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-muted-foreground">S80 (80mm) $/m²</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={rateS80}
+                    onChange={(e) => setRateS80(e.target.value)}
+                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="37"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground">S150 (6in) $/m²</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={rateS150}
+                    onChange={(e) => setRateS150(e.target.value)}
+                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="67"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground">S200 (8in) $/m²</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={rateS200}
+                    onChange={(e) => setRateS200(e.target.value)}
+                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="85"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

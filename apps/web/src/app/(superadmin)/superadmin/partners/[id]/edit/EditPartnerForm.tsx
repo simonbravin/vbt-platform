@@ -16,6 +16,19 @@ const FEE_MODES = [
   { value: "included", label: "Included" },
 ] as const;
 
+const MODULE_KEYS = [
+  { key: "engineering", labelKey: "superadmin.settings.engineering" },
+  { key: "documents", labelKey: "superadmin.settings.documents" },
+  { key: "training", labelKey: "superadmin.settings.training" },
+  { key: "reports", labelKey: "superadmin.settings.reports" },
+] as const;
+
+const SYSTEM_OPTIONS = [
+  { value: "S80", labelKey: "admin.catalog.s80" },
+  { value: "S150", labelKey: "admin.catalog.s150" },
+  { value: "S200", labelKey: "admin.catalog.s200" },
+] as const;
+
 type Initial = {
   companyName: string;
   contactName: string;
@@ -27,6 +40,8 @@ type Initial = {
   status: string;
   visionLatamCommissionPct: string;
   visionLatamCommissionFixedUsd: string;
+  moduleVisibility: Record<string, boolean> | null;
+  enabledSystems: string[] | null;
 };
 
 export function EditPartnerForm({
@@ -40,11 +55,19 @@ export function EditPartnerForm({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [form, setForm] = useState(initial);
+  const [visibility, setVisibility] = useState<Record<string, boolean>>(
+    () => initial.moduleVisibility ?? { engineering: true, documents: true, training: true, reports: true }
+  );
+  const [enabledSystems, setEnabledSystems] = useState<string[]>(
+    () => initial.enabledSystems?.length ? [...initial.enabledSystems] : ["S80", "S150", "S200"]
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setSaving(true);
     try {
       const body = {
@@ -58,6 +81,8 @@ export function EditPartnerForm({
         status: form.status,
         visionLatamCommissionPct: form.visionLatamCommissionPct.trim() ? parseFloat(form.visionLatamCommissionPct) : null,
         visionLatamCommissionFixedUsd: form.visionLatamCommissionFixedUsd.trim() ? parseFloat(form.visionLatamCommissionFixedUsd) : null,
+        moduleVisibility: visibility,
+        enabledSystems: enabledSystems.length === 3 ? null : enabledSystems.length > 0 ? enabledSystems : null,
       };
       const res = await fetch(`/api/saas/partners/${partnerId}`, {
         method: "PATCH",
@@ -69,8 +94,11 @@ export function EditPartnerForm({
         setError(data?.error?.message ?? data?.error ?? t("superadmin.partners.failedToUpdatePartner"));
         return;
       }
-      router.push(`/superadmin/partners/${partnerId}`);
-      router.refresh();
+      setSuccessMessage(t("superadmin.partners.changesSaved"));
+      setTimeout(() => {
+        router.push(`/superadmin/partners/${partnerId}`);
+        router.refresh();
+      }, 1500);
     } catch {
       setError(t("superadmin.partners.failedToUpdatePartner"));
     } finally {
@@ -86,6 +114,11 @@ export function EditPartnerForm({
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
           {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          {successMessage}
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -206,7 +239,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="visionLatamCommissionPct" className="block text-sm font-medium text-gray-700">
-            Vision Latam commission %
+            Comisión Vision Latam (% sobre factory cost)
           </label>
           <input
             id="visionLatamCommissionPct"
@@ -214,16 +247,18 @@ export function EditPartnerForm({
             min={0}
             max={100}
             step={0.5}
-            placeholder="Leave empty for global default"
+            placeholder="Ej. 20 → el partner ve base = factory × 1.20"
             value={form.visionLatamCommissionPct}
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionPct: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
-          <p className="mt-0.5 text-xs text-gray-500">Used as base price for new quotes. Empty = use global setting.</p>
+          <p className="mt-0.5 text-xs text-gray-500">
+            % que Vision Latam cobra sobre el costo de fábrica. El partner nunca ve el factory cost ni este %; solo ve el precio base = factory × (1 + %/100). Ej: 20% y $67/m² → el partner ve $80.40/m² como base. Vacío = usar valor global.
+          </p>
         </div>
         <div>
           <label htmlFor="visionLatamCommissionFixedUsd" className="block text-sm font-medium text-gray-700">
-            Vision Latam commission fixed (USD)
+            Comisión Vision Latam fija (USD, opcional)
           </label>
           <input
             id="visionLatamCommissionFixedUsd"
@@ -235,6 +270,43 @@ export function EditPartnerForm({
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionFixedUsd: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
+        </div>
+        <div className="sm:col-span-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Visibilidad de módulos (override por partner)</h4>
+          <p className="text-xs text-gray-500 mb-2">Qué módulos ve este partner. Si no se define, se usa la configuración global.</p>
+          <div className="flex flex-wrap gap-4">
+            {MODULE_KEYS.map(({ key, labelKey }) => (
+              <label key={key} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={visibility[key] ?? true}
+                  onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">{t(labelKey)}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="sm:col-span-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Sistemas de panel habilitados (80mm, 150mm, 200mm)</h4>
+          <p className="text-xs text-gray-500 mb-2">Qué sistemas puede usar este partner en cotizaciones e inventario. Solo verá piezas del catálogo de los sistemas marcados.</p>
+          <div className="flex flex-wrap gap-4">
+            {SYSTEM_OPTIONS.map(({ value, labelKey }) => (
+              <label key={value} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={enabledSystems.includes(value)}
+                  onChange={(e) => {
+                    if (e.target.checked) setEnabledSystems((s) => (s.includes(value) ? s : [...s, value]));
+                    else setEnabledSystems((s) => s.filter((x) => x !== value));
+                  }}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">{t(labelKey)}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
       <div className="flex gap-3">

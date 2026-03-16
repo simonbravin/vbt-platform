@@ -28,6 +28,8 @@ const patchSchema = z.object({
   agreementStatus: z.string().nullable().optional(),
   visionLatamCommissionPct: z.number().min(0).max(100).nullable().optional(),
   visionLatamCommissionFixedUsd: z.number().min(0).nullable().optional(),
+  moduleVisibility: z.record(z.string(), z.boolean()).nullable().optional(),
+  enabledSystems: z.array(z.enum(["S80", "S150", "S200"])).nullable().optional(),
 });
 
 export async function GET(
@@ -97,6 +99,8 @@ export async function PATCH(
       agreementStatus: data.agreementStatus ?? undefined,
       visionLatamCommissionPct: data.visionLatamCommissionPct,
       visionLatamCommissionFixedUsd: data.visionLatamCommissionFixedUsd,
+      moduleVisibility: data.moduleVisibility ?? undefined,
+      enabledSystems: data.enabledSystems ?? undefined,
     });
     await createActivityLog({
       organizationId: partner.id,

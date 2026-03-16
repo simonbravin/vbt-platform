@@ -42,6 +42,7 @@ export default function TaxesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", countryId: "", rules: [] as TaxRule[] });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/tax-rules").then(r => r.json()).then(d => setTaxSets(Array.isArray(d) ? d : []));
@@ -53,6 +54,7 @@ export default function TaxesPage() {
   }, []);
 
   const openAdd = () => {
+    setSaveError(null);
     setForm({ name: "", countryId: "", rules: [] });
     setEditSet(null);
     setShowAdd(true);
@@ -91,26 +93,33 @@ export default function TaxesPage() {
   const save = async () => {
     if (!form.name || !form.countryId) return;
     setSaving(true);
+    setSaveError(null);
     const payload = {
       ...form,
       rules: form.rules.map((r, i) => ({ ...r, order: i + 1 })),
     };
-    if (editSet) {
-      await fetch(`/api/tax-rules/${editSet.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/tax-rules", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      const res = editSet
+        ? await fetch(`/api/tax-rules/${editSet.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/tax-rules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaveError(data?.error ?? "Failed to save");
+        return;
+      }
+      setShowAdd(false);
+      load();
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowAdd(false);
-    load();
   };
 
   return (
@@ -196,6 +205,11 @@ export default function TaxesPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-gray-100">
               <h3 className="font-semibold text-lg">{editSet ? t("admin.taxes.editRuleSetTitle") : t("admin.taxes.addRuleSetTitle")}</h3>
+              {saveError && (
+                <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                  {saveError}
+                </div>
+              )}
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               <div className="grid grid-cols-2 gap-4">

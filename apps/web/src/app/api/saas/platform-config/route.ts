@@ -8,9 +8,16 @@ const patchSchema = z.object({
   pricing: z
     .object({
       defaultMarginMinPct: z.number().min(0).max(100).optional(),
+      defaultMarginMaxPct: z.number().min(0).max(100).optional(),
       defaultEntryFeeUsd: z.number().min(0).optional(),
       defaultTrainingFeeUsd: z.number().min(0).optional(),
       visionLatamCommissionPct: z.number().min(0).max(100).optional(),
+      rateS80: z.number().min(0).optional(),
+      rateS150: z.number().min(0).optional(),
+      rateS200: z.number().min(0).optional(),
+      rateGlobal: z.number().min(0).optional(),
+      baseUom: z.enum(["M", "FT"]).optional(),
+      minRunFt: z.number().min(0).optional(),
     })
     .optional(),
   moduleVisibility: z.record(z.boolean()).optional(),

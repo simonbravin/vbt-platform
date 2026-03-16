@@ -63,30 +63,7 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        <h2 className="font-semibold text-gray-700 pt-2">{t("admin.settings.rates")}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { key: "rateS80", labelKey: "admin.settings.rateS80" },
-            { key: "rateS150", labelKey: "admin.settings.rateS150" },
-            { key: "rateS200", labelKey: "admin.settings.rateS200" },
-            { key: "rateGlobal", labelKey: "admin.settings.rateGlobal" },
-          ].map(({ key, labelKey }) => (
-            <div key={key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t(labelKey)}</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={settings[key] ?? 0}
-                  onChange={(e) => upd(key, parseFloat(e.target.value) || 0)}
-                  className="w-full pl-6 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-sm text-gray-500 pt-1">System rates (USD/m²) are set by Vision Latam in Global Settings and are not editable here.</p>
 
         <h2 className="font-semibold text-gray-700 pt-2">{t("admin.settings.minRun")}</h2>
         <div className="grid grid-cols-3 gap-4">
