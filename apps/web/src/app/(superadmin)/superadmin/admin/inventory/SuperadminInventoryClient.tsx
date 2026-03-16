@@ -177,14 +177,6 @@ export function SuperadminInventoryClient() {
       .finally(() => setTxSaving(false));
   };
 
-  if (loadingOrgs) {
-    return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        {t("common.loading")}
-      </div>
-    );
-  }
-
   const togglePartnerFilter = (id: string) => {
     setSelectedPartnerIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -201,6 +193,14 @@ export function SuperadminInventoryClient() {
         (l.catalogPiece.systemCode ?? "").toLowerCase().includes(q)
     );
   }, [levels, searchFilter]);
+
+  if (loadingOrgs) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        {t("common.loading")}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
