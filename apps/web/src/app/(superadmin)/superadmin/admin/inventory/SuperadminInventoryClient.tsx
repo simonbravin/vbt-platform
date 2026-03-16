@@ -26,11 +26,11 @@ const TRANSACTION_TYPES = [
 
 export function SuperadminInventoryClient() {
   const t = useT();
-  const [organizations, setOrganizations] = useState<Org[]>([]);
   const [visionLatamOrg, setVisionLatamOrg] = useState<Org | null>(null);
   const [partnerOrgs, setPartnerOrgs] = useState<Org[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
+  const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
+  const [partnerDropdownOpen, setPartnerDropdownOpen] = useState(false);
   const [partnerLevels, setPartnerLevels] = useState<{ orgId: string; levels: LevelRow[] }[]>([]);
   const [loadingPartnerLevels, setLoadingPartnerLevels] = useState(false);
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
@@ -48,7 +48,7 @@ export function SuperadminInventoryClient() {
   const [searchFilter, setSearchFilter] = useState("");
   const [showAddItemForm, setShowAddItemForm] = useState(false);
 
-  const isVisionLatam = selectedOrgId && visionLatamOrg && selectedOrgId === visionLatamOrg.id;
+  const vlOrgId = visionLatamOrg?.id ?? "";
 
   const loadOrgs = useCallback(() => {
     setLoadingOrgs(true);
@@ -58,40 +58,37 @@ export function SuperadminInventoryClient() {
     ])
       .then(([partnersData, vlData]) => {
         const partners = (partnersData.partners ?? []).map((p: { id: string; name: string }) => ({ id: p.id, name: p.name ?? "—" })).filter((o: Org) => o.id);
-        const vl = vlData.organization ? { id: vlData.organization.id, name: vlData.organization.name + " — mi inventario" } : null;
+        const vl = vlData.organization ? { id: vlData.organization.id, name: vlData.organization.name } : null;
         if (vl) setVisionLatamOrg(vl);
-        setOrganizations(vl ? [vl, ...partners] : partners);
         setPartnerOrgs(partners);
-        if (!selectedOrgId && vl) setSelectedOrgId(vl.id);
-        else if (!selectedOrgId && partners[0]) setSelectedOrgId(partners[0].id);
       })
-      .catch(() => setOrganizations([]))
+      .catch(() => setPartnerOrgs([]))
       .finally(() => setLoadingOrgs(false));
-  }, [selectedOrgId]);
+  }, []);
 
   useEffect(() => {
     loadOrgs();
   }, []);
 
   useEffect(() => {
-    if (!selectedOrgId) {
+    if (!vlOrgId) {
       setWarehouses([]);
       setLevels([]);
       return;
     }
     setLoadingWarehouses(true);
     setLoadingLevels(true);
-    fetch(`/api/saas/warehouses?organizationId=${encodeURIComponent(selectedOrgId)}`)
+    fetch(`/api/saas/warehouses?organizationId=${encodeURIComponent(vlOrgId)}`)
       .then((r) => r.json())
       .then((data) => setWarehouses(Array.isArray(data.warehouses) ? data.warehouses : []))
       .catch(() => setWarehouses([]))
       .finally(() => setLoadingWarehouses(false));
-    fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(selectedOrgId)}&limit=500`)
+    fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`)
       .then((r) => (r.ok ? r.json() : { levels: [] }))
       .then((data) => setLevels(data.levels ?? []))
       .catch(() => setLevels([]))
       .finally(() => setLoadingLevels(false));
-  }, [selectedOrgId]);
+  }, [vlOrgId]);
 
   useEffect(() => {
     if (selectedPartnerIds.length === 0) {
@@ -113,13 +110,13 @@ export function SuperadminInventoryClient() {
   }, [selectedPartnerIds.join(",")]);
 
   useEffect(() => {
-    if (isVisionLatam) {
+    if (vlOrgId) {
       fetch("/api/catalog")
         .then((r) => r.json())
         .then((data) => setCatalogPieces(Array.isArray(data) ? data : []))
         .catch(() => setCatalogPieces([]));
     }
-  }, [isVisionLatam]);
+  }, [vlOrgId]);
 
   const handleSimulate = () => {
     if (!simulateQuoteId.trim()) return;
@@ -143,7 +140,7 @@ export function SuperadminInventoryClient() {
       .then((data) => {
         if (data.error) setAffectResult("Error: " + data.error);
         else setAffectResult(`Creadas ${data.created} transacciones.`);
-        if (data.created > 0) fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(selectedOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
+        if (data.created > 0) fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
       })
       .catch(() => setAffectResult("Error al afectar inventario."))
       .finally(() => setTxSaving(false));
@@ -161,7 +158,7 @@ export function SuperadminInventoryClient() {
         catalogPieceId: txForm.catalogPieceId,
         quantityDelta: delta,
         type: txForm.type,
-        organizationId: selectedOrgId,
+        organizationId: vlOrgId,
         notes: txForm.notes || undefined,
       }),
     })
@@ -171,7 +168,7 @@ export function SuperadminInventoryClient() {
       })
       .then(() => {
         setTxForm({ ...txForm, quantityDelta: 0, notes: "" });
-        fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(selectedOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
+        fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
       })
       .catch((e) => setAffectResult("Error: " + (e.message || "transacción")))
       .finally(() => setTxSaving(false));
@@ -194,6 +191,12 @@ export function SuperadminInventoryClient() {
     );
   }, [levels, searchFilter]);
 
+  const filteredPartnersForDropdown = useMemo(() => {
+    if (!partnerSearchQuery.trim()) return partnerOrgs;
+    const q = partnerSearchQuery.trim().toLowerCase();
+    return partnerOrgs.filter((o) => o.name.toLowerCase().includes(q));
+  }, [partnerOrgs, partnerSearchQuery]);
+
   if (loadingOrgs) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
@@ -202,155 +205,181 @@ export function SuperadminInventoryClient() {
     );
   }
 
+  if (!visionLatamOrg) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        No se encontró la organización Vision Latam. Solo superadmin puede gestionar inventario.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium text-foreground">Organización principal:</label>
-        <select
-          value={selectedOrgId}
-          onChange={(e) => setSelectedOrgId(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm min-w-[280px]"
-        >
-          <option value="">— Seleccionar —</option>
-          {organizations.map((org) => (
-            <option key={org.id} value={org.id}>{org.name}</option>
-          ))}
-        </select>
-      </div>
       {partnerOrgs.length > 0 && (
         <div className="rounded-lg border border-border bg-muted/30 p-3">
           <p className="text-sm font-medium text-foreground mb-2">Ver también inventario de (solo lectura):</p>
-          <div className="flex flex-wrap gap-3">
-            {partnerOrgs.map((org) => (
-              <label key={org.id} className="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedPartnerIds.includes(org.id)}
-                  onChange={() => togglePartnerFilter(org.id)}
-                  className="rounded border-input"
-                />
-                {org.name}
-              </label>
-            ))}
+          <div className="relative max-w-md">
+            <button
+              type="button"
+              onClick={() => setPartnerDropdownOpen((v) => !v)}
+              className="w-full flex items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm text-left"
+            >
+              <span className="text-muted-foreground">
+                {selectedPartnerIds.length === 0
+                  ? "Buscar y seleccionar partners…"
+                  : `${selectedPartnerIds.length} partner(s) seleccionado(s)`}
+              </span>
+              <span className="text-muted-foreground">{partnerDropdownOpen ? "▲" : "▼"}</span>
+            </button>
+            {partnerDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-lg max-h-64 overflow-hidden flex flex-col">
+                <div className="p-2 border-b border-border relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar partner…"
+                    value={partnerSearchQuery}
+                    onChange={(e) => setPartnerSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 rounded border border-input bg-background text-sm"
+                  />
+                </div>
+                <div className="overflow-y-auto p-2">
+                  {filteredPartnersForDropdown.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">Ningún resultado</p>
+                  ) : (
+                    filteredPartnersForDropdown.map((org) => (
+                      <label
+                        key={org.id}
+                        className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPartnerIds.includes(org.id)}
+                          onChange={() => togglePartnerFilter(org.id)}
+                          className="rounded border-input"
+                        />
+                        {org.name}
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {selectedOrgId && (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={t("admin.inventory.filterPlaceholder")}
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm"
-              />
-            </div>
-            {isVisionLatam && (
-              <button
-                type="button"
-                onClick={() => setShowAddItemForm((v) => !v)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
-              </button>
-            )}
-          </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder={t("admin.inventory.filterPlaceholder")}
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAddItemForm((v) => !v)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
+        </button>
+      </div>
 
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <h3 className="px-4 py-2 text-sm font-semibold text-foreground border-b border-border bg-muted/30">
-              Stock por bodega {selectedOrgId === visionLatamOrg?.id ? "(Vision Latam)" : ""}
-            </h3>
-            {loadingLevels ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Bodega</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Pieza</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Sistema</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Cantidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Unidad</th>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <h3 className="px-4 py-2 text-sm font-semibold text-foreground border-b border-border bg-muted/30">
+          Mi inventario (Vision Latam) — Stock por bodega
+        </h3>
+        {loadingLevels ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Bodega</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Pieza</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Sistema</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Cantidad</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Unidad</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border bg-card">
+                {filteredLevels.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      {levels.length === 0
+                        ? "No hay niveles de inventario. Usá \"Agregar ítem\" para cargar stock (solo piezas del catálogo)."
+                        : "Ningún resultado con el filtro."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLevels.map((l) => (
+                    <tr key={l.id}>
+                      <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
+                      <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
+                      <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                      <td className="px-4 py-2 text-sm text-right text-foreground">{l.quantity}</td>
+                      <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border bg-card">
-                    {filteredLevels.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                          {levels.length === 0
-                            ? "No hay niveles de inventario. Usá \"Agregar ítem\" para cargar stock (solo piezas del catálogo)."
-                            : "Ningún resultado con el filtro."}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredLevels.map((l) => (
-                        <tr key={l.id}>
-                          <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
-                          <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
-                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
-                          <td className="px-4 py-2 text-sm text-right text-foreground">{l.quantity}</td>
-                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+        )}
+      </div>
 
-          {selectedPartnerIds.length > 0 && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden mt-4">
-              <h3 className="text-sm font-semibold text-foreground px-4 py-2 bg-muted/50 border-b border-border">
-                Inventario de partners seleccionados (solo lectura)
-              </h3>
-              {loadingPartnerLevels ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Cargando…</div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {partnerLevels.map(({ orgId, levels: pl }) => (
-                    <div key={orgId} className="p-4">
-                      <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === orgId)?.name ?? orgId}</p>
-                      {pl.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Sin niveles.</p>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border">
-                                <th className="text-left py-1 pr-4 text-muted-foreground">Bodega</th>
-                                <th className="text-left py-1 pr-4 text-muted-foreground">Pieza</th>
-                                <th className="text-left py-1 pr-4 text-muted-foreground">Sistema</th>
-                                <th className="text-right py-1 text-muted-foreground">Cantidad</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pl.map((l) => (
-                                <tr key={l.id} className="border-b border-border/50">
-                                  <td className="py-1 pr-4">{l.warehouse.name}</td>
-                                  <td className="py-1 pr-4">{l.catalogPiece.canonicalName}</td>
-                                  <td className="py-1 pr-4">{l.catalogPiece.systemCode}</td>
-                                  <td className="py-1 text-right">{l.quantity}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+      {selectedPartnerIds.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden mt-4">
+          <h3 className="text-sm font-semibold text-foreground px-4 py-2 bg-muted/50 border-b border-border">
+            Inventario de partners seleccionados (solo lectura)
+          </h3>
+          {loadingPartnerLevels ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">Cargando…</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {partnerLevels.map(({ orgId, levels: pl }) => (
+                <div key={orgId} className="p-4">
+                  <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === orgId)?.name ?? orgId}</p>
+                  {pl.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Sin niveles.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-1 pr-4 text-muted-foreground">Bodega</th>
+                            <th className="text-left py-1 pr-4 text-muted-foreground">Pieza</th>
+                            <th className="text-left py-1 pr-4 text-muted-foreground">Sistema</th>
+                            <th className="text-right py-1 text-muted-foreground">Cantidad</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pl.map((l) => (
+                            <tr key={l.id} className="border-b border-border/50">
+                              <td className="py-1 pr-4">{l.warehouse.name}</td>
+                              <td className="py-1 pr-4">{l.catalogPiece.canonicalName}</td>
+                              <td className="py-1 pr-4">{l.catalogPiece.systemCode}</td>
+                              <td className="py-1 text-right">{l.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           )}
+        </div>
+      )}
 
-          {isVisionLatam && showAddItemForm && (
-            <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+      {showAddItemForm && (
+        <div className="space-y-4 rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground">
                   {t("admin.inventory.addItem")} — solo piezas del catálogo
@@ -506,19 +535,6 @@ export function SuperadminInventoryClient() {
                 )}
               </div>
             </div>
-          )}
-
-          {selectedOrgId && !isVisionLatam && (
-            <p className="text-sm text-muted-foreground">Vista solo lectura para partners. Solo Vision Latam puede crear transacciones desde aquí.</p>
-          )}
-        </>
-      )}
-
-      {!selectedOrgId && (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-          <Package className="w-10 h-10 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Seleccioná una organización para ver inventario y bodegas.</p>
-        </div>
       )}
     </div>
   );
