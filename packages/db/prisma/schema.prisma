@@ -87,6 +87,17 @@ enum QuoteItemType {
   other
 }
 
+enum InventoryTransactionType {
+  purchase_in
+  sale_out
+  project_consumption
+  project_surplus
+  adjustment_in
+  adjustment_out
+  transfer_in
+  transfer_out
+}
+
 enum EngineeringRequestStatus {
   draft
   submitted
@@ -148,6 +159,7 @@ model User {
   invitedOrgMembers       OrgMember[]             @relation("InvitedBy")
   approvedProjectClaims   ProjectClaim[]
   passwordResetTokens     PasswordResetToken[]
+  inventoryTransactionsCreated InventoryTransaction[] @relation("InventoryCreatedBy")
 
   @@map("users")
 }
@@ -198,6 +210,7 @@ model Organization {
   warehouses          Warehouse[]
   freightProfiles     FreightProfile[]
   taxRuleSets         TaxRuleSet[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([organizationType])
   @@index([status])
@@ -216,9 +229,62 @@ model Warehouse {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryLevels      InventoryLevel[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([organizationId])
   @@map("warehouses")
+}
+
+// ─── Inventory levels (stock per warehouse per catalog piece) ──────────────────
+
+model InventoryLevel {
+  id             String   @id @default(cuid())
+  warehouseId    String   @map("warehouse_id")
+  catalogPieceId String   @map("catalog_piece_id")
+  quantity       Float    @default(0)
+  unit           String?  // e.g. m2, m, units
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  catalogPiece CatalogPiece @relation(fields: [catalogPieceId], references: [id], onDelete: Restrict)
+
+  @@unique([warehouseId, catalogPieceId])
+  @@index([warehouseId])
+  @@index([catalogPieceId])
+  @@map("inventory_levels")
+}
+
+// ─── Inventory transactions (audit trail; each updates inventory_levels) ──────
+
+model InventoryTransaction {
+  id                String                  @id @default(cuid())
+  warehouseId       String                  @map("warehouse_id")
+  catalogPieceId    String                  @map("catalog_piece_id")
+  quantityDelta     Float                   @map("quantity_delta")
+  type              InventoryTransactionType @map("type")
+  referenceQuoteId  String?                 @map("reference_quote_id")
+  referenceProjectId String?                @map("reference_project_id")
+  notes             String?
+  createdByUserId   String?                 @map("created_by_user_id")
+  organizationId    String                  @map("organization_id")
+  createdAt         DateTime                @default(now()) @map("created_at")
+
+  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  catalogPiece CatalogPiece @relation(fields: [catalogPieceId], references: [id], onDelete: Restrict)
+  referenceQuote   Quote?   @relation(fields: [referenceQuoteId], references: [id], onDelete: SetNull)
+  referenceProject Project? @relation(fields: [referenceProjectId], references: [id], onDelete: SetNull)
+  createdByUser    User?    @relation("InventoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([warehouseId])
+  @@index([catalogPieceId])
+  @@index([referenceQuoteId])
+  @@index([referenceProjectId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("inventory_transactions")
 }
 
 // ─── Org Members ─────────────────────────────────────────────────────────────
@@ -399,6 +465,7 @@ model Project {
   claims                ProjectClaim[]
   quotes                Quote[]
   engineeringRequests   EngineeringRequest[]
+  inventoryTransactions InventoryTransaction[]
 
   @@index([organizationId])
   @@index([clientId])
@@ -462,6 +529,7 @@ model Quote {
   preparedByUser User?        @relation("QuotePreparedBy", fields: [preparedByUserId], references: [id])
   approvedByUser User?        @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id])
   items          QuoteItem[]
+  inventoryTransactions InventoryTransaction[]
 
   @@unique([organizationId, quoteNumber, version])
   @@index([organizationId])
@@ -474,24 +542,27 @@ model Quote {
 // ─── Quote Items ─────────────────────────────────────────────────────────────
 
 model QuoteItem {
-  id          String       @id @default(cuid())
-  quoteId     String       @map("quote_id")
-  itemType    QuoteItemType @map("item_type")
-  sku         String?
-  description String?
-  unit        String?
-  quantity    Float        @default(0)
-  unitCost    Float        @default(0) @map("unit_cost")
-  markupPct   Float        @default(0) @map("markup_pct")
-  unitPrice   Float        @default(0) @map("unit_price")
-  totalPrice  Float        @default(0) @map("total_price")
-  sortOrder   Int          @default(0) @map("sort_order")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id             String       @id @default(cuid())
+  quoteId        String       @map("quote_id")
+  catalogPieceId String?      @map("catalog_piece_id")
+  itemType      QuoteItemType @map("item_type")
+  sku           String?
+  description   String?
+  unit          String?
+  quantity      Float        @default(0)
+  unitCost      Float        @default(0) @map("unit_cost")
+  markupPct     Float        @default(0) @map("markup_pct")
+  unitPrice     Float        @default(0) @map("unit_price")
+  totalPrice    Float        @default(0) @map("total_price")
+  sortOrder     Int          @default(0) @map("sort_order")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
-  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote        Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  catalogPiece CatalogPiece? @relation(fields: [catalogPieceId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
+  @@index([catalogPieceId])
   @@map("quote_items")
 }
 
@@ -760,6 +831,10 @@ model CatalogPiece {
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
+
+  inventoryLevels      InventoryLevel[]
+  inventoryTransactions InventoryTransaction[]
+  quoteItems           QuoteItem[]
 
   @@unique([canonicalName, systemCode])
   @@index([systemCode])

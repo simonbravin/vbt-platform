@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Package,
   ClipboardList,
+  FolderOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
@@ -38,9 +39,11 @@ const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
   { labelKey: "nav.superadmin.quotes", href: "/superadmin/quotes", icon: ClipboardList },
+  { labelKey: "nav.superadmin.projects", href: "/superadmin/projects", icon: FolderOpen },
   { labelKey: "nav.superadmin.analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { labelKey: "nav.superadmin.reports", href: "/superadmin/reports", icon: FileBarChart },
   { labelKey: "nav.superadmin.activity", href: "/superadmin/activity", icon: Activity },
+  { labelKey: "nav.superadmin.inventory", href: "/superadmin/admin/inventory", icon: Package },
   {
     labelKey: "nav.superadmin.content",
     icon: FileText,
@@ -61,7 +64,6 @@ const superadminNavigation: NavItem[] = [
       { labelKey: "nav.countries", href: "/superadmin/admin/countries", icon: Globe },
       { labelKey: "nav.freight", href: "/superadmin/admin/freight", icon: Truck },
       { labelKey: "nav.taxes", href: "/superadmin/admin/taxes", icon: TrendingUp },
-      { labelKey: "nav.inventory", href: "/superadmin/admin/inventory", icon: Package },
     ],
   },
 ];

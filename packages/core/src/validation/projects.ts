@@ -29,6 +29,8 @@ export const updateProjectSchema = createProjectSchema.partial();
 export const listProjectsQuerySchema = z.object({
   status: projectStatusEnum.optional(),
   clientId: z.string().optional(),
+  organizationId: z.string().optional(),
+  countryCode: z.string().optional(),
   search: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),

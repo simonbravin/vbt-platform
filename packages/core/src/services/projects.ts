@@ -4,6 +4,8 @@ import { orgScopeWhere, type TenantContext } from "./tenant-context";
 export type ListProjectsOptions = {
   status?: ProjectStatus;
   clientId?: string;
+  organizationId?: string;
+  countryCode?: string;
   search?: string;
   limit?: number;
   offset?: number;
@@ -19,6 +21,8 @@ export async function listProjects(
     ...orgWhere,
     ...(options.status && { status: options.status }),
     ...(options.clientId && { clientId: options.clientId }),
+    ...(ctx.isPlatformSuperadmin && options.organizationId && { organizationId: options.organizationId }),
+    ...(options.countryCode && { countryCode: options.countryCode }),
     ...(options.search?.trim() && {
       OR: [
         { projectName: { contains: options.search.trim(), mode: "insensitive" as const } },
@@ -31,6 +35,7 @@ export async function listProjects(
     prisma.project.findMany({
       where,
       include: {
+        organization: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         assignedToUser: { select: { id: true, fullName: true } },
         _count: { select: { quotes: true } },

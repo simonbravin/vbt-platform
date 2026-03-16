@@ -12,8 +12,8 @@ export default async function SuperadminInventoryPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Inventario</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Ver y gestionar inventario por partner. Seleccioná una organización para ver sus bodegas.
+        <p className="mt-1 text-sm text-muted-foreground">
+          Inventario Vision Latam y por partner. Ver niveles, transacciones, afectar por cotización y simular sobrante/faltante.
         </p>
       </div>
       <SuperadminInventoryClient />

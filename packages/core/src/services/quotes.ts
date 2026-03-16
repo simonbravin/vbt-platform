@@ -18,6 +18,7 @@ export type CreateQuoteItemInput = {
 
 export type ListQuotesOptions = {
   projectId?: string;
+  organizationId?: string;
   status?: QuoteStatus;
   search?: string;
   limit?: number;
@@ -34,6 +35,7 @@ export async function listQuotes(
   const where = {
     ...orgWhere,
     ...(options.projectId && { projectId: options.projectId }),
+    ...(ctx.isPlatformSuperadmin && options.organizationId && { organizationId: options.organizationId }),
     ...(options.status && { status: options.status }),
     ...(searchTrim && {
       OR: [

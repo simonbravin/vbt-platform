@@ -2,45 +2,33 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ClipboardList, ChevronRight } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { FolderOpen, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
-type QuoteRow = {
+type ProjectRow = {
   id: string;
-  quoteNumber: string;
+  projectName: string;
+  projectCode?: string | null;
+  countryCode?: string | null;
+  city?: string | null;
   status: string;
-  totalPrice: number;
-  factoryCostTotal?: number | null;
-  visionLatamMarkupPct?: number | null;
-  createdAt: string;
-  organization?: { name: string } | null;
-  project: {
-    id: string;
-    projectName: string;
-    projectCode?: string | null;
-    countryCode?: string | null;
-    client?: { name: string } | null;
-  };
+  organization?: { id: string; name: string } | null;
+  client?: { id: string; name: string } | null;
+  _count?: { quotes: number };
 };
 
-const STATUS_KEYS: Record<string, string> = {
-  draft: "quotes.draft",
-  sent: "quotes.sent",
-  accepted: "quotes.accepted",
-  rejected: "quotes.rejected",
-  expired: "quotes.expired",
-};
+const PROJECT_STATUSES = ["lead", "qualified", "quoting", "engineering", "won", "lost", "on_hold"] as const;
 
-export function SuperadminQuotesListClient() {
+export function SuperadminProjectsListClient() {
   const t = useT();
-  const [quotes, setQuotes] = useState<QuoteRow[]>([]);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | "">("");
   const [search, setSearch] = useState("");
   const [organizationId, setOrganizationId] = useState<string | "">("");
+  const [countryCode, setCountryCode] = useState("");
   const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
@@ -50,7 +38,7 @@ export function SuperadminQuotesListClient() {
       .catch(() => {});
   }, []);
 
-  const fetchQuotes = useCallback(async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -58,23 +46,24 @@ export function SuperadminQuotesListClient() {
       if (statusFilter) params.set("status", statusFilter);
       if (search.trim()) params.set("search", search.trim());
       if (organizationId) params.set("organizationId", organizationId);
-      const res = await fetch(`/api/saas/quotes?${params}`);
+      if (countryCode.trim()) params.set("countryCode", countryCode.trim());
+      const res = await fetch(`/api/saas/projects?${params}`);
       const data = await res.json().catch(() => ({}));
-      setQuotes(data.quotes ?? []);
+      setProjects(data.projects ?? []);
       setTotal(data.total ?? 0);
-      setError(!res.ok || data.error ? (data.message ?? "Failed to load quotes") : null);
+      setError(!res.ok || data.error ? (data.message ?? "Failed to load projects") : null);
     } catch {
-      setQuotes([]);
+      setProjects([]);
       setTotal(0);
-      setError("Failed to load quotes");
+      setError("Failed to load projects");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, organizationId]);
+  }, [statusFilter, search, organizationId, countryCode]);
 
   useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
+    fetchProjects();
+  }, [fetchProjects]);
 
   return (
     <div className="space-y-4">
@@ -82,11 +71,11 @@ export function SuperadminQuotesListClient() {
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
           <span>
             {error}
-            {quotes.length === 0 && " Showing empty list."}
+            {projects.length === 0 && " Showing empty list."}
           </span>
           <button
             type="button"
-            onClick={() => fetchQuotes()}
+            onClick={() => fetchProjects()}
             className="rounded-lg px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
           >
             Retry
@@ -105,16 +94,23 @@ export function SuperadminQuotesListClient() {
           ))}
         </select>
         <input
+          type="text"
+          placeholder="Country code (e.g. AR, US)"
+          value={countryCode}
+          onChange={(e) => setCountryCode(e.target.value)}
+          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
+        />
+        <input
           type="search"
-          placeholder="Search by quote number or project..."
+          placeholder="Search by project name or code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && fetchQuotes()}
+          onKeyDown={(e) => e.key === "Enter" && fetchProjects()}
           className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
         />
         <button
           type="button"
-          onClick={() => fetchQuotes()}
+          onClick={() => fetchProjects()}
           className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
         >
           Search
@@ -124,29 +120,31 @@ export function SuperadminQuotesListClient() {
           onClick={() => setStatusFilter("")}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
         >
-          All
+          All statuses
         </button>
-        {(["draft", "sent", "accepted", "rejected", "expired"] as const).map((s) => (
+        {PROJECT_STATUSES.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setStatusFilter(s)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
           >
-            {t(STATUS_KEYS[s] ?? s)}
+            {s}
           </button>
         ))}
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-sm text-muted-foreground">Loading quotes…</div>
-        ) : quotes.length === 0 ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">Loading projects…</div>
+        ) : projects.length === 0 ? (
           <div className="p-12 text-center">
-            <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">No quotes found</p>
+            <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+            <p className="mt-2 text-sm font-medium text-foreground">No projects found</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {statusFilter ? `No quotes with status "${statusFilter}".` : "There are no quotes yet."}
+              {statusFilter || search || organizationId || countryCode
+                ? "No projects match the current filters."
+                : "There are no projects yet."}
             </p>
           </div>
         ) : (
@@ -155,22 +153,22 @@ export function SuperadminQuotesListClient() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Partner
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Quote
+                    Company
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Project
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Country
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    VL %
-                  </th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Total
+                    Quotes
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
@@ -178,51 +176,41 @@ export function SuperadminQuotesListClient() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {quotes.map((q) => {
-                  const vlPct = Number(q.visionLatamMarkupPct ?? 0);
-                  return (
-                    <tr key={q.id} className="hover:bg-muted/50">
-                      <td className="px-5 py-3 text-sm text-foreground">
-                        {q.organization?.name ?? "—"}
-                      </td>
-                      <td className="px-5 py-3 text-sm font-medium text-foreground">
-                        {q.quoteNumber}
-                      </td>
-                      <td className="px-5 py-3 text-sm text-foreground">
-                        {q.project?.projectName ?? "—"}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                            q.status === "accepted"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                              : q.status === "rejected"
-                                ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                : q.status === "sent"
-                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                                  : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {t(STATUS_KEYS[q.status] ?? q.status)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-right text-sm text-foreground">
-                        {vlPct}%
-                      </td>
-                      <td className="px-5 py-3 text-right text-sm text-foreground">
-                        {formatCurrency(q.totalPrice ?? 0)}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <Link
-                          href={`/superadmin/quotes/${q.id}`}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                        >
-                          Ver <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {projects.map((p) => (
+                  <tr key={p.id} className="hover:bg-muted/50">
+                    <td className="px-5 py-3 text-sm text-foreground">
+                      {p.organization?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-sm font-medium text-foreground">
+                      {p.projectName}
+                      {p.projectCode && (
+                        <span className="ml-1 text-muted-foreground">({p.projectCode})</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-foreground">
+                      {p.client?.name ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-foreground">
+                      {p.countryCode ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right text-sm text-foreground">
+                      {p._count?.quotes ?? 0}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <Link
+                        href={`/projects/${p.id}`}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      >
+                        Ver <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -230,7 +218,7 @@ export function SuperadminQuotesListClient() {
       </div>
       {!loading && total > 0 && (
         <p className="text-sm text-muted-foreground">
-          Showing {quotes.length} of {total} quotes
+          Showing {projects.length} of {total} projects
         </p>
       )}
     </div>

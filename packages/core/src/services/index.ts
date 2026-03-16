@@ -8,3 +8,4 @@ export * from "./partners";
 export * from "./org-members";
 export * from "./analytics";
 export * from "./platform-config";
+export * from "./inventory";
