@@ -1,6 +1,6 @@
 "use client";
 
-import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import type { QuoteWizardState } from "@/components/quotes/wizard-state";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 

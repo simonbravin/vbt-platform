@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import type { QuoteWizardState } from "@/components/quotes/wizard-state";
 import { useT } from "@/lib/i18n/context";
 
 interface Props {

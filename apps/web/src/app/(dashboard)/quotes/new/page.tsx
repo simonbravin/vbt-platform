@@ -1,252 +1,30 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import Step1Method from "@/components/quotes/step1-method";
-import Step2CSV from "@/components/quotes/step2-csv";
-import { Step3MaterialCost } from "@/components/quotes/step3-material";
-import { Step4Commission } from "@/components/quotes/step4-commission";
-import { Step5Destination } from "@/components/quotes/step5-destination";
-import { Step6Preview } from "@/components/quotes/step6-preview";
+import Link from "next/link";
 import { useT } from "@/lib/i18n/context";
 
-export interface QuoteWizardState {
-  // Step 1
-  projectId: string;
-  costMethod: "CSV" | "M2_BY_SYSTEM";
-  baseUom: "M" | "FT";
-  warehouseId?: string;
-  reserveStock: boolean;
-  // Step 2 (CSV)
-  revitImportId?: string;
-  importRows?: any[];
-  // Step 3
-  m2S80: number;
-  m2S150: number;
-  m2S200: number;
-  m2Total: number;
-  csvLines?: any[];
-  // Step 4
-  commissionPct: number;
-  commissionFixed: number;
-  commissionFixedPerKit: number;
-  kitsPerContainer: number;
-  totalKits: number;
-  numContainers: number;
-  // Step 5
-  countryId?: string;
-  freightProfileId?: string;
-  freightCostUsd: number;
-  taxRuleSetId?: string;
-  notes?: string;
-  // Computed (from Step 3: always per kit — CSV is one kit; total = factoryCostUsd × totalKits in Step 4+)
-  factoryCostUsd?: number;
-  fobUsd?: number;
-  cifUsd?: number;
-  taxesFeesUsd?: number;
-  landedDdpUsd?: number;
-}
-
-const initialState: QuoteWizardState = {
-  projectId: "",
-  costMethod: "CSV",
-  baseUom: "M",
-  reserveStock: false,
-  m2S80: 0,
-  m2S150: 0,
-  m2S200: 0,
-  m2Total: 0,
-  commissionPct: 0,
-  commissionFixed: 0,
-  commissionFixedPerKit: 0,
-  kitsPerContainer: 0,
-  totalKits: 0,
-  numContainers: 1,
-  freightCostUsd: 0,
-};
-
-const STEP_KEYS = ["quotes.stepMethod", "quotes.stepImport", "quotes.stepMaterial", "quotes.stepCommission", "quotes.stepDestination", "quotes.stepPreview"] as const;
-
+/**
+ * Legacy step-by-step quote wizard. Deprecated: it posted to /api/quotes (501).
+ * Redirect to /quotes/create to create a draft via /api/saas/quotes, then add items from the quote detail.
+ */
 export default function NewQuotePage() {
   const t = useT();
   const router = useRouter();
-  const { data: session } = useSession();
-  const [step, setStep] = useState(1);
-  const [state, setState] = useState<QuoteWizardState>(initialState);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const STEPS = useMemo(
-    () => [1, 2, 3, 4, 5, 6].map((num, i) => ({ num, label: t(STEP_KEYS[i]) })),
-    [t]
-  );
-
-  const update = useCallback((patch: Partial<QuoteWizardState>) => {
-    setState((prev) => ({ ...prev, ...patch }));
-  }, []);
-
-  const canAdvance = () => {
-    if (step === 1) return !!state.projectId && !!state.costMethod;
-    if (step === 2) {
-      if (state.costMethod !== "CSV") return true;
-      return !!state.revitImportId;
-    }
-    return true;
-  };
-
-  const next = () => {
-    if (!canAdvance()) return;
-    // Skip step 2 for non-CSV methods
-    if (step === 1 && state.costMethod !== "CSV") {
-      setStep(3);
-    } else {
-      setStep((s) => Math.min(s + 1, 6));
-    }
-  };
-
-  const prev = () => {
-    if (step === 3 && state.costMethod !== "CSV") {
-      setStep(1);
-    } else {
-      setStep((s) => Math.max(s - 1, 1));
-    }
-  };
-
-  const submit = async () => {
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const totalKits = Math.max(1, state.totalKits || 0);
-      const payload = {
-        ...state,
-        factoryCostUsd: (state.factoryCostUsd ?? 0) * totalKits,
-      };
-      const res = await fetch("/api/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? t("quotes.failedCreate"));
-        return;
-      }
-
-      router.push(`/quotes/${data.id}`);
-    } catch (e) {
-      setError(t("auth.errorUnexpected"));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const activeSteps = state.costMethod !== "CSV"
-    ? STEPS.filter((s) => s.num !== 2)
-    : STEPS;
-
+  useEffect(() => {
+    router.replace("/quotes/create");
+  }, [router]);
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t("quotes.newQuoteTitle")}</h1>
-        <p className="text-gray-500 text-sm mt-0.5">{t("quotes.newQuoteSubtitle")}</p>
-      </div>
-
-      {/* Step indicators */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center justify-between">
-          {activeSteps.map((s, i) => {
-            const currentIdx = activeSteps.findIndex((as) => as.num === step);
-            const isActive = s.num === step;
-            const isDone = activeSteps.indexOf(s) < currentIdx;
-
-            return (
-              <div key={s.num} className="flex items-center flex-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                      isDone
-                        ? "bg-green-500 text-white"
-                        : isActive
-                        ? "bg-vbt-blue text-white"
-                        : "bg-gray-100 text-gray-400"
-                    }`}
-                  >
-                    {isDone ? <Check className="w-4 h-4" /> : s.num}
-                  </div>
-                  <span
-                    className={`text-sm font-medium hidden sm:block ${
-                      isActive ? "text-vbt-blue" : isDone ? "text-green-600" : "text-gray-400"
-                    }`}
-                  >
-                    {s.label}
-                  </span>
-                </div>
-                {i < activeSteps.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-2 transition-all ${
-                      isDone ? "bg-green-400" : "bg-gray-200"
-                    }`}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Step content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        {step === 1 && <Step1Method state={state as any} update={update as any} />}
-        {step === 2 && <Step2CSV state={state as any} update={update as any} />}
-        {step === 3 && <Step3MaterialCost state={state} update={update} />}
-        {step === 4 && <Step4Commission state={state} update={update} />}
-        {step === 5 && <Step5Destination state={state} update={update} />}
-        {step === 6 && <Step6Preview state={state} update={update} />}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={prev}
-          disabled={step === 1}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("quotes.previous")}
-        </button>
-
-        {step < 6 ? (
-          <button
-            onClick={next}
-            disabled={!canAdvance()}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {t("quotes.next")}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={submit}
-            disabled={submitting}
-            className="inline-flex items-center gap-2 px-6 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? t("quotes.creating") : t("quotes.createQuote")}
-            <Check className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+    <div className="max-w-lg mx-auto p-6 space-y-4">
+      <p className="text-muted-foreground text-sm">
+        {t("quotes.newQuoteTitle")} — redirecting to create draft…
+      </p>
+      <p className="text-sm">
+        <Link href="/quotes/create" className="text-vbt-blue hover:underline">
+          Go to Create Quote
+        </Link>
+      </p>
     </div>
   );
 }

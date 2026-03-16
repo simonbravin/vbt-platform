@@ -15,19 +15,25 @@ async function getHandler(req: Request) {
   const limit = url.searchParams.get("limit");
   const offset = url.searchParams.get("offset");
 
-  const tenantCtx = {
-    userId: ctx.userId,
-    organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
-  };
-  const result = await listLevels(prisma, tenantCtx, {
-    warehouseId,
-    organizationId,
-    catalogPieceId,
-    limit: limit ? Math.min(200, Math.max(1, parseInt(limit, 10) || 50)) : undefined,
-    offset: offset ? Math.max(0, parseInt(offset, 10) || 0) : undefined,
-  });
-  return NextResponse.json(result);
+  try {
+    const tenantCtx = {
+      userId: ctx.userId,
+      organizationId: ctx.activeOrgId ?? null,
+      isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    };
+    const result = await listLevels(prisma, tenantCtx, {
+      warehouseId,
+      organizationId,
+      catalogPieceId,
+      limit: limit ? Math.min(500, Math.max(1, parseInt(limit, 10) || 50)) : undefined,
+      offset: offset ? Math.max(0, parseInt(offset, 10) || 0) : undefined,
+    });
+    return NextResponse.json(result);
+  } catch (e) {
+    if (e instanceof TenantError) throw e;
+    console.error("[api/saas/inventory/levels GET]", e);
+    return NextResponse.json({ levels: [], total: 0 });
+  }
 }
 
 export const GET = withSaaSHandler({ rateLimitTier: "read" }, getHandler);

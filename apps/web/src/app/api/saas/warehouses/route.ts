@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
     console.error("[api/saas/warehouses GET]", e);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ warehouses: [] });
   }
 }
 
@@ -38,6 +38,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const location = typeof body.location === "string" ? body.location.trim() || null : null;
+    const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() || null : null;
+    const address = typeof body.address === "string" ? body.address.trim() || null : null;
+    const managerName = typeof body.managerName === "string" ? body.managerName.trim() || null : null;
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
     let organizationId: string | null = null;
     if (ctx.isPlatformSuperadmin && body.organizationId) {
@@ -49,7 +52,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No organization context" }, { status: 400 });
     }
     const warehouse = await prisma.warehouse.create({
-      data: { organizationId, name, location },
+      data: { organizationId, name, location, countryCode, address, managerName },
     });
     return NextResponse.json(warehouse);
   } catch (e) {

@@ -14,6 +14,7 @@ export type CreateQuoteItemInput = {
   unitPrice?: number;
   totalPrice?: number;
   sortOrder?: number;
+  catalogPieceId?: string | null;
 };
 
 export type ListQuotesOptions = {
@@ -162,6 +163,7 @@ export async function createQuote(
           unitPrice: item.unitPrice ?? 0,
           totalPrice: item.totalPrice ?? 0,
           sortOrder: item.sortOrder ?? i,
+          catalogPieceId: item.catalogPieceId ?? null,
         })),
       });
     }
@@ -232,6 +234,7 @@ export async function updateQuote(
             unitPrice: item.unitPrice ?? 0,
             totalPrice: item.totalPrice ?? 0,
             sortOrder: item.sortOrder ?? i,
+            catalogPieceId: item.catalogPieceId ?? null,
           })),
         });
       }
@@ -286,6 +289,7 @@ export async function duplicateQuote(
     unitPrice: it.unitPrice,
     totalPrice: it.totalPrice,
     sortOrder: it.sortOrder,
+    catalogPieceId: (it as { catalogPieceId?: string | null }).catalogPieceId ?? null,
   }));
   const created = await createQuote(prisma, ctx, {
     projectId: existing.projectId,

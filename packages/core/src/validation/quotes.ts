@@ -8,12 +8,13 @@ export const quoteItemSchema = z.object({
   sku: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   unit: z.string().nullable().optional(),
-  quantity: z.number().optional(),
+  quantity: z.number().min(0).optional(),
   unitCost: z.number().optional(),
   markupPct: z.number().optional(),
   unitPrice: z.number().optional(),
   totalPrice: z.number().optional(),
   sortOrder: z.number().optional(),
+  catalogPieceId: z.string().nullable().optional(),
 });
 
 export const createQuoteSchema = z.object({

@@ -21,6 +21,9 @@ export async function PATCH(
     const body = await req.json().catch(() => ({}));
     const name = typeof body.name === "string" ? body.name.trim() : undefined;
     const location = typeof body.location === "string" ? body.location.trim() || null : undefined;
+    const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() || null : undefined;
+    const address = typeof body.address === "string" ? body.address.trim() || null : undefined;
+    const managerName = typeof body.managerName === "string" ? body.managerName.trim() || null : undefined;
     const isActive = typeof body.isActive === "boolean" ? body.isActive : undefined;
 
     const updated = await prisma.warehouse.update({
@@ -28,6 +31,9 @@ export async function PATCH(
       data: {
         ...(name !== undefined && { name }),
         ...(location !== undefined && { location }),
+        ...(countryCode !== undefined && { countryCode }),
+        ...(address !== undefined && { address }),
+        ...(managerName !== undefined && { managerName }),
         ...(isActive !== undefined && { isActive }),
       },
       include: { organization: { select: { id: true, name: true } } },

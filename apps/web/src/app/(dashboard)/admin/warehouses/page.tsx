@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { Warehouse, Plus, Pencil } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
+type Country = { id: string; code: string; name: string };
+
 export default function WarehousesPage() {
   const t = useT();
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", location: "" });
+  const [form, setForm] = useState({ name: "", location: "", countryCode: "", address: "", managerName: "" });
   const [saving, setSaving] = useState(false);
 
   const load = () => {
@@ -17,15 +20,24 @@ export default function WarehousesPage() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    fetch("/api/countries").then(r => r.json()).then(d => setCountries(Array.isArray(d) ? d : []));
+  }, []);
 
   const openAdd = () => {
-    setForm({ name: "", location: "" });
+    setForm({ name: "", location: "", countryCode: "", address: "", managerName: "" });
     setEditItem(null);
     setShowAdd(true);
   };
 
   const openEdit = (w: any) => {
-    setForm({ name: w.name, location: w.location ?? "" });
+    setForm({
+      name: w.name,
+      location: w.location ?? "",
+      countryCode: w.countryCode ?? "",
+      address: w.address ?? "",
+      managerName: w.managerName ?? "",
+    });
     setEditItem(w);
     setShowAdd(true);
   };
@@ -33,22 +45,32 @@ export default function WarehousesPage() {
   const save = async () => {
     if (!form.name) return;
     setSaving(true);
-    if (editItem) {
-      await fetch(`/api/admin/warehouses/${editItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    } else {
-      await fetch("/api/admin/warehouses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+    const payload = {
+      name: form.name,
+      location: form.location || undefined,
+      countryCode: form.countryCode || undefined,
+      address: form.address || undefined,
+      managerName: form.managerName || undefined,
+    };
+    try {
+      if (editItem) {
+        await fetch(`/api/admin/warehouses/${editItem.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch("/api/admin/warehouses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      setShowAdd(false);
+      load();
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowAdd(false);
-    load();
   };
 
   return (
@@ -76,10 +98,10 @@ export default function WarehousesPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-800">{w.name}</p>
-                  {w.location && <p className="text-gray-400 text-sm">{w.location}</p>}
-                  <p className="text-gray-400 text-xs mt-1">
-                    {w._count?.items ?? 0} {t("admin.warehouses.skus")} · {w._count?.movesFrom ?? 0} {t("admin.warehouses.moves")}
-                  </p>
+                  {(w.location || w.address) && (
+                    <p className="text-gray-400 text-sm">{[w.location, w.address].filter(Boolean).join(" · ")}</p>
+                  )}
+                  {w.managerName && <p className="text-gray-400 text-xs mt-0.5">{t("admin.warehouses.manager")}: {w.managerName}</p>}
                 </div>
               </div>
               <button
@@ -115,6 +137,39 @@ export default function WarehousesPage() {
                   value={form.location}
                   onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))}
                   placeholder={t("admin.warehouses.locationPlaceholder")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.country")}</label>
+                <select
+                  value={form.countryCode}
+                  onChange={(e) => setForm(p => ({ ...p, countryCode: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                >
+                  <option value="">—</option>
+                  {countries.map((c) => (
+                    <option key={c.id} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.address")}</label>
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
+                  placeholder={t("admin.warehouses.addressPlaceholder")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.managerName")}</label>
+                <input
+                  type="text"
+                  value={form.managerName}
+                  onChange={(e) => setForm(p => ({ ...p, managerName: e.target.value }))}
+                  placeholder={t("admin.warehouses.managerPlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>

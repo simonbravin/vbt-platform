@@ -28,7 +28,11 @@ export function SuperadminInventoryClient() {
   const t = useT();
   const [organizations, setOrganizations] = useState<Org[]>([]);
   const [visionLatamOrg, setVisionLatamOrg] = useState<Org | null>(null);
+  const [partnerOrgs, setPartnerOrgs] = useState<Org[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
+  const [partnerLevels, setPartnerLevels] = useState<{ orgId: string; levels: LevelRow[] }[]>([]);
+  const [loadingPartnerLevels, setLoadingPartnerLevels] = useState(false);
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
   const [levels, setLevels] = useState<LevelRow[]>([]);
   const [catalogPieces, setCatalogPieces] = useState<CatalogPieceRow[]>([]);
@@ -80,11 +84,30 @@ export function SuperadminInventoryClient() {
       .catch(() => setWarehouses([]))
       .finally(() => setLoadingWarehouses(false));
     fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(selectedOrgId)}&limit=500`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : { levels: [] }))
       .then((data) => setLevels(data.levels ?? []))
       .catch(() => setLevels([]))
       .finally(() => setLoadingLevels(false));
   }, [selectedOrgId]);
+
+  useEffect(() => {
+    if (selectedPartnerIds.length === 0) {
+      setPartnerLevels([]);
+      return;
+    }
+    setLoadingPartnerLevels(true);
+    const ids = [...selectedPartnerIds];
+    Promise.all(
+      ids.map((orgId) =>
+        fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(orgId)}&limit=500`)
+          .then((r) => (r.ok ? r.json() : { levels: [] }))
+          .then((data) => ({ orgId, levels: data.levels ?? [] }))
+      )
+    )
+      .then((results) => setPartnerLevels(results))
+      .catch(() => setPartnerLevels([]))
+      .finally(() => setLoadingPartnerLevels(false));
+  }, [selectedPartnerIds.join(",")]);
 
   useEffect(() => {
     if (isVisionLatam) {
@@ -159,14 +182,20 @@ export function SuperadminInventoryClient() {
     );
   }
 
+  const togglePartnerFilter = (id: string) => {
+    setSelectedPartnerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium text-foreground">Organización:</label>
+        <label className="text-sm font-medium text-foreground">Organización principal:</label>
         <select
           value={selectedOrgId}
           onChange={(e) => setSelectedOrgId(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm min-w-[220px]"
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm min-w-[280px]"
         >
           <option value="">— Seleccionar —</option>
           {organizations.map((org) => (
@@ -174,6 +203,24 @@ export function SuperadminInventoryClient() {
           ))}
         </select>
       </div>
+      {partnerOrgs.length > 0 && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+          <p className="text-sm font-medium text-foreground mb-2">Ver también inventario de (solo lectura):</p>
+          <div className="flex flex-wrap gap-3">
+            {partnerOrgs.map((org) => (
+              <label key={org.id} className="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedPartnerIds.includes(org.id)}
+                  onChange={() => togglePartnerFilter(org.id)}
+                  className="rounded border-input"
+                />
+                {org.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selectedOrgId && (
         <>
@@ -212,6 +259,51 @@ export function SuperadminInventoryClient() {
               </div>
             )}
           </div>
+
+          {selectedPartnerIds.length > 0 && (
+            <div className="rounded-xl border border-border bg-card overflow-hidden mt-4">
+              <h3 className="text-sm font-semibold text-foreground px-4 py-2 bg-muted/50 border-b border-border">
+                Inventario de partners seleccionados (solo lectura)
+              </h3>
+              {loadingPartnerLevels ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">Cargando…</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {partnerLevels.map(({ orgId, levels: pl }) => (
+                    <div key={orgId} className="p-4">
+                      <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === orgId)?.name ?? orgId}</p>
+                      {pl.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Sin niveles.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th className="text-left py-1 pr-4 text-muted-foreground">Bodega</th>
+                                <th className="text-left py-1 pr-4 text-muted-foreground">Pieza</th>
+                                <th className="text-left py-1 pr-4 text-muted-foreground">Sistema</th>
+                                <th className="text-right py-1 text-muted-foreground">Cantidad</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pl.map((l) => (
+                                <tr key={l.id} className="border-b border-border/50">
+                                  <td className="py-1 pr-4">{l.warehouse.name}</td>
+                                  <td className="py-1 pr-4">{l.catalogPiece.canonicalName}</td>
+                                  <td className="py-1 pr-4">{l.catalogPiece.systemCode}</td>
+                                  <td className="py-1 text-right">{l.quantity}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {isVisionLatam && (
             <div className="space-y-4 rounded-xl border border-border bg-card p-4">

@@ -95,9 +95,9 @@ export default function Step1Method({ state, update }: Step1Props) {
 
   React.useEffect(() => {
     setLoadingWarehouses(true)
-    fetch("/api/admin/warehouses")
+    fetch("/api/saas/warehouses")
       .then((r) => r.json())
-      .then((data) => setWarehouses(Array.isArray(data) ? data : data.warehouses ?? []))
+      .then((data) => setWarehouses(Array.isArray(data?.warehouses) ? data.warehouses : []))
       .catch(() => setWarehouses([]))
       .finally(() => setLoadingWarehouses(false))
   }, [])

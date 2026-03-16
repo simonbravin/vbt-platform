@@ -102,7 +102,8 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 | `app/api/saas/quotes/[id]/route.ts` | Migrated | GET getQuoteById; PATCH updateQuote (status, pricing, items replace). |
 | `app/api/saas/quotes/[id]/duplicate/route.ts` | New | POST duplicateQuote (new version, draft). |
 | Core `packages/core/src/services/quotes.ts` | Extended | createQuote with items in transaction; updateQuote with optional items replace; duplicateQuote; listQuotes search. |
-| Legacy quote wizard `/quotes/new` | Out of scope | CSV/Revit flow not restored; legacy. |
+| Legacy quote wizard `/quotes/new` | Deprecated | Redirects to `/quotes/create`. CSV/Revit flow not migrated; create draft then add items from quote detail. |
+| Quote items `catalogPieceId` | Migrated | Validation, core create/update/duplicate, and saas/quotes accept and persist `catalogPieceId`. "Affect inventory by quote" and "simulate" require items with `catalogPieceId`; quote-by-m² only is estimation and does not feed inventory. |
 
 ### Clients — Migrated
 
@@ -120,7 +121,8 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 | Item | Status | Notes |
 |------|--------|--------|
 | `reports/page.tsx` | Migrated | effectiveOrgId, clients + STATIC_COUNTRIES; ReportsClient uses new schema (projectName, status lead/won/lost, countryCode). |
-| `api/reports/projects` | Migrated | GET returns real data (tenant-scoped); summary; query params: page, limit, status, countryCode, clientId, search, soldFrom, soldTo; format=csv \| xlsx returns file download. |
+| `api/reports/projects` | Migrated | GET returns real data (tenant-scoped); summary; query params: page, limit, status, countryCode, clientId, search, soldFrom, soldTo; format=csv \| xlsx returns file download. try/catch returns empty payload on error. |
+| `api/sales/reports/summary` | Stubbed | Returns 200 with stub totals so Reports page does not break. Sales module not migrated. |
 | `api/reports/pieces` | Stubbed | Returns empty `byQty`, `byKg`, `byM2`; not used by main reports flow. See route comment. |
 | `api/reports/email` | Migrated | POST: to (required), subject, status, countryCode, clientId, soldFrom, soldTo, search; sends CSV report via Resend; buildVbtEmailHtml. |
 | Partner Reports export | Done | Export CSV and Export Excel (server-side) with same filters; PDF for quotes remains at /api/quotes/[id]/pdf. |
@@ -138,8 +140,10 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 |------|--------|--------|
 | `api/countries/*` | Stubbed | GET returns []; POST/ PATCH/DELETE return 501 (no CountryProfile). Forms use `lib/countries.ts` (STATIC_COUNTRIES). |
 | `api/admin/settings` | Migrated | prisma.organization; PATCH may pass unknown fields (Org has no rateS80 etc in new schema). |
-| `api/admin/warehouses/*` | Stubbed | 501. |
-| `api/inventory/*` | Stubbed | GET empty; POST/move/logs 501. |
+| `api/admin/warehouses/*` | Implemented | GET returns array (Superadmin = Vision Latam only; partner = their org). Prefer GET/POST `api/saas/warehouses` (returns `{ warehouses }`) for new code. |
+| `api/saas/warehouses` | Migrated | GET/POST; supports `organizationId` for superadmin. Step1 (wizard) and inventory flows use this where applicable. |
+| `api/inventory/*` (legacy) | Deprecated | GET/POST, `api/inventory/[id]/move`, `api/inventory/logs` return **410 Gone** with message to use `/api/saas/inventory/*`. |
+| `api/saas/inventory/levels`, `api/saas/inventory/transactions` | Migrated | SaaS inventory: levels by org/warehouse; transactions for moves. Partner and Superadmin inventory UIs use these. |
 | `api/freight/*`, `api/tax-rules/*` | Stubbed | 501 or empty. |
 | `api/catalog/*`, `api/import/*` | Stubbed | 501 or empty (no pieceCatalog/revitImport). |
 
@@ -255,7 +259,8 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 - **Partner Management:** Partners (GET/POST /api/saas/partners, GET/PATCH /api/saas/partners/[id]); territories (GET/POST partners/[id]/territories, DELETE /api/saas/territories/[id]); onboarding (GET/POST/PATCH partners/[id]/onboard); org members (GET/POST /api/saas/org-members, PATCH/DELETE org-members/[id]). Core services: partners.ts, org-members.ts. Schema: PartnerProfile + contactName, contactEmail, onboardingState. Activity log: partner_created, partner_updated, territory_assigned, territory_removed, partner_onboarded, member_invited, member_role_changed. Platform superadmin for partner/territory/onboarding; activeOrgId for org members. See `docs/PARTNER-SYSTEM.md`.
 - **Analytics and reporting:** Pipeline (GET /api/saas/analytics/pipeline); partner performance (GET /api/saas/analytics/partners, filters dateFrom, dateTo, partnerId, country); quote analytics (GET /api/saas/analytics/quotes); leaderboard (GET /api/saas/analytics/leaderboard, sort revenue \| quotes_accepted); dashboard overview, recent-projects, recent-quotes, activity. Core analytics.ts; tenant-scoped unless platform superadmin. See `docs/ANALYTICS-SYSTEM.md`.
 - **Backend hardening:** Rate limiting (analytics 60/min, create_update 20/min, auth 10/min); caching (analytics 60s, dashboard 30s, leaderboard 120s); centralized validation in `packages/core/src/validation` (import `@vbt/core/validation`); unified error body `{ error: { code, message, details } }`; Quote index on `createdAt`; structured API logging (endpoint, userId, organizationId, duration, status). `withSaaSHandler` applied to analytics, dashboard, projects, quotes, engineering, documents, partners. See `docs/BACKEND-HARDENING.md`.
-- **Remaining legacy:** Sales UI (pages still call stubbed APIs); Legacy quote wizard `/quotes/new` (CSV/Revit) not restored; Reports data stubbed; Catalog/Import/Revit flow stubbed.
+- **Remaining legacy:** Sales UI (pages still call stubbed APIs); Legacy quote wizard `/quotes/new` redirects to `/quotes/create`; Reports projects real data, sales summary stubbed 200; Catalog/Import/Revit flow stubbed.
+- **Audit (inventory + warehouses + quotes):** (1) `catalogPieceId` added to quote item validation, core create/update/duplicate, and saas/quotes APIs; UI can send/persist per item. (2) Step1 wizard and inventory flows use `api/saas/warehouses` where applicable; `api/admin/warehouses` kept as legacy array format. (3) Legacy `api/inventory` GET/POST/move/logs return 410; use `api/saas/inventory/*`. (4) `(dashboard)/admin/inventory` redirects to `/inventory`. (5) `/quotes/new` redirects to `/quotes/create`. (6) Reports: `reports/projects` safe (try/catch); `sales/reports/summary` returns 200 stub. (7) Quote item `quantity` validation: min(0). See plan "Auditoría SaaS Inventario y Distribuidores".
 - **Partner pricing (no EXW):** Partners must not see factory cost or EXW. Base price = factory cost + Vision Latam commission % (default 20%). Global Settings: added "Vision Latam commission %" in pricing. GET /api/quotes/[id] and GET /api/saas/quotes/[id] mask response for non-superadmin (factoryCostTotal/factoryCostUsd null, basePriceForPartner computed from platform config). Quote detail UI and PDF show "Base price (Vision Latam)" when basePriceForPartner is present. PDF route also enforces org scope and masks for partners. See docs/FRONTEND-AUDIT.md.
 - **Follow-up (migration + E2E auth):** Prisma migration for `platform_config` added (`migrations/20250313000000_add_platform_config/migration.sql` + `migration_lock.toml`). E2E auth flows: `e2e/auth-flows.spec.ts` (superadmin dashboard/reports, partner nav without Sales/Admin when `E2E_*` env set). DEPLOY.md updated with E2E env vars.
 - **Dual-portal implementation (Fase 1–5):** (1) Reports: access restricted to org_admin/SUPERADMIN via reports layout and sidebar roles; email report restricted to org_admin/superadmin in API and UI (`canSendReport`). (2) Global Settings: PlatformConfig model and table; core getPlatformConfig/updatePlatformConfig; GET/PATCH /api/saas/platform-config; GlobalSettingsClient (pricing defaults, module visibility); Partner Parameters tab shows platform defaults when no override. (3) Pending page: improved copy and sign-out link. (4) docs/DEPLOY.md env and deploy checklist; Playwright e2e smoke tests (login, dashboard/superadmin/reports redirect when unauthenticated); build passes; playwright.config and e2e excluded from Next.js tsconfig. (5) api/reports/pieces documented as stubbed; MODULE-MIGRATION-STATUS and changelog updated.

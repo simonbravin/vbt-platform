@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { QuoteWizardState } from "@/app/(dashboard)/quotes/new/page";
+import type { QuoteWizardState } from "@/components/quotes/wizard-state";
 import { useT } from "@/lib/i18n/context";
 
 // Packing capacity: m² of wall panels per 40ft HC container
