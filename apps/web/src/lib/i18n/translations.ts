@@ -576,6 +576,7 @@ export const translations = {
     "admin.settings.saveSettings": "Save Settings",
     "admin.settings.saved": "Settings saved successfully.",
     "admin.settings.saveFailed": "Failed to save settings.",
+    "admin.settings.failedToLoad": "Failed to load settings",
 
     // Admin - Catalog
     "admin.catalog.title": "Piece Catalog",
@@ -1568,6 +1569,7 @@ export const translations = {
     "admin.settings.saveSettings": "Guardar Configuración",
     "admin.settings.saved": "Configuración guardada exitosamente.",
     "admin.settings.saveFailed": "Error al guardar la configuración.",
+    "admin.settings.failedToLoad": "Error al cargar la configuración",
 
     // Admin - Catalog
     "admin.catalog.title": "Catálogo de Piezas",

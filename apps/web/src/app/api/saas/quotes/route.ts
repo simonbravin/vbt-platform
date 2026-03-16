@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, requireActiveOrg } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import { listQuotes, createQuote, getVisionLatamCommissionPctForOrg } from "@vbt/core";
-import { createQuoteSchema, listQuotesQuerySchema } from "@vbt/core/validation";
+import { createQuoteSchema } from "@vbt/core/validation";
 import { generateQuoteNumber } from "@/lib/utils";
 import { createActivityLog } from "@/lib/audit";
 import { withSaaSHandler } from "@/lib/saas-handler";
@@ -14,25 +14,35 @@ async function getHandler(req: Request) {
     throw new TenantError("No active organization", "NO_ACTIVE_ORG");
   }
   const url = new URL(req.url);
-  const parsed = listQuotesQuerySchema.safeParse({
-    status: url.searchParams.get("status") || undefined,
-    search: url.searchParams.get("search") || undefined,
-    limit: url.searchParams.get("limit"),
-    offset: url.searchParams.get("offset"),
-  });
-  if (!parsed.success) throw parsed.error;
+  const limitRaw = url.searchParams.get("limit");
+  const offsetRaw = url.searchParams.get("offset");
+  const limit = limitRaw != null && limitRaw !== "" ? Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 50)) : 50;
+  const offset = offsetRaw != null && offsetRaw !== "" ? Math.max(0, parseInt(offsetRaw, 10) || 0) : 0;
+  const status = url.searchParams.get("status") || undefined;
+  const search = url.searchParams.get("search") || undefined;
+  const projectId = url.searchParams.get("projectId") ?? undefined;
+
   const tenantCtx = {
     userId: ctx.userId,
     organizationId: ctx.activeOrgId ?? null,
     isPlatformSuperadmin: ctx.isPlatformSuperadmin,
   };
-  const result = await listQuotes(prisma, tenantCtx, {
-    projectId: url.searchParams.get("projectId") ?? undefined,
-    status: parsed.data.status,
-    search: parsed.data.search,
-    limit: parsed.data.limit ?? 50,
-    offset: parsed.data.offset ?? 0,
-  });
+  let result: Awaited<ReturnType<typeof listQuotes>>;
+  try {
+    result = await listQuotes(prisma, tenantCtx, {
+      projectId,
+      status: status as "draft" | "sent" | "accepted" | "rejected" | "expired" | undefined,
+      search: search || undefined,
+      limit,
+      offset,
+    });
+  } catch (e) {
+    console.error("[api/saas/quotes GET] listQuotes error:", e);
+    return NextResponse.json(
+      { error: "Failed to load quotes" },
+      { status: 500 }
+    );
+  }
   // Partners must not see factory cost; expose basePriceForPartner using quote's stored VL %
   if (!ctx.isPlatformSuperadmin && result.quotes.length > 0) {
     const quotes = result.quotes.map((q) => {

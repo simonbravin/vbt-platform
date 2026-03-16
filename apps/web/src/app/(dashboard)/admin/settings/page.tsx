@@ -8,25 +8,67 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<"success" | "error" | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings").then(r => r.json()).then(setSettings);
+    setErrorDetail(null);
+    fetch("/api/admin/settings")
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setErrorDetail(data?.error ?? ` ${r.status}`);
+          setSettings(null);
+          return;
+        }
+        setSettings(data);
+      })
+      .catch(() => setSettings(null));
   }, []);
 
   const save = async () => {
     setSaving(true);
     setMsg(null);
-    const res = await fetch("/api/admin/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
-    });
-    setSaving(false);
-    if (res.ok) setMsg("success");
-    else setMsg("error");
+    setErrorDetail(null);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseUom: settings?.baseUom,
+          weightUom: settings?.weightUom,
+          minRunFt: settings?.minRunFt,
+          commissionPct: settings?.commissionPct,
+          commissionFixed: settings?.commissionFixed,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg("success");
+        setSettings((prev: any) => ({ ...prev, ...data }));
+        setTimeout(() => setMsg(null), 4000);
+      } else {
+        setMsg("error");
+        setErrorDetail(data?.error ?? t("admin.settings.saveFailed"));
+      }
+    } catch {
+      setMsg("error");
+      setErrorDetail(t("admin.settings.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const upd = (k: string, v: any) => setSettings((p: any) => ({ ...p, [k]: v }));
+
+  if (errorDetail && !settings) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {t("admin.settings.failedToLoad")}: {errorDetail}
+        </div>
+      </div>
+    );
+  }
 
   if (!settings) return <div className="p-8 text-center text-gray-400">{t("common.loading")}</div>;
 
@@ -39,7 +81,7 @@ export default function SettingsPage() {
 
       {msg && (
         <div className={`p-3 rounded-lg text-sm ${msg === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-          {msg === "success" ? t("admin.settings.saved") : t("admin.settings.saveFailed")}
+          {msg === "success" ? t("admin.settings.saved") : (errorDetail ?? t("admin.settings.saveFailed"))}
         </div>
       )}
 

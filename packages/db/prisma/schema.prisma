@@ -272,6 +272,7 @@ model PartnerProfile {
   visionLatamCommissionFixedUsd Float? @map("vision_latam_commission_fixed_usd")
   moduleVisibility       Json?    @map("module_visibility") // override per partner; keys e.g. engineering, documents, training, reports
   enabledSystems         Json?    @map("enabled_systems")   // ["S80","S150","S200"] — which panel systems this partner can use; null = all
+  quoteDefaults         Json?    @map("quote_defaults")    // partner's defaults: { minRunFt?, commissionPct?, commissionFixed?, baseUom?, weightUom? }
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
