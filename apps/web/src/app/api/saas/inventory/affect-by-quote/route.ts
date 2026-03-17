@@ -49,7 +49,8 @@ async function postHandler(req: Request) {
     if (message.includes("Insufficient")) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
-    throw e;
+    console.error("[api/saas/inventory/affect-by-quote]", e);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

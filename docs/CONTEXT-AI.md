@@ -100,6 +100,17 @@ Referencia: `apps/web/src/lib/auth.ts`, `apps/web/src/app/(dashboard)/layout.tsx
 
 ---
 
+## 4.1. Vision Latam (plataforma) vs partners (distribuidores)
+
+- **Vision Latam** es la organización dueña de la plataforma (empresa que tiene stock propio y distribuidores). En el modelo de datos existe **una sola organización** con `organizationType: "vision_latam"`. Esa org tiene bodegas, inventario, catálogo que administra la plataforma.
+- **Superadmin** es un **rol de usuario** (ej. `user.isPlatformSuperadmin`). No es “un usuario más”: cuando actúa, lo hace en nombre de **Vision Latam** (crear bodegas de VL, inventario de VL, aprobar cotizaciones de partners, config global). El `organizationId` que se usa en esas acciones es **siempre el de la org Vision Latam**, obtenido por `getVisionLatamOrganizationId(prisma)` — no el `activeOrgId` del usuario.
+- **Partners** son organizaciones con `organizationType` comercial (distribuidores). Cada partner tiene su propio `organizationId`, sus bodegas, inventario, clientes, cotizaciones. Las APIs de partner usan `ctx.activeOrgId` (la org del usuario en sesión).
+- **Bootstrap:** La org Vision Latam debe existir desde el setup. La migración `20250321000000_bootstrap_vision_latam_org` la crea si no existe (idempotente). El seed también la crea/actualiza. **Ninguna API crea esta org sobre la marcha**; si falta, se responde 503 con mensaje claro de ejecutar migraciones/seed.
+
+Referencia: `packages/core` `getVisionLatamOrganizationId`, `packages/db/prisma/migrations/20250321000000_bootstrap_vision_latam_org`, rutas `api/admin/warehouses` y `api/saas/inventory/vision-latam-org`.
+
+---
+
 ## 5. Modelo de datos (resumen)
 
 - **Tenant:** La entidad **Org** es el tenant. Casi todo lo operativo tiene `orgId`: Client, Project, Quote, Sale, Warehouse, CountryProfile, FreightRateProfile, TaxRuleSet, BillingEntity, Payment, AuditLog, RevitImport.

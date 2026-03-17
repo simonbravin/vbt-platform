@@ -42,8 +42,9 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(country);
   } catch (e: unknown) {
-    const err = e as { code?: string };
+    const err = e as Error & { code?: string };
     if (err?.code === "P2002") return NextResponse.json({ error: "A country with this code already exists" }, { status: 409 });
-    throw e;
+    console.error("[api/countries POST]", err);
+    return NextResponse.json({ error: err?.message ?? "Failed to create country" }, { status: 500 });
   }
 }

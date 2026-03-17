@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getVisionLatamOrganizationId } from "@vbt/core";
 import { prisma } from "@/lib/db";
 import { getTenantContext, TenantError, tenantErrorStatus } from "@/lib/tenant";
 
@@ -10,13 +11,10 @@ export async function GET(req: Request) {
     if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     if (ctx.isPlatformSuperadmin) {
-      const vlOrg = await prisma.organization.findFirst({
-        where: { organizationType: "vision_latam" },
-        select: { id: true },
-      });
-      if (!vlOrg) return NextResponse.json([]);
+      const vlOrgId = await getVisionLatamOrganizationId(prisma);
+      if (!vlOrgId) return NextResponse.json([]);
       const list = await prisma.warehouse.findMany({
-        where: { organizationId: vlOrg.id },
+        where: { organizationId: vlOrgId },
         include: { organization: { select: { id: true, name: true } } },
         orderBy: { name: "asc" },
       });
@@ -55,25 +53,22 @@ export async function POST(req: Request) {
     const contactEmail = typeof body.contactEmail === "string" ? body.contactEmail.trim() || null : null;
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
+    // Superadmin = Vision Latam org (platform owner). Partner = their active org. No ad-hoc org creation.
     let organizationId: string | null = null;
     if (ctx.isPlatformSuperadmin) {
-      if (body.organizationId) {
-        organizationId = body.organizationId;
+      if (body.organizationId && typeof body.organizationId === "string" && body.organizationId.trim()) {
+        organizationId = body.organizationId.trim();
       } else {
-        const vlOrg = await prisma.organization.findFirst({
-          where: { organizationType: "vision_latam" },
-          select: { id: true },
-        });
-        organizationId = vlOrg?.id ?? null;
+        organizationId = await getVisionLatamOrganizationId(prisma);
       }
     } else if (ctx.activeOrgId) {
       organizationId = ctx.activeOrgId;
     }
     if (!organizationId || typeof organizationId !== "string" || !organizationId.trim()) {
-      return NextResponse.json(
-        { error: "Organization required. As superadmin, Vision Latam org is used by default." },
-        { status: 400 }
-      );
+      const msg = ctx.isPlatformSuperadmin
+        ? "Platform not configured: Vision Latam organization is missing. Run database migrations (prisma migrate deploy) and optionally seed (pnpm db:seed)."
+        : "Organization required. Select your organization or contact support.";
+      return NextResponse.json({ error: msg }, { status: ctx.isPlatformSuperadmin ? 503 : 400 });
     }
     const orgId = organizationId.trim();
 
