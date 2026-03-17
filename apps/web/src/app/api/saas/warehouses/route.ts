@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, getSessionUser, getEffectiveOrganizationId, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import {
+  getTenantContext,
+  getSessionUser,
+  getEffectiveOrganizationId,
+  TenantError,
+  tenantErrorStatus,
+} from "@/lib/tenant";
 
 export async function GET(req: Request) {
   try {
@@ -52,8 +58,20 @@ export async function POST(req: Request) {
     } else {
       organizationId = ctx.activeOrgId ?? (user ? getEffectiveOrganizationId(user) : null);
     }
+    // Definitive fallback: if the session doesn't carry an org, resolve from membership.
+    // This is tenant-safe because we still only use orgs where the logged-in user is an active member.
     if (!organizationId || typeof organizationId !== "string" || !organizationId.trim()) {
-      return NextResponse.json({ error: "No organization context" }, { status: 400 });
+      const member = await prisma.orgMember.findFirst({
+        where: { userId: ctx.userId, status: "active" },
+        select: { organizationId: true },
+      });
+      organizationId = member?.organizationId ?? null;
+    }
+    if (!organizationId || typeof organizationId !== "string" || !organizationId.trim()) {
+      return NextResponse.json(
+        { error: "Organization context missing or invalid. Select your organization or contact support." },
+        { status: 400 }
+      );
     }
     const orgId = organizationId.trim();
     const fullData = { organizationId: orgId, name, location, countryCode, address, managerName, contactPhone, contactEmail };
