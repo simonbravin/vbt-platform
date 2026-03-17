@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Warehouse, Plus, Pencil, Trash2, Package, ArrowRightLeft, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
-type WarehouseRow = { id: string; name: string; location: string | null; address?: string | null; managerName?: string | null; contactPhone?: string | null; contactEmail?: string | null; isActive: boolean };
+type Country = { id: string; code: string; name: string };
+type WarehouseRow = { id: string; name: string; location: string | null; countryCode?: string | null; address?: string | null; managerName?: string | null; contactPhone?: string | null; contactEmail?: string | null; isActive: boolean };
 type LevelRow = {
   id: string;
   quantity: number;
@@ -41,7 +42,8 @@ export function InventoryClient() {
   const [loadingLevels, setLoadingLevels] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState<WarehouseRow | null>(null);
-  const [form, setForm] = useState({ name: "", location: "", managerName: "", contactPhone: "", contactEmail: "" });
+  const [form, setForm] = useState({ name: "", location: "", countryCode: "", address: "", managerName: "", contactPhone: "", contactEmail: "" });
+  const [countries, setCountries] = useState<Country[]>([]);
   const [txForm, setTxForm] = useState({ warehouseId: "", catalogPieceId: "", quantityDelta: 0, type: "purchase_in", notes: "", referenceProjectId: "" });
   const [saving, setSaving] = useState(false);
   const [txSaving, setTxSaving] = useState(false);
@@ -80,6 +82,12 @@ export function InventoryClient() {
       .then((r) => r.json())
       .then((data) => setCatalogPieces(Array.isArray(data) ? data : []))
       .catch(() => setCatalogPieces([]));
+  }, []);
+  useEffect(() => {
+    fetch("/api/countries")
+      .then((r) => r.json())
+      .then((data) => setCountries(Array.isArray(data) ? data : []))
+      .catch(() => setCountries([]));
   }, []);
 
   useEffect(() => {
@@ -126,7 +134,7 @@ export function InventoryClient() {
   };
 
   const openAdd = () => {
-    setForm({ name: "", location: "", managerName: "", contactPhone: "", contactEmail: "" });
+    setForm({ name: "", location: "", countryCode: "", address: "", managerName: "", contactPhone: "", contactEmail: "" });
     setEditItem(null);
     setShowAdd(true);
   };
@@ -135,6 +143,8 @@ export function InventoryClient() {
     setForm({
       name: w.name,
       location: w.location ?? "",
+      countryCode: w.countryCode ?? "",
+      address: w.address ?? "",
       managerName: w.managerName ?? "",
       contactPhone: w.contactPhone ?? "",
       contactEmail: w.contactEmail ?? "",
@@ -150,6 +160,8 @@ export function InventoryClient() {
     const payload = {
       name: form.name.trim(),
       location: form.location.trim() || null,
+      countryCode: form.countryCode.trim() || null,
+      address: form.address.trim() || null,
       managerName: form.managerName.trim() || null,
       contactPhone: form.contactPhone.trim() || null,
       contactEmail: form.contactEmail.trim() || null,
@@ -464,59 +476,82 @@ export function InventoryClient() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="font-semibold text-lg mb-4">
-              {editItem ? t("common.edit") : t("common.add")} {t("partner.settings.warehouses").toLowerCase()}
+              {editItem ? t("admin.warehouses.editTitle") : t("admin.warehouses.addTitle")}
             </h3>
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                {t("common.name")} *
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
-                placeholder={t("partner.settings.warehouses")}
-              />
-              <label className="block text-sm font-medium text-gray-700">
-                {t("common.notes")} / Location
-              </label>
-              <input
-                type="text"
-                value={form.location}
-                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
-                placeholder="Location"
-              />
-              <label className="block text-sm font-medium text-gray-700">
-                {t("admin.warehouses.managerName")}
-              </label>
-              <input
-                type="text"
-                value={form.managerName}
-                onChange={(e) => setForm((f) => ({ ...f, managerName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
-                placeholder={t("admin.warehouses.managerPlaceholder")}
-              />
-              <label className="block text-sm font-medium text-gray-700">
-                {t("admin.warehouses.contactPhone")}
-              </label>
-              <input
-                type="text"
-                value={form.contactPhone}
-                onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
-                placeholder={t("admin.warehouses.contactPhonePlaceholder")}
-              />
-              <label className="block text-sm font-medium text-gray-700">
-                {t("admin.warehouses.contactEmail")}
-              </label>
-              <input
-                type="email"
-                value={form.contactEmail}
-                onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
-                placeholder={t("admin.warehouses.contactEmailPlaceholder")}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.nameLabel")} *</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.namePlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.locationLabel")}</label>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.locationPlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.country")}</label>
+                <select
+                  value={form.countryCode}
+                  onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                >
+                  <option value="">—</option>
+                  {countries.map((c) => (
+                    <option key={c.id} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.address")}</label>
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.addressPlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.managerName")}</label>
+                <input
+                  type="text"
+                  value={form.managerName}
+                  onChange={(e) => setForm((f) => ({ ...f, managerName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.managerPlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.contactPhone")}</label>
+                <input
+                  type="text"
+                  value={form.contactPhone}
+                  onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.contactPhonePlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.contactEmail")}</label>
+                <input
+                  type="email"
+                  value={form.contactEmail}
+                  onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+                  placeholder={t("admin.warehouses.contactEmailPlaceholder")}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button

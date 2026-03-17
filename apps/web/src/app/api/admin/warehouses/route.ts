@@ -76,17 +76,59 @@ export async function POST(req: Request) {
       );
     }
 
-    const warehouse = await prisma.warehouse.create({
-      data: { organizationId, name, location, countryCode, address, managerName, contactPhone, contactEmail },
-      include: { organization: { select: { id: true, name: true } } },
-    });
+    const fullData = { organizationId, name, location, countryCode, address, managerName, contactPhone, contactEmail };
+    const includeOrg = { organization: { select: { id: true, name: true } } } as const;
+    let warehouse: Awaited<ReturnType<typeof prisma.warehouse.create>> & { organization?: { id: string; name: string } };
+    try {
+      warehouse = await prisma.warehouse.create({
+        data: fullData,
+        include: includeOrg,
+      });
+    } catch (createErr) {
+      const err = createErr as Error & { code?: string };
+      const isSchemaError = err?.code === "P2011" || /column|Unknown column/i.test(String(err?.message ?? ""));
+      if (isSchemaError) {
+        try {
+          warehouse = await prisma.warehouse.create({
+            data: { organizationId, name, location },
+            include: includeOrg,
+          });
+          if (warehouse && (countryCode ?? address ?? managerName ?? contactPhone ?? contactEmail)) {
+            await prisma.warehouse
+              .update({
+                where: { id: warehouse.id },
+                data: {
+                  ...(countryCode != null && { countryCode }),
+                  ...(address != null && { address }),
+                  ...(managerName != null && { managerName }),
+                  ...(contactPhone != null && { contactPhone }),
+                  ...(contactEmail != null && { contactEmail }),
+                },
+              })
+              .then(() => prisma.warehouse.findUnique({ where: { id: warehouse!.id }, include: includeOrg }))
+              .then((updated) => {
+                if (updated) warehouse = updated as typeof warehouse;
+              })
+              .catch(() => {});
+          }
+        } catch (fallbackErr) {
+          console.error("[api/admin/warehouses POST fallback]", fallbackErr);
+          return NextResponse.json(
+            { error: "Database schema may be outdated. Run migrations (prisma migrate deploy) with the production DATABASE_URL." },
+            { status: 500 }
+          );
+        }
+      } else {
+        throw createErr;
+      }
+    }
     return NextResponse.json(warehouse);
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     const err = e as Error & { code?: string };
     console.error("[api/admin/warehouses POST]", err);
     const message = err?.code === "P2011" || err?.message?.includes("column") || err?.message?.includes("Unknown column")
-      ? "Database schema may be outdated. Run migrations (pnpm db:migrate or prisma migrate deploy)."
+      ? "Database schema may be outdated. Run migrations (prisma migrate deploy) with the production DATABASE_URL."
       : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
