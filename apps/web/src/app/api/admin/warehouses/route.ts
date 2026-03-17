@@ -75,6 +75,8 @@ export async function POST(req: Request) {
     const fullData = { organizationId: orgId, name, location, countryCode, address, managerName, contactPhone, contactEmail };
     const includeOrg = { organization: { select: { id: true, name: true } } } as const;
     let warehouse: Awaited<ReturnType<typeof prisma.warehouse.create>> & { organization?: { id: string; name: string } };
+    const vlMissingMsg =
+      "Platform not configured: Vision Latam organization is missing. Run database migrations (prisma migrate deploy) and optionally seed (pnpm db:seed).";
     try {
       warehouse = await prisma.warehouse.create({
         data: fullData,
@@ -82,6 +84,9 @@ export async function POST(req: Request) {
       });
     } catch (createErr) {
       const err = createErr as Error & { code?: string };
+      if (err?.code === "P2011") {
+        return NextResponse.json({ error: vlMissingMsg }, { status: 503 });
+      }
       const isMissingColumn = err?.code === "P2022" || /column.*does not exist|Unknown column/i.test(String(err?.message ?? ""));
       if (isMissingColumn) {
         try {
@@ -108,7 +113,11 @@ export async function POST(req: Request) {
               .catch(() => {});
           }
         } catch (fallbackErr) {
+          const fallbackErrCode = (fallbackErr as Error & { code?: string })?.code;
           console.error("[api/admin/warehouses POST fallback]", fallbackErr);
+          if (fallbackErrCode === "P2011") {
+            return NextResponse.json({ error: vlMissingMsg }, { status: 503 });
+          }
           return NextResponse.json(
             { error: "Database schema may be outdated. Run migrations (prisma migrate deploy) with the production DATABASE_URL." },
             { status: 500 }

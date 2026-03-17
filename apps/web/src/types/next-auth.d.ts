@@ -13,7 +13,7 @@ declare module "next-auth" {
       role: OrgMemberRole | string;
       roles: string[];
       isPlatformSuperadmin: boolean;
-      /** @deprecated Use activeOrgId */
+      /** @deprecated Use activeOrgId. Only for backward compat; login populates activeOrgId. */
       orgId: string | null;
       /** @deprecated Use activeOrgName */
       orgSlug?: string | null;

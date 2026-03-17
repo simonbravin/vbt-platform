@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
 
 const settingsSchema = z.object({
@@ -45,7 +46,7 @@ export async function GET() {
   const userId = user.id ?? user.userId;
   if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-  const orgId = await resolveOrgId(userId, user.activeOrgId ?? user.orgId ?? null);
+  const orgId = await resolveOrgId(userId, getEffectiveOrganizationId(user));
   if (!orgId) return NextResponse.json({ error: "No organization. Join or create an organization first." }, { status: 400 });
 
   const org = await prisma.organization.findFirst({
@@ -79,7 +80,7 @@ export async function PATCH(req: Request) {
   const userId = user.id ?? user.userId;
   if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-  const orgId = await resolveOrgId(userId, user.activeOrgId ?? user.orgId ?? null);
+  const orgId = await resolveOrgId(userId, getEffectiveOrganizationId(user));
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const body = await req.json();

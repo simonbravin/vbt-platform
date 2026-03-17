@@ -19,7 +19,7 @@ Session (JWT) and `session.user` contain:
 | `role` | string | Role in the **active** organization: `org_admin` \| `sales_user` \| `technical_user` \| `viewer` |
 | `roles` | string[] | Array with the active org role (one active org per session) |
 | `isPlatformSuperadmin` | boolean | If true, user can access all organizations and manage permissions |
-| `orgId` | string \| null | **Deprecated.** Use `activeOrgId`. Kept for backward compat. |
+| `orgId` | string \| null | **Deprecated.** Use `activeOrgId`. Kept for backward compat. In code use `getEffectiveOrganizationId(user)` for current org. DB column is always `organization_id`; Prisma field is `organizationId`. |
 | `orgSlug` | string \| null | **Deprecated.** Use `activeOrgName`. |
 
 - **One active org per session:** A user may belong to multiple organizations; the session holds one `activeOrgId` (e.g. first membership). Switching org can be added later (e.g. API to set active org).
@@ -60,7 +60,7 @@ Session (JWT) and `session.user` contain:
 - **Data:** Applying migrations against a DB that was created with the legacy schema will **drop** old tables and **create** new ones. No automatic data migration. See `docs/MIGRATION-RISKS.md`.
 - **Auth:** Login and signup use the new `User` / `Organization` / `OrgMember` models. Session shape is as in §1.
 - **Audit:** Legacy `createAuditLog` is kept for compatibility; new code should use `createActivityLog` (writes to `activity_logs` with string `action` and `metadataJson`).
-- **Existing routes/pages:** Many API routes and dashboard pages still reference the legacy schema (e.g. `orgId`, `Org`, `CountryProfile`, `Sale`). They need to be updated to `organizationId` and the new models. New **SaaS** endpoints live under **`/api/saas/*`** and use the new services and schema.
+- **Existing routes/pages:** Use `getEffectiveOrganizationId(user)` for tenant scope; DB column is `organization_id`, Prisma field is `organizationId`. New **SaaS** endpoints live under **`/api/saas/*`** and use the new services and schema.
 
 ---
 

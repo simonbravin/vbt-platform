@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
 import { createAuditLog } from "@/lib/audit";
 import { buildQuoteSnapshot, TaxRule, removeVersionPrefix } from "@vbt/core";
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
   const projectId = url.searchParams.get("projectId") ?? "";
   const search = (url.searchParams.get("search") ?? "").trim();
 
-  const organizationId = (user as any).activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json([]);
 
   const where: any = {

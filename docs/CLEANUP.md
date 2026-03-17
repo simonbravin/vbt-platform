@@ -13,7 +13,7 @@
 | Item | Location | Note |
 |------|----------|------|
 | `createAuditLog` | `lib/audit.ts` | Wrapper around `createActivityLog`; used by `api/quotes/[id]`, `api/admin/users/[id]`, `api/quotes/[id]/email`. Prefer `createActivityLog` for new code. |
-| `orgId` / `orgSlug` on session | `types/next-auth.d.ts`, `lib/auth.ts` | Marked @deprecated; use `activeOrgId` / `activeOrgName`. Still populated for backward compatibility. |
+| `orgId` / `orgSlug` on session | `types/next-auth.d.ts`, `lib/auth.ts` | Marked @deprecated; use `activeOrgId` / `activeOrgName`. Use `getEffectiveOrganizationId(user)` for current org. Convention: DB = `organization_id`, Prisma = `organizationId`, session = `activeOrgId`. |
 
 ## Console usage
 

@@ -34,8 +34,7 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 
 ### Non-blocking technical debt
 
-- Session backward compat: `orgId` / `orgSlug` on session (keep until all UI migrated).
-- Various `(user as { orgId: string })` casts; prefer `user.activeOrgId ?? user.orgId`.
+- Session backward compat: `orgId` / `orgSlug` on session (deprecated; use `activeOrgId`). Convención única: DB = `organization_id`, Prisma = `organizationId`, sesión = `activeOrgId`; usar `getEffectiveOrganizationId(user)` para la org actual.
 - `createAuditLog` → `createActivityLog` (already wrapped in audit.ts).
 - Legacy enums: `DRAFT`, `SOLD`, etc. vs new `lead`, `won`, `draft`.
 
@@ -43,10 +42,10 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 
 ## 2. Legacy usages by category
 
-### orgId (→ organizationId or activeOrgId)
+### organization_id / organizationId / activeOrgId (convención única)
 
-- **Pages:** `projects/page.tsx`, `projects/[id]/page.tsx`, `quotes/page.tsx`, `dashboard/page.tsx`, `reports/page.tsx`, `clients/page.tsx`, `clients/[id]/page.tsx` (latter two already use organizationId).
-- **API routes:** `api/projects/*`, `api/quotes/*`, `api/clients/*`, `api/sales/*`, `api/countries/*`, `api/admin/*`, `api/reports/*`, `api/import/*`, `api/inventory/*`, `api/tax-rules/*`, `api/freight/*`, `api/catalog/*`.
+- **DB:** Todas las FKs a organizaciones usan la columna `organization_id` (snake_case). No usar `orgId` ni `organizationId` como nombre de columna en PostgreSQL.
+- **App:** Usar `getEffectiveOrganizationId(session.user)` para obtener la org actual (devuelve `activeOrgId ?? orgId` legacy). Pages y API routes refactorizados para usar este helper.
 
 ### Org / prisma.org
 

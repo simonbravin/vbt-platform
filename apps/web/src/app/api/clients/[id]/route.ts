@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,7 +22,7 @@ export async function GET(
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as { activeOrgId?: string; orgId?: string };
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({
@@ -45,7 +46,7 @@ export async function PATCH(
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const existing = await prisma.client.findFirst({
@@ -80,7 +81,7 @@ export async function DELETE(
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({

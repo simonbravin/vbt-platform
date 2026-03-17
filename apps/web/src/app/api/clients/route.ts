@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
 
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as { activeOrgId?: string; orgId?: string };
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ clients: [], total: 0, page: 1, limit: 50 });
 
   const url = new URL(req.url);
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const body = await req.json();

@@ -31,7 +31,7 @@ export function SuperadminInventoryClient() {
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
   const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
   const [partnerDropdownOpen, setPartnerDropdownOpen] = useState(false);
-  const [partnerLevels, setPartnerLevels] = useState<{ orgId: string; levels: LevelRow[] }[]>([]);
+  const [partnerLevels, setPartnerLevels] = useState<{ organizationId: string; levels: LevelRow[] }[]>([]);
   const [loadingPartnerLevels, setLoadingPartnerLevels] = useState(false);
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
   const [levels, setLevels] = useState<LevelRow[]>([]);
@@ -98,10 +98,10 @@ export function SuperadminInventoryClient() {
     setLoadingPartnerLevels(true);
     const ids = [...selectedPartnerIds];
     Promise.all(
-      ids.map((orgId) =>
-        fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(orgId)}&limit=500`)
+      ids.map((organizationId) =>
+        fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(organizationId)}&limit=500`)
           .then((r) => (r.ok ? r.json() : { levels: [] }))
-          .then((data) => ({ orgId, levels: data.levels ?? [] }))
+          .then((data) => ({ organizationId, levels: data.levels ?? [] }))
       )
     )
       .then((results) => setPartnerLevels(results))
@@ -342,9 +342,9 @@ export function SuperadminInventoryClient() {
             <div className="p-6 text-center text-sm text-muted-foreground">Cargando…</div>
           ) : (
             <div className="divide-y divide-border">
-              {partnerLevels.map(({ orgId, levels: pl }) => (
-                <div key={orgId} className="p-4">
-                  <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === orgId)?.name ?? orgId}</p>
+              {partnerLevels.map(({ organizationId: partnerOrgId, levels: pl }) => (
+                <div key={partnerOrgId} className="p-4">
+                  <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === partnerOrgId)?.name ?? partnerOrgId}</p>
                   {pl.length === 0 ? (
                     <p className="text-xs text-muted-foreground">Sin niveles.</p>
                   ) : (

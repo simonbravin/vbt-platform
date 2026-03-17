@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requireSession, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { getEffectiveOrganizationId, requireSession, TenantError, tenantErrorStatus } from "@/lib/tenant";
 
 export async function GET(
   _req: Request,
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const user = await requireSession();
-    const orgId = user.activeOrgId ?? user.orgId;
+    const orgId = getEffectiveOrganizationId(user);
     if (!orgId && !user.isPlatformSuperadmin) {
       return NextResponse.json({ error: "No active organization" }, { status: 403 });
     }

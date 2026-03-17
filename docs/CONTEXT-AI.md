@@ -88,13 +88,13 @@ VBT_Cotizador/
 
 - **NextAuth** con estrategia **JWT** y **CredentialsProvider**. No hay OAuth en uso.
 - **Registro:** Signup crea usuario con estado `PENDING`; un ADMIN/SUPERADMIN debe aprobarlo para que pase a `ACTIVE`.
-- **Sesión:** Tras login se guardan en el token/session: `id`, `email`, `name`, `role`, `orgId`, `orgSlug`. El usuario pertenece a **una Org** (por ahora se toma la primera membresía en `authorize`).
+- **Sesión:** Tras login se guardan en el token/session: `id`, `email`, `name`, `role`, `activeOrgId` (y legacy `orgId`/`orgSlug` deprecados). El usuario pertenece a **una Org** (por ahora se toma la primera membresía en `authorize`). Para obtener la org actual en código usar `getEffectiveOrganizationId(user)`.
 - **Roles (`OrgMemberRole`):**  
   - **SUPERADMIN** – Acceso total; solo SUPERADMIN ve “Entities” (BillingEntity); puede cambiar roles de usuarios.  
   - **ADMIN** – Configuración de la org (catálogo, warehouses, países, flete, impuestos, settings, usuarios).  
   - **SALES** – Operación + inventario.  
   - **VIEWER** – Solo lectura (según qué rutas expongan datos).
-- **Scoping:** Casi todas las APIs filtran por `orgId` obtenido de `session.user.orgId`. Quien no tiene `orgId` (ej. usuario sin org asignada) no debería ver datos de otras orgs; el superadmin de plataforma (ver todo) aún no está implementado a nivel de filtro cross-org.
+- **Scoping:** Casi todas las APIs filtran por `organizationId` obtenido de `getEffectiveOrganizationId(session.user)` (que usa `activeOrgId` con fallback a `orgId` legacy). Quien no tiene org activa no debería ver datos de otras orgs; el superadmin de plataforma usa `getVisionLatamOrganizationId` para recursos de VL y puede ver todos los partners.
 
 Referencia: `apps/web/src/lib/auth.ts`, `apps/web/src/app/(dashboard)/layout.tsx`.
 
@@ -106,6 +106,7 @@ Referencia: `apps/web/src/lib/auth.ts`, `apps/web/src/app/(dashboard)/layout.tsx
 - **Superadmin** es un **rol de usuario** (ej. `user.isPlatformSuperadmin`). No es “un usuario más”: cuando actúa, lo hace en nombre de **Vision Latam** (crear bodegas de VL, inventario de VL, aprobar cotizaciones de partners, config global). El `organizationId` que se usa en esas acciones es **siempre el de la org Vision Latam**, obtenido por `getVisionLatamOrganizationId(prisma)` — no el `activeOrgId` del usuario.
 - **Partners** son organizaciones con `organizationType` comercial (distribuidores). Cada partner tiene su propio `organizationId`, sus bodegas, inventario, clientes, cotizaciones. Las APIs de partner usan `ctx.activeOrgId` (la org del usuario en sesión).
 - **Bootstrap:** La org Vision Latam debe existir desde el setup. La migración `20250321000000_bootstrap_vision_latam_org` la crea si no existe (idempotente). El seed también la crea/actualiza. **Ninguna API crea esta org sobre la marcha**; si falta, se responde 503 con mensaje claro de ejecutar migraciones/seed.
+- **Convención de FKs:** Todas las FKs a organizaciones usan la columna **`organization_id`** en la DB y el campo **`organizationId`** en Prisma; en sesión se usa **`activeOrgId`** (legacy: `orgId` deprecado). Una sola convención en todo el sistema.
 
 Referencia: `packages/core` `getVisionLatamOrganizationId`, `packages/db/prisma/migrations/20250321000000_bootstrap_vision_latam_org`, rutas `api/admin/warehouses` y `api/saas/inventory/vision-latam-org`.
 
@@ -113,8 +114,8 @@ Referencia: `packages/core` `getVisionLatamOrganizationId`, `packages/db/prisma/
 
 ## 5. Modelo de datos (resumen)
 
-- **Tenant:** La entidad **Org** es el tenant. Casi todo lo operativo tiene `orgId`: Client, Project, Quote, Sale, Warehouse, CountryProfile, FreightRateProfile, TaxRuleSet, BillingEntity, Payment, AuditLog, RevitImport.
-- **Global (sin orgId):** User, SystemType, PieceCatalog, PieceCost. PieceAlias tiene `orgId` opcional.
+- **Tenant:** La entidad **Org** es el tenant. Casi todo lo operativo tiene **`organization_id`** (DB) / **`organizationId`** (Prisma): Client, Project, Quote, Sale, Warehouse, CountryProfile, FreightRateProfile, TaxRuleSet, BillingEntity, Payment, AuditLog, RevitImport.
+- **Global (sin organization_id):** User, SystemType, PieceCatalog, PieceCost. PieceAlias tiene `organization_id` opcional.
 - **Flujos principales:**  
   - **Clientes** → **Proyectos** → **Cotizaciones (Quotes)** (con líneas, impuestos, docs/PDF).  
   - **Quote** puede ser “baseline” de un Project; al cerrar venta, **Sale** liga Client, Project, Quote (opcional), facturas (SaleInvoice por BillingEntity) y **Payments**.
@@ -142,7 +143,7 @@ La navegación y visibilidad por rol están definidas en `apps/web/src/component
 
 - **Patrón:** Next.js App Router API routes en `apps/web/src/app/api/`. No hay tRPC.
 - **Auth:** Las rutas que requieren sesión usan `getServerSession(authOptions)`; si no hay sesión devuelven 401.
-- **Scoping:** Las lecturas/escrituras de datos por org usan `session.user.orgId` en el `where` de Prisma (ej. `where: { id, orgId: user.orgId }`).
+- **Scoping:** Las lecturas/escrituras de datos por org usan `getEffectiveOrganizationId(session.user)` o `ctx.activeOrgId` en el `where` de Prisma (ej. `where: { id, organizationId }`).
 - **Roles:** Algunas rutas comprueban `user.role` (ej. SUPERADMIN o ADMIN) y devuelven 403 si no aplica.
 - **Validación:** Entradas validadas con Zod; respuestas típicamente JSON.
 - **Auditoría:** Acciones sensibles registradas con `createAuditLog` (ver `lib/audit.ts`).

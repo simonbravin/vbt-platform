@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/utils";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { STATIC_COUNTRIES } from "@/lib/countries";
 import { cookies } from "next/headers";
@@ -24,7 +24,7 @@ export default async function ReportsPage() {
     const sessionUser = await requireAuth();
     user = sessionUser as SessionUser;
     const effectiveOrgId = await getEffectiveActiveOrgId(sessionUser as SessionUser);
-    organizationId = effectiveOrgId ?? (sessionUser as { activeOrgId?: string; orgId?: string }).activeOrgId ?? (sessionUser as { orgId?: string }).orgId;
+    organizationId = effectiveOrgId ?? getEffectiveOrganizationId(sessionUser) ?? undefined;
     canSendReport = user.role === "org_admin" || !!(user as SessionUser).isPlatformSuperadmin;
 
     if (organizationId) {

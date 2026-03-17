@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import type { SessionUser } from "@/lib/auth";
 
 export async function GET(req: Request) {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as SessionUser & { activeOrgId?: string; orgId?: string };
   const effectiveOrgId = await getEffectiveActiveOrgId(user);
-  const organizationId = effectiveOrgId ?? user.activeOrgId ?? user.orgId;
+  const organizationId = effectiveOrgId ?? getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ topByProjects: [], topBySold: [] });
 
   const url = new URL(req.url);

@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/utils";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -24,7 +24,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
   const t = getT(locale);
 
   const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
-  const organizationId = effectiveOrgId ?? (user as { activeOrgId?: string; orgId?: string }).activeOrgId ?? (user as { orgId?: string }).orgId;
+  const organizationId = effectiveOrgId ?? getEffectiveOrganizationId(user);
   if (!organizationId) return null;
 
   type QuoteWithProject = Awaited<

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
 import { createAuditLog } from "@/lib/audit";
 import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
@@ -51,7 +52,7 @@ export async function PATCH(
   }
 
   const { status, role } = parsed.data;
-  const orgId = currentUser.activeOrgId ?? currentUser.orgId;
+  const orgId = getEffectiveOrganizationId(currentUser);
 
   // Fetch user before update to get their email and org membership (for role update when approver has no org)
   const targetUser = await prisma.user.findUnique({

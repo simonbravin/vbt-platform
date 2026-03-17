@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { Resend } from "resend";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
 import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
@@ -32,7 +33,7 @@ export async function POST(
   }
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
+    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
     include: { project: { include: { client: { select: { name: true } } } }, preparedByUser: { select: { fullName: true } } },
   });
 
@@ -132,7 +133,7 @@ export async function POST(
     }
 
     await createAuditLog({
-      orgId: (user as any).activeOrgId ?? user.orgId,
+      orgId: getEffectiveOrganizationId(user) ?? undefined,
       userId: user.id,
       action: "quote_sent",
       entityType: "quote",

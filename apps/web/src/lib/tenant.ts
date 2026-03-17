@@ -127,8 +127,20 @@ export async function getTenantContext(): Promise<TenantContext | null> {
 }
 
 /**
+ * Single source of truth for "current organization id" from session user.
+ * Returns activeOrgId with legacy fallback to orgId (deprecated). Prefer this instead of
+ * repeating "user.activeOrgId ?? user.orgId" across routes and pages.
+ */
+export function getEffectiveOrganizationId(
+  user: { activeOrgId?: string | null; orgId?: string | null } | null
+): string | null {
+  if (!user) return null;
+  return user.activeOrgId ?? user.orgId ?? null;
+}
+
+/**
  * Effective activeOrgId for layout/redirect logic: for superadmins, reads vbt-active-org cookie;
- * otherwise returns session activeOrgId.
+ * otherwise returns session activeOrgId (with legacy orgId fallback).
  */
 export async function getEffectiveActiveOrgId(
   user: SessionUser | null
@@ -138,7 +150,7 @@ export async function getEffectiveActiveOrgId(
     const store = await cookies();
     return store.get(ACTIVE_ORG_COOKIE)?.value ?? null;
   }
-  return user.activeOrgId ?? null;
+  return getEffectiveOrganizationId(user);
 }
 
 /**

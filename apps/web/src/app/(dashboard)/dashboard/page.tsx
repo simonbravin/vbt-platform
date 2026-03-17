@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/utils";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -29,7 +29,7 @@ export default async function DashboardPage(props: PageProps) {
   }
 
   const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
-  const organizationId = effectiveOrgId ?? (user as { activeOrgId?: string | null; orgId?: string | null }).activeOrgId ?? (user as { orgId?: string | null }).orgId;
+  const organizationId = effectiveOrgId ?? getEffectiveOrganizationId(user);
   if (organizationId == null || organizationId === "") {
     redirect("/login");
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 
 export async function GET(
@@ -12,9 +13,9 @@ export async function GET(
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as any;
 
-  const organizationId = (user as any).activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId },
+    where: { id: params.id, organizationId: organizationId ?? undefined },
     include: {
       project: true,
       items: { orderBy: { sortOrder: "asc" } },
@@ -48,7 +49,7 @@ export async function PATCH(
   }
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
+    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
@@ -65,7 +66,7 @@ export async function PATCH(
       data: data as any,
     });
     await createAuditLog({
-      orgId: (user as any).activeOrgId ?? user.orgId,
+      orgId: getEffectiveOrganizationId(user) ?? undefined,
       userId: user.id,
       action: data.status === "ARCHIVED" ? "QUOTE_ARCHIVED" : "QUOTE_UPDATED",
       entityType: "Quote",
@@ -93,12 +94,12 @@ export async function DELETE(
   }
 
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
+    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
   await createAuditLog({
-    orgId: (user as any).activeOrgId ?? user.orgId,
+    orgId: getEffectiveOrganizationId(user) ?? undefined,
     userId: user.id,
     action: "QUOTE_DELETED",
     entityType: "Quote",

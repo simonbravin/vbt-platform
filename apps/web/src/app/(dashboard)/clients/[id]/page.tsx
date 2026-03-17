@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/utils";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +15,7 @@ export default async function ClientDetailPage({
   try {
     const user = await requireAuth();
     const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
-    const orgId = effectiveOrgId ?? user.activeOrgId ?? user.orgId ?? "";
+    const orgId = effectiveOrgId ?? getEffectiveOrganizationId(user) ?? "";
     if (!orgId) notFound();
 
     const [client] = await Promise.all([

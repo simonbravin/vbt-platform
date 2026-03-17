@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { QuotePdfDocument, type QuotePdfData } from "@/components/pdf/quote-pdf";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 import React from "react";
@@ -24,7 +25,7 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const user = session.user as { activeOrgId?: string; orgId?: string; isPlatformSuperadmin?: boolean };
-  const organizationId = user.activeOrgId ?? user.orgId;
+  const organizationId = getEffectiveOrganizationId(user);
   const isPlatformSuperadmin = !!user.isPlatformSuperadmin;
 
   const url = new URL(req.url);

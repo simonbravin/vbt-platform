@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/utils";
-import { getEffectiveActiveOrgId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { ProjectDetailClient } from "./ProjectDetailClient";
@@ -10,7 +10,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
   try {
     const user = await requireAuth();
     const effectiveOrgId = await getEffectiveActiveOrgId(user as SessionUser);
-    const orgId = effectiveOrgId ?? user.activeOrgId ?? user.orgId ?? "";
+    const orgId = effectiveOrgId ?? getEffectiveOrganizationId(user) ?? "";
     const tenantCtx = {
       userId: user.userId ?? user.id,
       organizationId: orgId || null,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getEffectiveOrganizationId } from "@/lib/tenant";
 
 export async function GET(
   _req: Request,
@@ -11,13 +12,12 @@ export async function GET(
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as any;
 
+  const orgId = getEffectiveOrganizationId(user);
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: (user as any).activeOrgId ?? user.orgId },
+    where: { id: params.id, organizationId: orgId ?? "" },
     select: { id: true },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
-
-  const orgId = (user as any).activeOrgId ?? user.orgId;
   const logs = await prisma.activityLog.findMany({
     where: { entityType: "Quote", entityId: params.id, ...(orgId ? { organizationId: orgId } : {}) },
     include: { user: { select: { fullName: true } } },
