@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
+    "build": "pnpm --filter @vbt/db exec prisma migrate deploy && pnpm --filter web build",
     "db:generate": "pnpm --filter @vbt/db generate",
     "db:migrate": "pnpm --filter @vbt/db migrate:dev",
     "db:push": "pnpm --filter @vbt/db db:push",
