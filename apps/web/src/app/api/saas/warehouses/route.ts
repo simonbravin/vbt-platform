@@ -76,7 +76,21 @@ export async function POST(req: Request) {
       );
     }
     const orgId = organizationId.trim();
-    const fullData = { organizationId: orgId, name, location, countryCode, address, managerName, contactPhone, contactEmail };
+    // Explicit timestamps/isActive to avoid NOT NULL constraint issues in Neon when migrations
+    // were partially applied (e.g. updated_at without DEFAULT).
+    const fullData = {
+      organizationId: orgId,
+      name,
+      location,
+      countryCode,
+      address,
+      managerName,
+      contactPhone,
+      contactEmail,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     let warehouse: Awaited<ReturnType<typeof prisma.warehouse.create>>;
     try {
       warehouse = await prisma.warehouse.create({ data: fullData });
@@ -92,7 +106,14 @@ export async function POST(req: Request) {
       if (isMissingColumn) {
         try {
           warehouse = await prisma.warehouse.create({
-            data: { organizationId: orgId, name, location, isActive: true },
+            data: {
+              organizationId: orgId,
+              name,
+              location,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           });
           if (warehouse && (countryCode ?? address ?? managerName ?? contactPhone ?? contactEmail)) {
             await prisma.warehouse.update({
