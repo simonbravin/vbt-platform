@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Warehouse, Plus, Pencil } from "lucide-react";
+import { Warehouse, Plus, Pencil, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Country = { id: string; code: string; name: string };
 
@@ -14,6 +15,7 @@ export default function WarehousesPage() {
   const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", location: "", countryCode: "", address: "", managerName: "", contactPhone: "", contactEmail: "" });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   const load = () => {
     fetch("/api/admin/warehouses").then(r => r.json()).then(d => setWarehouses(Array.isArray(d) ? d : []));
@@ -77,6 +79,20 @@ export default function WarehousesPage() {
     }
   };
 
+  const remove = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/admin/warehouses/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      setDeleteTarget(null);
+      load();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -95,7 +111,7 @@ export default function WarehousesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {warehouses.map((w) => (
           <div key={w.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
                   <Warehouse className="w-5 h-5 text-vbt-orange" />
@@ -112,13 +128,24 @@ export default function WarehousesPage() {
                     </p>
                   )}
                 </div>
-              </div>
-              <button
-                onClick={() => openEdit(w)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => openEdit(w)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                    title={t("common.edit")}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(w)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                    title={t("common.delete")}
+                    disabled={saving}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
             </div>
           </div>
         ))}
@@ -212,6 +239,19 @@ export default function WarehousesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t("admin.warehouses.deleteConfirmTitle")}
+        description={deleteTarget ? t("admin.warehouses.deleteConfirmMessage").replace("{{name}}", deleteTarget.name) : ""}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("common.deleting")}
+        variant="danger"
+        loading={saving}
+        onConfirm={remove}
+      />
     </div>
   );
 }

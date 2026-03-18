@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight, Pencil, Activity, ShoppingCart } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -582,37 +583,31 @@ export default function QuoteDetailPage() {
         </div>
       )}
 
-      {/* Archive confirmation dialog */}
-      {archiveDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-2">{t("quotes.archiveQuoteTitle")}</h3>
-            <p className="text-gray-600 text-sm mb-6">{t("quotes.archiveQuoteMsg")}</p>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setArchiveDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
-              <button type="button" onClick={archive} disabled={archiving} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                {archiving ? t("quotes.archiving") : t("quotes.archive")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={archiveDialog}
+        onOpenChange={setArchiveDialog}
+        title={t("quotes.archiveQuoteTitle")}
+        description={t("quotes.archiveQuoteMsg")}
+        confirmLabel={t("quotes.archive")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("quotes.archiving")}
+        variant="primary"
+        loading={archiving}
+        onConfirm={archive}
+      />
 
-      {/* Delete permanently dialog */}
-      {deleteDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-2 text-red-700">{t("quotes.deleteQuoteTitle")}</h3>
-            <p className="text-gray-600 text-sm mb-6">{t("quotes.deleteQuoteMsg")}</p>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setDeleteDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
-              <button type="button" onClick={deletePermanently} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50">
-                {deleting ? t("quotes.deleting") : t("quotes.deleteTitle")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={deleteDialog}
+        onOpenChange={setDeleteDialog}
+        title={t("quotes.deleteQuoteTitle")}
+        description={t("quotes.deleteQuoteMsg")}
+        confirmLabel={t("quotes.deleteTitle")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("quotes.deleting")}
+        variant="danger"
+        loading={deleting}
+        onConfirm={deletePermanently}
+      />
 
       {/* Email Dialog */}
       {emailDialog && (

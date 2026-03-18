@@ -1,14 +1,18 @@
 import type { PrismaClient, Document, DocumentCategory } from "@vbt/db";
 
 /**
- * Document library is platform-wide (no organizationId on documents).
- * Filtering is by visibility and optional countryScope.
+ * Document library: platform docs have organizationId null; partner docs have organizationId set.
+ * When organizationId is passed (partner), list returns platform docs + that org's docs only.
  */
 export type ListDocumentsOptions = {
   categoryId?: string;
   categoryCode?: string;
   visibility?: "public" | "partners_only" | "internal";
   countryScope?: string; // e.g. "PA" or "*"
+  projectId?: string;
+  engineeringRequestId?: string;
+  /** When set (partner), filter to platform docs (org null) + this org's docs. When omitted (superadmin), no org filter. */
+  organizationId?: string | null;
   limit?: number;
   offset?: number;
 };
@@ -25,22 +29,32 @@ export async function listDocuments(
   prisma: PrismaClient,
   options: ListDocumentsOptions = {}
 ): Promise<{ documents: Document[]; total: number }> {
-  const where: Record<string, unknown> = {};
-  if (options.categoryId) where.categoryId = options.categoryId;
+  const and: Record<string, unknown>[] = [];
+  const base: Record<string, unknown> = {};
+  if (options.categoryId) base.categoryId = options.categoryId;
   if (options.categoryCode) {
     const cat = await prisma.documentCategory.findUnique({
       where: { code: options.categoryCode },
     });
-    if (cat) where.categoryId = cat.id;
+    if (cat) base.categoryId = cat.id;
   }
-  if (options.visibility) where.visibility = options.visibility;
+  if (options.visibility) base.visibility = options.visibility;
+  if (options.projectId) base.projectId = options.projectId;
+  if (options.engineeringRequestId) base.engineeringRequestId = options.engineeringRequestId;
+  and.push(base);
+  if (options.organizationId !== undefined && options.organizationId !== null) {
+    and.push({ OR: [{ organizationId: null }, { organizationId: options.organizationId }] });
+  }
   if (options.countryScope) {
-    where.OR = [
-      { countryScope: options.countryScope },
-      { countryScope: "*" },
-      { countryScope: null },
-    ];
+    and.push({
+      OR: [
+        { countryScope: options.countryScope },
+        { countryScope: "*" },
+        { countryScope: null },
+      ],
+    });
   }
+  const where = and.length === 1 ? and[0] : { AND: and };
   const [documents, total] = await Promise.all([
     prisma.document.findMany({
       where,
@@ -72,6 +86,9 @@ export type CreateDocumentInput = {
   visibility?: "public" | "partners_only" | "internal";
   countryScope?: string | null;
   documentType?: string | null;
+  projectId?: string | null;
+  engineeringRequestId?: string | null;
+  organizationId?: string | null;
   createdByUserId?: string | null;
 };
 
@@ -89,6 +106,9 @@ export async function createDocument(
       visibility: input.visibility ?? "partners_only",
       countryScope: input.countryScope ?? null,
       documentType: input.documentType ?? null,
+      projectId: input.projectId ?? null,
+      engineeringRequestId: input.engineeringRequestId ?? null,
+      organizationId: input.organizationId ?? null,
       createdByUserId: input.createdByUserId ?? null,
     },
     include: { category: { select: { id: true, name: true, code: true } } },

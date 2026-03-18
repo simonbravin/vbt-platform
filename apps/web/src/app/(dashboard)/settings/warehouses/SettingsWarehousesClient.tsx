@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Warehouse, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Country = { id: string; code: string; name: string };
 
@@ -17,6 +18,7 @@ export default function SettingsWarehousesClient() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<typeof warehouses[0] | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -102,13 +104,18 @@ export default function SettingsWarehousesClient() {
     }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm(t("common.confirmDelete") ?? "¿Eliminar?")) return;
+  const confirmDelete = (w: typeof warehouses[0]) => {
+    setDeleteTarget(w);
+  };
+
+  const remove = async () => {
+    if (!deleteTarget) return;
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/saas/warehouses/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/saas/warehouses/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar");
+      setDeleteTarget(null);
       load();
     } catch {
       setError("No se pudo eliminar la bodega");
@@ -177,7 +184,13 @@ export default function SettingsWarehousesClient() {
                     <button type="button" onClick={() => openEdit(w)} className="p-2 text-muted-foreground hover:text-primary" title={t("common.edit")}>
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => remove(w.id)} disabled={saving} className="p-2 text-muted-foreground hover:text-destructive" title={t("common.delete")}>
+                    <button
+                      type="button"
+                      onClick={() => confirmDelete(w)}
+                      disabled={saving}
+                      className="p-2 text-muted-foreground hover:text-destructive"
+                      title={t("common.delete")}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -280,6 +293,19 @@ export default function SettingsWarehousesClient() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t("admin.warehouses.deleteConfirmTitle")}
+        description={deleteTarget ? t("admin.warehouses.deleteConfirmMessage").replace("{{name}}", deleteTarget.name) : ""}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("common.deleting")}
+        variant="danger"
+        loading={saving}
+        onConfirm={remove}
+      />
     </div>
   );
 }

@@ -33,13 +33,14 @@ export function ClientDetailActions({
   const t = useT();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const initialCountryId = client.country?.id ?? (client.countryCode && countries.find((c) => c.code === client.countryCode)?.id) ?? "";
   const [form, setForm] = useState({
     name: client.name,
     legalName: client.legalName ?? "",
     taxId: client.taxId ?? "",
     address: client.address ?? "",
     city: client.city ?? "",
-    countryId: client.country?.id ?? "",
+    countryId: initialCountryId,
     countryCode: client.countryCode ?? "",
     phone: client.phone ?? "",
     email: client.email ?? "",
@@ -50,13 +51,14 @@ export function ClientDetailActions({
   const [error, setError] = useState("");
 
   const openEdit = () => {
+    const countryId = client.country?.id ?? (client.countryCode && countries.find((c) => c.code === client.countryCode)?.id) ?? "";
     setForm({
       name: client.name,
       legalName: client.legalName ?? "",
       taxId: client.taxId ?? "",
       address: client.address ?? "",
       city: client.city ?? "",
-      countryId: client.country?.id ?? "",
+      countryId,
       countryCode: client.countryCode ?? "",
       phone: client.phone ?? "",
       email: client.email ?? "",
@@ -74,6 +76,7 @@ export function ClientDetailActions({
     }
     setSaving(true);
     setError("");
+    const countryCode = form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : null;
     const res = await fetch(`/api/clients/${client.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -83,8 +86,7 @@ export function ClientDetailActions({
         taxId: form.taxId?.trim() || undefined,
         address: form.address?.trim() || undefined,
         city: form.city?.trim() || undefined,
-        countryId: form.countryId || undefined,
-        countryCode: form.countryCode?.trim() || undefined,
+        countryCode: countryCode ?? undefined,
         phone: form.phone?.trim() || undefined,
         email: form.email?.trim() || undefined,
         website: form.website?.trim() || undefined,

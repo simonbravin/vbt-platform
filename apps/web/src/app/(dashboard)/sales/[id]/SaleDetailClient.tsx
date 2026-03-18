@@ -8,6 +8,7 @@ import { formatCurrency, parseJsonSafe } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const DUE_SOON_DAYS = 7;
 
@@ -569,64 +570,33 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         document.body
       )}
 
-      {deletePaymentId && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !deletingPayment && setDeletePaymentId(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">Remove payment?</h3>
-            <p className="text-sm text-gray-600 mb-4">This will delete the payment and update the sale status. This cannot be undone.</p>
-            {deletePaymentError && <p className="text-sm text-red-600 mb-3">{deletePaymentError}</p>}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setDeletePaymentId(null); setDeletePaymentError(null); }}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeletePayment}
-                disabled={deletingPayment}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-              >
-                {deletingPayment ? "Removing..." : "Remove"}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmDialog
+        open={!!deletePaymentId}
+        onOpenChange={(open) => !open && (setDeletePaymentId(null), setDeletePaymentError(null))}
+        title={t("partner.sales.removePaymentConfirmTitle")}
+        description={t("partner.sales.removePaymentConfirmMessage")}
+        confirmLabel={t("partner.sales.removePayment")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("partner.sales.removing")}
+        variant="danger"
+        loading={deletingPayment}
+        error={deletePaymentError}
+        onConfirm={handleDeletePayment}
+      />
 
-      {deleteSaleOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !deletingSale && setDeleteSaleOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">Delete sale?</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              This will permanently delete this sale ({sale.saleNumber ?? saleId}) and all its invoices and payments. This cannot be undone.
-            </p>
-            {deleteSaleError && <p className="text-sm text-red-600 mb-3">{deleteSaleError}</p>}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setDeleteSaleOpen(false); setDeleteSaleError(null); }}
-                disabled={deletingSale}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSale}
-                disabled={deletingSale}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-              >
-                {deletingSale ? "Deleting..." : "Delete sale"}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmDialog
+        open={deleteSaleOpen}
+        onOpenChange={(open) => !open && (setDeleteSaleOpen(false), setDeleteSaleError(null))}
+        title={t("partner.sales.deleteSaleConfirmTitle")}
+        description={sale ? t("partner.sales.deleteSaleConfirmMessage", { number: sale.saleNumber ?? saleId }) : ""}
+        confirmLabel={t("partner.sales.deleteSale")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("common.deleting")}
+        variant="danger"
+        loading={deletingSale}
+        error={deleteSaleError}
+        onConfirm={handleDeleteSale}
+      />
 
       {invoiceModalMode && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !invSubmitting && setInvoiceModalMode(null)}>
@@ -678,24 +648,19 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         document.body
       )}
 
-      {deleteInvoiceId && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !deletingInvoice && setDeleteInvoiceId(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-2">Remove invoice line?</h3>
-            <p className="text-sm text-gray-600 mb-4">This will delete the invoice line and may update the sale status. This cannot be undone.</p>
-            {deleteInvoiceError && <p className="text-sm text-red-600 mb-3">{deleteInvoiceError}</p>}
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setDeleteInvoiceId(null); setDeleteInvoiceError(null); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
-                Cancel
-              </button>
-              <button type="button" onClick={handleDeleteInvoice} disabled={deletingInvoice} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
-                {deletingInvoice ? "Removing..." : "Remove"}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmDialog
+        open={!!deleteInvoiceId}
+        onOpenChange={(open) => !open && (setDeleteInvoiceId(null), setDeleteInvoiceError(null))}
+        title={t("partner.sales.removeInvoiceConfirmTitle")}
+        description={t("partner.sales.removeInvoiceConfirmMessage")}
+        confirmLabel={t("partner.sales.removeLine")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("partner.sales.removing")}
+        variant="danger"
+        loading={deletingInvoice}
+        error={deleteInvoiceError}
+        onConfirm={handleDeleteInvoice}
+      />
     </div>
   );
 }

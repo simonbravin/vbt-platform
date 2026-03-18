@@ -6,6 +6,7 @@ import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
 
+// Client model has: name, clientType, countryCode, city, website, email, phone, notes. legalName, taxId, address are not in the model and are ignored if sent.
 const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
   city: z.string().optional(),
@@ -70,27 +71,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const userWithId = session.user as { id?: string };
-  const client = await prisma.client.create({
-    data: {
+  try {
+    const userWithId = session.user as { id?: string };
+    const client = await prisma.client.create({
+      data: {
+        organizationId,
+        name: parsed.data.name,
+        clientType: "developer",
+        city: parsed.data.city ?? null,
+        countryCode: parsed.data.countryCode ?? null,
+        phone: parsed.data.phone ?? null,
+        email: parsed.data.email ?? null,
+        website: parsed.data.website ?? null,
+        notes: parsed.data.notes ?? null,
+      },
+    });
+    await createActivityLog({
       organizationId,
-      name: parsed.data.name,
-      clientType: "developer",
-      city: parsed.data.city ?? null,
-      countryCode: parsed.data.countryCode ?? null,
-      phone: parsed.data.phone ?? null,
-      email: parsed.data.email ?? null,
-      website: parsed.data.website ?? null,
-      notes: parsed.data.notes ?? null,
-    },
-  });
-  await createActivityLog({
-    organizationId,
-    userId: userWithId.id,
-    action: "client_created",
-    entityType: "client",
-    entityId: client.id,
-    metadata: { name: client.name },
-  });
-  return NextResponse.json(client, { status: 201 });
+      userId: userWithId.id,
+      action: "client_created",
+      entityType: "client",
+      entityId: client.id,
+      metadata: { name: client.name },
+    });
+    return NextResponse.json(client, { status: 201 });
+  } catch (e) {
+    console.error("[api/clients POST]", e);
+    return NextResponse.json(
+      { error: "An error occurred while creating the client. Please try again." },
+      { status: 500 }
+    );
+  }
 }

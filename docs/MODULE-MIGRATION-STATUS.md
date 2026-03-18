@@ -29,7 +29,7 @@ Tracks incremental migration from legacy schema to Partner SaaS schema.
 | **Sales module** | `prisma.sale`, `prisma.saleInvoice`, `prisma.billingEntity` — **not in new schema**. Sales not migrated; routes will 500 at runtime if hit. |
 | **Countries** | `prisma.countryProfile` — **not in new schema**. Use `countryCode` on Client/Project or static list. |
 | **Admin settings** | `prisma.org` — use `prisma.organization`. |
-| **Warehouses / Inventory** | `prisma.warehouse` — **not in new schema**. |
+| **Warehouses / Inventory** | Warehouses are in the new schema (`organizations`, `warehouses`, `inventory_levels`, `inventory_transactions`). Use `/api/saas/warehouses` and `/api/saas/inventory/*`. |
 | **Freight / Tax rules** | `orgId`, `countryId` — new schema has no CountryProfile/FreightRateProfile/TaxRuleSet. |
 
 ### Non-blocking technical debt

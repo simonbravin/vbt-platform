@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/context";
 
 type ProjectOption = { id: string; projectName: string };
 
+const REQUEST_TYPE_OPTIONS = [
+  { value: "new_design", labelKey: "partner.engineering.requestType.new_design" },
+  { value: "revision", labelKey: "partner.engineering.requestType.revision" },
+  { value: "technical_support", labelKey: "partner.engineering.requestType.technical_support" },
+  { value: "other", labelKey: "partner.engineering.requestType.other" },
+] as const;
+
+const SYSTEM_OPTIONS = [
+  { value: "S80", labelKey: "admin.catalog.s80" },
+  { value: "S150", labelKey: "admin.catalog.s150" },
+  { value: "S200", labelKey: "admin.catalog.s200" },
+] as const;
+
 export function NewEngineeringRequestForm() {
+  const t = useT();
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [form, setForm] = useState({
@@ -13,7 +28,7 @@ export function NewEngineeringRequestForm() {
     requestNumber: "",
     requestType: "",
     wallAreaM2: "",
-    systemType: "",
+    systemTypeIds: [] as string[],
     notes: "",
   });
   const [saving, setSaving] = useState(false);
@@ -21,7 +36,7 @@ export function NewEngineeringRequestForm() {
 
   useEffect(() => {
     fetch("/api/saas/projects?limit=100")
-      .then((r) => r.ok ? r.json() : { projects: [] })
+      .then((r) => (r.ok ? r.json() : { projects: [] }))
       .then((data) => setProjects(data.projects ?? []))
       .catch(() => {});
   }, []);
@@ -35,6 +50,7 @@ export function NewEngineeringRequestForm() {
     }
     setSaving(true);
     try {
+      const systemType = form.systemTypeIds.length > 0 ? form.systemTypeIds.join(",") : undefined;
       const res = await fetch("/api/saas/engineering", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,7 +60,7 @@ export function NewEngineeringRequestForm() {
           status: "draft",
           requestType: form.requestType.trim() || undefined,
           wallAreaM2: form.wallAreaM2 ? Number(form.wallAreaM2) : undefined,
-          systemType: form.systemType.trim() || undefined,
+          systemType,
           notes: form.notes.trim() || undefined,
         }),
       });
@@ -63,46 +79,62 @@ export function NewEngineeringRequestForm() {
     }
   };
 
+  const toggleSystem = (value: string) => {
+    setForm((f) =>
+      f.systemTypeIds.includes(value)
+        ? { ...f, systemTypeIds: f.systemTypeIds.filter((x) => x !== value) }
+        : { ...f, systemTypeIds: [...f.systemTypeIds, value] }
+    );
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm max-w-xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Project *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.project")} *</label>
           <select
             value={form.projectId}
             onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
             required
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">Select project</option>
+            <option value="">{t("partner.engineering.selectProject")}</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.projectName}</option>
+              <option key={p.id} value={p.id}>
+                {p.projectName}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Request number *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.request")} # *</label>
           <input
             type="text"
             value={form.requestNumber}
             onChange={(e) => setForm((f) => ({ ...f, requestNumber: e.target.value }))}
             required
-            placeholder="e.g. ER-2024-001"
+            placeholder={t("partner.engineering.requestNumberPlaceholder")}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Request type</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.requestTypeLabel")}</label>
+          <select
             value={form.requestType}
             onChange={(e) => setForm((f) => ({ ...f, requestType: e.target.value }))}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
+          >
+            <option value="">—</option>
+            {REQUEST_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {t(opt.labelKey)}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Wall area (m²)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.wallAreaM2")}</label>
           <input
             type="number"
             step="any"
@@ -112,16 +144,23 @@ export function NewEngineeringRequestForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">System type</label>
-          <input
-            type="text"
-            value={form.systemType}
-            onChange={(e) => setForm((f) => ({ ...f, systemType: e.target.value }))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.systemType")}</label>
+          <div className="flex flex-wrap gap-4">
+            {SYSTEM_OPTIONS.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.systemTypeIds.includes(opt.value)}
+                  onChange={() => toggleSystem(opt.value)}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">{t(opt.labelKey)}</span>
+              </label>
+            ))}
+          </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.notes")}</label>
           <textarea
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -135,14 +174,14 @@ export function NewEngineeringRequestForm() {
             disabled={saving}
             className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
           >
-            {saving ? "Creating..." : "Create request"}
+            {saving ? t("partner.engineering.creating") : t("partner.engineering.createRequest")}
           </button>
           <button
             type="button"
             onClick={() => router.push("/engineering")}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       </form>

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
 import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import { checkRateLimit, getRateLimitIdentifier, RateLimitExceededError } from "@/lib/rate-limit";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -17,6 +18,14 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  try {
+    await checkRateLimit(getRateLimitIdentifier(req), "auth");
+  } catch (e) {
+    if (e instanceof RateLimitExceededError) {
+      return NextResponse.json({ error: e.message }, { status: 429 });
+    }
+    throw e;
+  }
   try {
     const body = await req.json();
     const parsed = signupSchema.safeParse(body);

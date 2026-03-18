@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireActiveOrg } from "@/lib/tenant";
+import { requireActiveOrg, getTenantContext } from "@/lib/tenant";
 import { listDocuments, createDocument } from "@vbt/core";
 import { createDocumentSchema } from "@vbt/core/validation";
 import { createActivityLog } from "@/lib/audit";
@@ -10,9 +10,13 @@ const VISIBILITY = ["public", "partners_only", "internal"] as const;
 
 async function getHandler(req: Request) {
   try {
+    const ctx = await getTenantContext();
+    if (!ctx) {
+      return NextResponse.json({ error: "Unauthorized", documents: [], total: 0 }, { status: 401 });
+    }
     const url = new URL(req.url);
     const visibilityParam = url.searchParams.get("visibility");
-    const result = await listDocuments(prisma, {
+    const listOptions: Parameters<typeof listDocuments>[1] = {
       categoryId: url.searchParams.get("categoryId") ?? undefined,
       categoryCode: url.searchParams.get("categoryCode") ?? undefined,
       visibility:
@@ -20,9 +24,15 @@ async function getHandler(req: Request) {
           ? (visibilityParam as (typeof VISIBILITY)[number])
           : undefined,
       countryScope: url.searchParams.get("countryScope") ?? undefined,
+      projectId: url.searchParams.get("projectId") ?? undefined,
+      engineeringRequestId: url.searchParams.get("engineeringRequestId") ?? undefined,
       limit: Number(url.searchParams.get("limit")) || 100,
       offset: Number(url.searchParams.get("offset")) || 0,
-    });
+    };
+    if (ctx && !ctx.isPlatformSuperadmin && ctx.activeOrgId) {
+      listOptions.organizationId = ctx.activeOrgId;
+    }
+    const result = await listDocuments(prisma, listOptions);
     return NextResponse.json(result);
   } catch (e) {
     console.error("GET /api/saas/documents error:", e);

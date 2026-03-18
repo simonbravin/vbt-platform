@@ -319,7 +319,7 @@ export function DocumentsAdminClient() {
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3">
                       <a
-                        href={doc.fileUrl}
+                        href={doc.fileUrl ? `/api/saas/documents/${doc.id}/file` : "#"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-gray-900 hover:text-vbt-blue flex items-center gap-1"

@@ -94,6 +94,15 @@ export async function createProject(
   if (!organizationId && !ctx.isPlatformSuperadmin) {
     throw new Error("Organization context required to create project");
   }
+  if (input.clientId) {
+    const client = await prisma.client.findUnique({
+      where: { id: input.clientId },
+      select: { organizationId: true },
+    });
+    if (!client || client.organizationId !== organizationId) {
+      throw new Error("Client does not belong to your organization");
+    }
+  }
   return prisma.project.create({
     data: {
       organizationId: organizationId!,
@@ -125,9 +134,19 @@ export async function updateProject(
   data: Partial<CreateProjectInput>
 ): Promise<Project> {
   const orgWhere = orgScopeWhere(ctx);
-  await prisma.project.findFirstOrThrow({
+  const existing = await prisma.project.findFirstOrThrow({
     where: { id: projectId, ...orgWhere },
+    select: { organizationId: true },
   });
+  if (data.clientId !== undefined && data.clientId !== null) {
+    const client = await prisma.client.findUnique({
+      where: { id: data.clientId },
+      select: { organizationId: true },
+    });
+    if (!client || client.organizationId !== existing.organizationId) {
+      throw new Error("Client does not belong to this project's organization");
+    }
+  }
   return prisma.project.update({
     where: { id: projectId },
     data: {

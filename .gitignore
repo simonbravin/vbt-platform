@@ -11,6 +11,10 @@ build
 .turbo
 prisma/migrations/dev
 
+# Local uploads (api/upload writes here in dev)
+apps/web/public/uploads
+public/uploads
+
 # OS
 .DS_Store
 Thumbs.db

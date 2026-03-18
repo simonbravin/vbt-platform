@@ -3,6 +3,7 @@ import { prisma, Prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { verifyPasswordResetToken } from "@/lib/password-reset-token";
+import { checkRateLimit, getRateLimitIdentifier, RateLimitExceededError } from "@/lib/rate-limit";
 
 const bodySchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -19,6 +20,14 @@ function isDbToken(token: string): boolean {
 }
 
 export async function POST(req: Request) {
+  try {
+    await checkRateLimit(getRateLimitIdentifier(req), "auth");
+  } catch (e) {
+    if (e instanceof RateLimitExceededError) {
+      return NextResponse.json({ error: e.message }, { status: 429 });
+    }
+    throw e;
+  }
   try {
     const body = await req.json();
     const parsed = bodySchema.safeParse(body);

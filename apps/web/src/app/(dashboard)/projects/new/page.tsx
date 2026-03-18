@@ -27,6 +27,7 @@ export default function NewProjectPage() {
     phone: "",
   });
   const [savingClient, setSavingClient] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
   const [form, setForm] = useState({
     projectName: "",
     clientId: "" as string,
@@ -63,14 +64,18 @@ export default function NewProjectPage() {
   async function saveNewClient() {
     if (!newClientForm.name.trim()) return;
     setSavingClient(true);
+    setNewClientError(null);
     try {
+      const countryCode = newClientForm.countryId
+        ? (countries.find((c) => c.id === newClientForm.countryId)?.code ?? newClientForm.countryId)
+        : undefined;
       const res = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newClientForm.name.trim(),
           legalName: newClientForm.legalName.trim() || undefined,
-          countryId: newClientForm.countryId || undefined,
+          countryCode: countryCode || undefined,
           email: newClientForm.email.trim() || undefined,
           phone: newClientForm.phone.trim() || undefined,
         }),
@@ -81,7 +86,11 @@ export default function NewProjectPage() {
         setForm((p) => ({ ...p, clientId: data.id }));
         setNewClientOpen(false);
         setNewClientForm({ name: "", legalName: "", countryId: "", email: "", phone: "" });
+      } else {
+        setNewClientError(data.error ?? t("auth.errorUnexpected"));
       }
+    } catch {
+      setNewClientError(t("auth.errorUnexpected"));
     } finally {
       setSavingClient(false);
     }
@@ -247,6 +256,9 @@ export default function NewProjectPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-lg font-semibold text-gray-900">{t("projects.newClientModalTitle")}</h2>
+              {newClientError && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{newClientError}</div>
+              )}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">{t("common.name")} *</label>
                 <input

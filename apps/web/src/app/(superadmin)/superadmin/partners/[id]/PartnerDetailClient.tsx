@@ -17,6 +17,7 @@ import {
   Target,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Territory = {
   id: string;
@@ -593,6 +594,8 @@ function TerritoriesSection({
   const [territoryType, setTerritoryType] = useState<"exclusive" | "open" | "referral">("open");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [removeTerritoryId, setRemoveTerritoryId] = useState<string | null>(null);
+  const [removingTerritory, setRemovingTerritory] = useState(false);
 
   async function handleAdd() {
     if (!countryCode.trim() || countryCode.length !== 2) {
@@ -629,16 +632,24 @@ function TerritoriesSection({
     }
   }
 
-  async function handleRemove(territoryId: string) {
-    if (!confirm("Remove this territory?")) return;
+  async function doRemoveTerritory(territoryId: string) {
     try {
       const res = await fetch(`/api/saas/territories/${territoryId}`, { method: "DELETE" });
       if (!res.ok) return;
       setTerritories(territories.filter((t) => t.id !== territoryId));
+      setRemoveTerritoryId(null);
       onUpdate();
     } catch {
       // ignore
+    } finally {
+      setRemovingTerritory(false);
     }
+  }
+
+  async function handleRemoveConfirm() {
+    if (!removeTerritoryId) return;
+    setRemovingTerritory(true);
+    await doRemoveTerritory(removeTerritoryId);
   }
 
   return (
@@ -721,7 +732,7 @@ function TerritoriesSection({
               <span className="text-xs rounded bg-gray-100 px-2 py-0.5">{t.territoryType}</span>
               <button
                 type="button"
-                onClick={() => handleRemove(t.id)}
+                onClick={() => setRemoveTerritoryId(t.id)}
                 className="text-sm text-red-600 hover:underline"
               >
                 Remove
@@ -730,6 +741,19 @@ function TerritoriesSection({
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={!!removeTerritoryId}
+        onOpenChange={(open) => !open && setRemoveTerritoryId(null)}
+        title={t("superadmin.partners.removeTerritoryConfirmTitle")}
+        description={t("superadmin.partners.removeTerritoryConfirmMessage")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("superadmin.partners.removing")}
+        variant="danger"
+        loading={removingTerritory}
+        onConfirm={handleRemoveConfirm}
+      />
     </div>
   );
 }

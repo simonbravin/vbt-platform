@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
-import { createAuditLog } from "@/lib/audit";
 import { buildQuoteSnapshot, TaxRule, removeVersionPrefix } from "@vbt/core";
 import { generateQuoteNumber } from "@/lib/utils";
 

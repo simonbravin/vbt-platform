@@ -6,6 +6,7 @@ import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
 import { z } from "zod";
 import crypto from "crypto";
 import { createPasswordResetToken } from "@/lib/password-reset-token";
+import { checkRateLimit, getRateLimitIdentifier, RateLimitExceededError } from "@/lib/rate-limit";
 
 const bodySchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -14,6 +15,14 @@ const bodySchema = z.object({
 const TOKEN_EXPIRY_HOURS = 1;
 
 export async function POST(req: Request) {
+  try {
+    await checkRateLimit(getRateLimitIdentifier(req), "auth");
+  } catch (e) {
+    if (e instanceof RateLimitExceededError) {
+      return NextResponse.json({ error: e.message }, { status: 429 });
+    }
+    throw e;
+  }
   try {
     const body = await req.json();
     const parsed = bodySchema.safeParse(body);

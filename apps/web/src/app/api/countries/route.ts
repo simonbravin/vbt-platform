@@ -1,17 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireSession, requirePlatformSuperadmin, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { requireSession, getEffectiveActiveOrgId, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { getAllowedCountryCodes } from "@/lib/allowed-countries";
 
-/** GET: list countries — any authenticated user (partners need it for dropdowns). */
+/** GET: list countries — superadmin sees all; partners see only countries assigned to their org. */
 export async function GET() {
+  let user;
   try {
-    await requireSession();
+    user = await requireSession();
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    if (user.isPlatformSuperadmin) {
+      const list = await prisma.country.findMany({
+        orderBy: [{ name: "asc" }],
+      });
+      return NextResponse.json(list);
+    }
+    const activeOrgId = await getEffectiveActiveOrgId(user);
+    if (!activeOrgId) {
+      return NextResponse.json([]);
+    }
+    const allowedCodes = await getAllowedCountryCodes(prisma, activeOrgId);
+    if (allowedCodes.length === 0) {
+      return NextResponse.json([]);
+    }
     const list = await prisma.country.findMany({
+      where: { code: { in: allowedCodes } },
       orderBy: [{ name: "asc" }],
     });
     return NextResponse.json(list);

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ClientDetailActions } from "./ClientDetailActions";
 import type { SessionUser } from "@/lib/auth";
+import { getAllowedCountryCodes } from "@/lib/allowed-countries";
 
 export default async function ClientDetailPage({
   params,
@@ -18,7 +19,7 @@ export default async function ClientDetailPage({
     const orgId = effectiveOrgId ?? getEffectiveOrganizationId(user) ?? "";
     if (!orgId) notFound();
 
-    const [client] = await Promise.all([
+    const [client, allowedCodes] = await Promise.all([
       prisma.client.findFirst({
         where: { id: params.id, organizationId: orgId },
         include: {
@@ -28,8 +29,20 @@ export default async function ClientDetailPage({
           },
         },
       }),
+      getAllowedCountryCodes(prisma, orgId),
     ]);
-    const countries: { id: string; name: string; code: string }[] = [];
+    const countryRows =
+      allowedCodes.length > 0
+        ? await prisma.country.findMany({
+            where: { code: { in: allowedCodes } },
+            orderBy: { name: "asc" },
+          })
+        : [];
+    const countries: { id: string; name: string; code: string }[] = countryRows.map((co) => ({
+      id: co.id,
+      name: co.name,
+      code: co.code,
+    }));
 
     if (!client) notFound();
 

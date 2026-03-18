@@ -63,8 +63,15 @@ async function postHandler(req: Request) {
       ? new Date(parsed.data.expectedCloseDate)
       : undefined,
   };
-  const project = await createProject(prisma, tenantCtx, input);
-  return NextResponse.json(project, { status: 201 });
+  try {
+    const project = await createProject(prisma, tenantCtx, input);
+    return NextResponse.json(project, { status: 201 });
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("Client does not belong")) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+    throw e;
+  }
 }
 
 export const GET = withSaaSHandler({}, getHandler);

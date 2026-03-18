@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
-import { createAuditLog } from "@/lib/audit";
+import { createActivityLog } from "@/lib/audit";
 import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
 import { Resend } from "resend";
 
@@ -95,13 +95,13 @@ export async function PATCH(
         ? "USER_ROLE_CHANGED"
         : null;
   if (action && (orgId ?? targetOrgId)) {
-    await createAuditLog({
-      orgId: orgId ?? targetOrgId ?? undefined,
+    await createActivityLog({
+      organizationId: orgId ?? targetOrgId ?? undefined,
       userId: currentUser.id,
-      action: action as any,
+      action: action as string,
       entityType: "User",
       entityId: params.id,
-      meta: { status, role },
+      metadata: { status, role },
     });
   }
 

@@ -6,6 +6,7 @@ import { LayoutGrid, List, FileText, Search, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getCountryName } from "@/lib/countries";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Quote = {
   id: string;
@@ -44,6 +45,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null);
 
   useEffect(() => {
     if (!search.trim()) setQuotes(initialQuotes);
@@ -72,12 +74,17 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
     }
   }, [search, initialStatus, initialQuotes]);
 
-  const handleDelete = async (q: Quote) => {
-    if (!confirm(`¿Eliminar la cotización ${q.quoteNumber ?? q.id} de forma permanente? No se puede deshacer.`)) return;
-    setDeletingId(q.id);
+  const handleDeleteClick = (q: Quote) => setDeleteTarget(q);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
     try {
-      const res = await fetch(`/api/quotes/${q.id}`, { method: "DELETE" });
-      if (res.ok) setQuotes((prev) => prev.filter((x) => x.id !== q.id));
+      const res = await fetch(`/api/quotes/${deleteTarget.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setQuotes((prev) => prev.filter((x) => x.id !== deleteTarget.id));
+        setDeleteTarget(null);
+      }
     } finally {
       setDeletingId(null);
     }
@@ -165,7 +172,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => handleDelete(q)}
+                      onClick={() => handleDeleteClick(q)}
                       disabled={deletingId === q.id}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded disabled:opacity-50"
                       title={t("quotes.deleteTitle")}
@@ -184,7 +191,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
             <div key={q.id} className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow relative group">
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); handleDelete(q); }}
+                onClick={(e) => { e.preventDefault(); handleDeleteClick(q); }}
                 disabled={deletingId === q.id}
                 className="absolute top-3 right-3 p-1.5 text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                 title={t("quotes.deleteTitle")}
@@ -214,6 +221,19 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={t("quotes.deleteQuoteTitle")}
+        description={deleteTarget ? t("quotes.deleteConfirm", { number: deleteTarget.quoteNumber ?? deleteTarget.id }) : ""}
+        confirmLabel={t("quotes.deleteTitle")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("quotes.deleting")}
+        variant="danger"
+        loading={deletingId === deleteTarget?.id}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

@@ -52,7 +52,7 @@ export function DocumentsPartnerClient() {
               <FileText className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
                 <a
-                  href={doc.fileUrl}
+                  href={doc.fileUrl ? `/api/saas/documents/${doc.id}/file` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-gray-900 hover:text-vbt-blue flex items-center gap-1"

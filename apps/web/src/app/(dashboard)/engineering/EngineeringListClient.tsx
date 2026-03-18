@@ -14,7 +14,7 @@ type RequestRow = {
   createdAt: string;
 };
 
-const STATUS_OPTIONS = ["draft", "submitted", "in_review", "needs_info", "in_progress", "completed", "delivered", "rejected"];
+const STATUS_OPTIONS = ["draft", "submitted", "in_review", "pending_info", "needs_info", "in_progress", "completed", "delivered", "rejected"];
 
 export function EngineeringListClient() {
   const t = useT();
@@ -63,7 +63,9 @@ export function EngineeringListClient() {
         >
           <option value="">{t("partner.engineering.allStatuses")}</option>
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {t(`partner.engineering.status.${s}`)}
+            </option>
           ))}
         </select>
         <Link
@@ -114,7 +116,7 @@ export function EngineeringListClient() {
                     </td>
                     <td className="px-5 py-3">
                       <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
-                        {r.status}
+                        {t(`partner.engineering.status.${r.status}`)}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-500">

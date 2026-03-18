@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
+import { createActivityLog } from "@/lib/audit";
 
 export async function GET(
   _req: Request,
@@ -65,13 +65,13 @@ export async function PATCH(
       where: { id: params.id },
       data: data as any,
     });
-    await createAuditLog({
-      orgId: getEffectiveOrganizationId(user) ?? undefined,
+    await createActivityLog({
+      organizationId: getEffectiveOrganizationId(user) ?? undefined,
       userId: user.id,
       action: data.status === "ARCHIVED" ? "QUOTE_ARCHIVED" : "QUOTE_UPDATED",
       entityType: "Quote",
       entityId: params.id,
-      meta: { changed: Object.keys(data) },
+      metadata: { changed: Object.keys(data) },
     });
     const updated = await prisma.quote.findFirst({
       where: { id: params.id },
@@ -98,13 +98,13 @@ export async function DELETE(
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
-  await createAuditLog({
-    orgId: getEffectiveOrganizationId(user) ?? undefined,
+  await createActivityLog({
+    organizationId: getEffectiveOrganizationId(user) ?? undefined,
     userId: user.id,
     action: "QUOTE_DELETED",
     entityType: "Quote",
     entityId: params.id,
-    meta: { quoteNumber: (quote as { quoteNumber?: string }).quoteNumber ?? params.id },
+    metadata: { quoteNumber: (quote as { quoteNumber?: string }).quoteNumber ?? params.id },
   });
 
   await prisma.quote.delete({

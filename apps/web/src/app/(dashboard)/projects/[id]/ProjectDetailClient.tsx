@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, FileText, Plus, Pencil, Trash2, ShoppingCart } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useT } from "@/lib/i18n/context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Country = { id: string; name: string; code: string };
 type Quote = {
@@ -55,6 +56,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newClientForm, setNewClientForm] = useState({ name: "", legalName: "", countryId: "", email: "", phone: "" });
   const [savingClient, setSavingClient] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
   const [sales, setSales] = useState<SaleRow[]>([]);
   const projectName = project.projectName ?? (project as any).name ?? "";
   const projectClientId = project.clientId ?? project.client?.id ?? (project as any).clientRecord?.id ?? "";
@@ -123,14 +125,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
   const saveNewClient = async () => {
     if (!newClientForm.name.trim()) return;
     setSavingClient(true);
+    setNewClientError(null);
     try {
+      const countryCode = newClientForm.countryId
+        ? (countries.find((c) => c.id === newClientForm.countryId)?.code ?? newClientForm.countryId)
+        : undefined;
       const res = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newClientForm.name.trim(),
           legalName: newClientForm.legalName.trim() || undefined,
-          countryId: newClientForm.countryId || undefined,
+          countryCode: countryCode || undefined,
           email: newClientForm.email.trim() || undefined,
           phone: newClientForm.phone.trim() || undefined,
         }),
@@ -141,7 +147,11 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
         setForm((f) => ({ ...f, clientId: data.id }));
         setNewClientOpen(false);
         setNewClientForm({ name: "", legalName: "", countryId: "", email: "", phone: "" });
+      } else {
+        setNewClientError(data.error ?? t("auth.errorUnexpected"));
       }
+    } catch {
+      setNewClientError(t("auth.errorUnexpected"));
     } finally {
       setSavingClient(false);
     }
@@ -245,21 +255,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
         </div>
       </div>
 
-      {deleteDialog && createPortal(
-        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => !deleting && setDeleteDialog(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-lg text-gray-900 mb-2">{t("projects.deleteProjectTitle")}</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              {t("projects.deleteProjectMsg", { name: projectName })}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setDeleteDialog(false)} disabled={deleting} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">{t("common.cancel")}</button>
-              <button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? t("projects.deleting") : t("common.delete")}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmDialog
+        open={deleteDialog}
+        onOpenChange={setDeleteDialog}
+        title={t("projects.deleteProjectTitle")}
+        description={t("projects.deleteProjectMsg", { name: projectName })}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("projects.deleting")}
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
 
       {/* Project info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -506,6 +513,9 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
         <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={() => setNewClientOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-lg text-gray-900">New client</h3>
+            {newClientError && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{newClientError}</div>
+            )}
             <div>
               <label className="block text-sm text-gray-600 mb-1">Name *</label>
               <input

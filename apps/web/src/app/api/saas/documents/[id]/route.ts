@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireActiveOrg } from "@/lib/tenant";
+import { requireActiveOrg, getTenantContext } from "@/lib/tenant";
 import { getDocumentById, updateDocument } from "@vbt/core";
 import { z } from "zod";
 
@@ -15,12 +15,27 @@ const patchSchema = z.object({
   countryScope: z.string().nullable().optional(),
 });
 
+function canAccessDocument(
+  doc: { organizationId: string | null },
+  ctx: { isPlatformSuperadmin: boolean; activeOrgId: string | null } | null
+): boolean {
+  if (!doc.organizationId) return true;
+  if (!ctx) return false;
+  if (ctx.isPlatformSuperadmin) return true;
+  return ctx.activeOrgId === doc.organizationId;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   const doc = await getDocumentById(prisma, params.id);
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const ctx = await getTenantContext();
+  if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessDocument(doc, ctx)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   return NextResponse.json(doc);
 }
 
@@ -32,6 +47,10 @@ export async function PATCH(
     await requireActiveOrg();
     const existing = await getDocumentById(prisma, params.id);
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const ctx = await getTenantContext();
+    if (!canAccessDocument(existing, ctx)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const body = await req.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) {

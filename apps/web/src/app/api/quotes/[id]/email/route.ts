@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { Resend } from "resend";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
+import { createActivityLog } from "@/lib/audit";
 import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
 import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
 
@@ -132,13 +132,13 @@ export async function POST(
       }
     }
 
-    await createAuditLog({
-      orgId: getEffectiveOrganizationId(user) ?? undefined,
+    await createActivityLog({
+      organizationId: getEffectiveOrganizationId(user) ?? undefined,
       userId: user.id,
       action: "quote_sent",
       entityType: "quote",
       entityId: params.id,
-      meta: { to: parsed.data.to, quoteNumber },
+      metadata: { to: parsed.data.to, quoteNumber },
     });
 
     return NextResponse.json({

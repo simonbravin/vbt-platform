@@ -103,6 +103,9 @@ export async function POST(req: Request) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
+    if (e instanceof Error && e.message.includes("Client does not belong")) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     throw e;
   }
 }

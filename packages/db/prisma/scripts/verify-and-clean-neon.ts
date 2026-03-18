@@ -21,6 +21,8 @@ const EXPECTED_TABLES = [
   "password_reset_tokens",
   "organizations",
   "warehouses",
+  "inventory_levels",
+  "inventory_transactions",
   "org_members",
   "partner_profiles",
   "partner_invites",
@@ -40,6 +42,10 @@ const EXPECTED_TABLES = [
   "training_modules",
   "training_enrollments",
   "activity_logs",
+  "countries",
+  "freight_profiles",
+  "tax_rule_sets",
+  "catalog_pieces",
   "platform_config",
 ] as const;
 
