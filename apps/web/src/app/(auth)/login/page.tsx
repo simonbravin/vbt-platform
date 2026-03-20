@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -11,12 +11,13 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/context";
 import { Locale } from "@/lib/i18n/translations";
 
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-type FormData = z.infer<typeof schema>;
+function getLoginSchema(t: (key: string) => string) {
+  return z.object({
+    email: z.string().email(t("auth.emailInvalid")),
+    password: z.string().min(1, t("auth.passwordRequired")),
+  });
+}
+type FormData = z.infer<ReturnType<typeof getLoginSchema>>;
 
 function LoginForm() {
   const router = useRouter();
@@ -25,6 +26,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { t } = useLanguage();
+  const schema = useMemo(() => getLoginSchema(t), [t]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -93,7 +95,7 @@ function LoginForm() {
             type="email"
             autoComplete="email"
             className="w-full px-3 py-2 bg-white text-gray-900 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
-            placeholder="you@example.com"
+            placeholder={t("auth.placeholderEmail")}
           />
           {errors.email && (
             <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -109,8 +111,8 @@ function LoginForm() {
               {...register("password")}
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-className="w-full px-3 py-2 pr-10 bg-white text-gray-900 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
-            placeholder="••••••••"
+              className="w-full px-3 py-2 pr-10 bg-white text-gray-900 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              placeholder="••••••••"
             />
             <button
               type="button"

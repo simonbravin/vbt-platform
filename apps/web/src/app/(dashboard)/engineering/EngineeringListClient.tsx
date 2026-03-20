@@ -97,7 +97,7 @@ export function EngineeringListClient() {
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.request")}</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.project")}</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.status")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("engineering.list.colCreated")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">

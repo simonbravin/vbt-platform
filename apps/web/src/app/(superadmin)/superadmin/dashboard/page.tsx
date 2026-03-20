@@ -1,7 +1,10 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { SuperadminDashboardClient } from "./SuperadminDashboardClient";
+import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
+import type { Locale } from "@/lib/i18n/translations";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +13,16 @@ export default async function SuperadminDashboardPage() {
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
 
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
+  const locale: Locale = raw === "es" || raw === "en" ? raw : "en";
+  const t = getT(locale);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Platform Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Global overview and partner performance
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("superadmin.page.dashboardTitle")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.dashboardSubtitle")}</p>
       </div>
       <SuperadminDashboardClient />
     </div>

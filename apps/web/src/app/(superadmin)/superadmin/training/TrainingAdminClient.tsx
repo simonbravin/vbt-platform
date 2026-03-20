@@ -13,6 +13,23 @@ type TrainingProgram = {
   _count?: { enrollments: number };
 };
 
+const KNOWN_PROGRAM_STATUSES = ["active", "inactive", "draft", "archived", "published"] as const;
+const KNOWN_ENROLLMENT_STATUSES = ["not_started", "in_progress", "completed"] as const;
+
+function programStatusLabel(t: (key: string) => string, status: string): string {
+  if ((KNOWN_PROGRAM_STATUSES as readonly string[]).includes(status)) {
+    return t(`superadmin.training.programStatus.${status}`);
+  }
+  return status;
+}
+
+function enrollmentStatusLabel(t: (key: string) => string, status: string): string {
+  if ((KNOWN_ENROLLMENT_STATUSES as readonly string[]).includes(status)) {
+    return t(`superadmin.training.enrollmentStatus.${status}`);
+  }
+  return status;
+}
+
 type Enrollment = {
   id: string;
   status: string;
@@ -50,7 +67,7 @@ export function TrainingAdminClient() {
     }
     fetchPrograms();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +91,7 @@ export function TrainingAdminClient() {
     }
     fetchEnrollments();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   return (
     <div className="space-y-8">
@@ -98,10 +115,10 @@ export function TrainingAdminClient() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollments</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colTitle")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colLevel")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colEnrollments")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -114,7 +131,7 @@ export function TrainingAdminClient() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{p.level ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{p.status}</td>
+                    <td className="px-5 py-3 text-sm text-gray-600">{programStatusLabel(t, p.status)}</td>
                     <td className="px-5 py-3 text-right text-sm text-gray-600">{p._count?.enrollments ?? 0}</td>
                   </tr>
                 ))}
@@ -138,11 +155,11 @@ export function TrainingAdminClient() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colUser")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colProgram")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colPartner")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colProgress")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -153,7 +170,7 @@ export function TrainingAdminClient() {
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{e.trainingProgram?.title ?? "—"}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{e.organization?.name ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{e.status}</td>
+                    <td className="px-5 py-3 text-sm text-gray-600">{enrollmentStatusLabel(t, e.status)}</td>
                     <td className="px-5 py-3 text-right text-sm text-gray-600">{e.progressPct}%</td>
                   </tr>
                 ))}
@@ -162,7 +179,9 @@ export function TrainingAdminClient() {
           </div>
         )}
         {!loadingEnrollments && enrollments.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">{enrollmentsTotal} enrollment(s)</p>
+          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+            {t("superadmin.training.enrollmentsTotal", { count: enrollmentsTotal })}
+          </p>
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight, Pencil, Activity, ShoppingCart } from "lucide-react";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage, useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 function fmt(n: number) {
@@ -20,6 +20,7 @@ const STATUS_KEYS: Record<string, string> = {
 
 export default function QuoteDetailPage() {
   const t = useT();
+  const { locale } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const [quote, setQuote] = useState<any>(null);
@@ -102,7 +103,7 @@ export default function QuoteDetailPage() {
     const res = await fetch(`/api/quotes/${params.id}/email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: emailTo, message: emailMsg }),
+      body: JSON.stringify({ to: emailTo, message: emailMsg, locale }),
     });
     let data: { error?: string } = {};
     try {

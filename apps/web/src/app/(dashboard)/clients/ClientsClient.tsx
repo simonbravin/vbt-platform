@@ -476,7 +476,8 @@ export function ClientsClient({
                 )}
               </div>
               <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-muted-foreground">
-                {c._count.projects} project{c._count.projects !== 1 ? "s" : ""}
+                {c._count.projects}{" "}
+                {c._count.projects === 1 ? t("clients.projectSingular") : t("clients.projectPlural")}
               </div>
             </div>
           ))}
@@ -486,11 +487,11 @@ export function ClientsClient({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Legal name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Country</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Contact</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Projects</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("common.name")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.legalName")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.country")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.tableContact")}</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("projects.title")}</th>
                 <th className="w-10 px-4 py-3"></th>
               </tr>
             </thead>
@@ -533,7 +534,7 @@ export function ClientsClient({
               className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">New client</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t("clients.newClient")}</h2>
               {modalForm}
               <div className="flex gap-2 mt-4 justify-end">
                 <button
@@ -565,7 +566,7 @@ export function ClientsClient({
               className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">Edit client</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">{t("clients.editClientTitle")}</h2>
               {modalForm}
               <div className="flex gap-2 mt-4 justify-end">
                 <button

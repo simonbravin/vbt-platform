@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/context";
 
 const PARTNER_TYPES = [
-  { value: "commercial_partner", label: "Commercial partner" },
-  { value: "master_partner", label: "Master partner" },
+  { value: "commercial_partner", labelKey: "superadmin.partners.commercialPartner" as const },
+  { value: "master_partner", labelKey: "superadmin.partners.masterPartner" as const },
 ] as const;
 
 const FEE_MODES = [
-  { value: "fixed", label: "Fixed" },
-  { value: "percent", label: "Percent" },
-  { value: "per_request", label: "Per request" },
-  { value: "included", label: "Included" },
+  { value: "fixed", labelKey: "superadmin.partner.engineeringFee.fixed" as const },
+  { value: "percent", labelKey: "superadmin.partner.engineeringFee.percent" as const },
+  { value: "per_request", labelKey: "superadmin.partner.engineeringFee.per_request" as const },
+  { value: "included", labelKey: "superadmin.partner.engineeringFee.included" as const },
 ] as const;
 
 const MODULE_KEYS = [
@@ -124,7 +124,7 @@ export function EditPartnerForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-            Company name *
+            {t("superadmin.partners.fieldCompanyName")}
           </label>
           <input
             id="companyName"
@@ -137,7 +137,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
-            Contact name
+            {t("superadmin.partners.fieldContactName")}
           </label>
           <input
             id="contactName"
@@ -149,7 +149,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
-            Contact email
+            {t("superadmin.partners.fieldContactEmail")}
           </label>
           <input
             id="contactEmail"
@@ -161,7 +161,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="website" className="block text-sm font-medium text-gray-700">
-            Website
+            {t("superadmin.partners.fieldWebsite")}
           </label>
           <input
             id="website"
@@ -173,7 +173,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-            Country (code)
+            {t("superadmin.partner.edit.countryCode")}
           </label>
           <input
             id="country"
@@ -186,7 +186,7 @@ export function EditPartnerForm({
         </div>
         <div>
           <label htmlFor="partnerType" className="block text-sm font-medium text-gray-700">
-            Partner type *
+            {t("superadmin.partner.edit.partnerType")}
           </label>
           <select
             id="partnerType"
@@ -199,14 +199,14 @@ export function EditPartnerForm({
           >
             {PARTNER_TYPES.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-gray-700">
-            Engineering fee mode
+            {t("superadmin.partner.edit.engineeringFeeMode")}
           </label>
           <select
             id="engineeringFeeMode"
@@ -217,14 +217,14 @@ export function EditPartnerForm({
             <option value="">—</option>
             {FEE_MODES.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-            Status
+            {t("superadmin.partner.edit.accountStatus")}
           </label>
           <select
             id="status"
@@ -232,14 +232,14 @@ export function EditPartnerForm({
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           >
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="pending">Pending</option>
+            <option value="active">{t("admin.users.statusActive")}</option>
+            <option value="suspended">{t("admin.users.statusSuspended")}</option>
+            <option value="pending">{t("admin.users.statusPending")}</option>
           </select>
         </div>
         <div>
           <label htmlFor="visionLatamCommissionPct" className="block text-sm font-medium text-gray-700">
-            Comisión Vision Latam (% sobre factory cost)
+            {t("superadmin.partner.commissionPctFieldLabel")}
           </label>
           <input
             id="visionLatamCommissionPct"
@@ -247,33 +247,31 @@ export function EditPartnerForm({
             min={0}
             max={100}
             step={0.5}
-            placeholder="Ej. 20 → el partner ve base = factory × 1.20"
+            placeholder={t("superadmin.partner.commissionPctPlaceholder")}
             value={form.visionLatamCommissionPct}
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionPct: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
-          <p className="mt-0.5 text-xs text-gray-500">
-            % que Vision Latam cobra sobre el costo de fábrica. El partner nunca ve el factory cost ni este %; solo ve el precio base = factory × (1 + %/100). Ej: 20% y $67/m² → el partner ve $80.40/m² como base. Vacío = usar valor global.
-          </p>
+          <p className="mt-0.5 text-xs text-gray-500">{t("superadmin.partner.commissionPctHelp")}</p>
         </div>
         <div>
           <label htmlFor="visionLatamCommissionFixedUsd" className="block text-sm font-medium text-gray-700">
-            Comisión Vision Latam fija (USD, opcional)
+            {t("superadmin.partner.commissionFixedFieldLabel")}
           </label>
           <input
             id="visionLatamCommissionFixedUsd"
             type="number"
             min={0}
             step={0.01}
-            placeholder="Optional"
+            placeholder={t("admin.inventory.optional")}
             value={form.visionLatamCommissionFixedUsd}
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionFixedUsd: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
         </div>
         <div className="sm:col-span-2">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Visibilidad de módulos (override por partner)</h4>
-          <p className="text-xs text-gray-500 mb-2">Qué módulos ve este partner. Si no se define, se usa la configuración global.</p>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">{t("superadmin.partner.moduleVisibilityTitle")}</h4>
+          <p className="text-xs text-gray-500 mb-2">{t("superadmin.partner.moduleVisibilityHelp")}</p>
           <div className="flex flex-wrap gap-4">
             {MODULE_KEYS.map(({ key, labelKey }) => (
               <label key={key} className="flex items-center gap-2">
@@ -289,8 +287,8 @@ export function EditPartnerForm({
           </div>
         </div>
         <div className="sm:col-span-2">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Sistemas de panel habilitados (80mm, 150mm, 200mm)</h4>
-          <p className="text-xs text-gray-500 mb-2">Qué sistemas puede usar este partner en cotizaciones e inventario. Solo verá piezas del catálogo de los sistemas marcados.</p>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">{t("superadmin.partner.enabledSystemsTitle")}</h4>
+          <p className="text-xs text-gray-500 mb-2">{t("superadmin.partner.enabledSystemsHelp")}</p>
           <div className="flex flex-wrap gap-4">
             {SYSTEM_OPTIONS.map(({ value, labelKey }) => (
               <label key={value} className="flex items-center gap-2">
@@ -315,14 +313,14 @@ export function EditPartnerForm({
           disabled={saving}
           className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90 disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Save changes"}
+          {saving ? t("common.saving") : t("common.saveChanges")}
         </button>
         <button
           type="button"
           onClick={() => router.push(`/superadmin/partners/${partnerId}`)}
           className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>

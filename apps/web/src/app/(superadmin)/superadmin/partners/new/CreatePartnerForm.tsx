@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/context";
 
+const PARTNER_TYPES = [
+  { value: "commercial_partner", labelKey: "superadmin.partners.commercialPartner" as const },
+  { value: "master_partner", labelKey: "superadmin.partners.masterPartner" as const },
+] as const;
+
+const FEE_MODES = [
+  { value: "fixed", labelKey: "superadmin.partner.engineeringFee.fixed" as const },
+  { value: "percent", labelKey: "superadmin.partner.engineeringFee.percent" as const },
+  { value: "per_request", labelKey: "superadmin.partner.engineeringFee.per_request" as const },
+  { value: "included", labelKey: "superadmin.partner.engineeringFee.included" as const },
+] as const;
+
 export function CreatePartnerForm() {
   const t = useT();
-  const PARTNER_TYPES = useMemo(() => [
-    { value: "commercial_partner", label: t("superadmin.partners.commercialPartner") },
-    { value: "master_partner", label: t("superadmin.partners.masterPartner") },
-  ] as const, [t]);
-  const FEE_MODES = useMemo(() => [
-    { value: "fixed", label: "Fixed" },
-    { value: "percent", label: "Percent" },
-    { value: "per_request", label: t("superadmin.partners.billingPerRequest") },
-    { value: "included", label: "Included" },
-  ] as const, [t]);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +109,7 @@ export function CreatePartnerForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-            Company name *
+            {t("superadmin.partners.fieldCompanyName")}
           </label>
           <input
             id="companyName"
@@ -120,7 +122,7 @@ export function CreatePartnerForm() {
         </div>
         <div>
           <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
-            Contact name
+            {t("superadmin.partners.fieldContactName")}
           </label>
           <input
             id="contactName"
@@ -132,7 +134,7 @@ export function CreatePartnerForm() {
         </div>
         <div>
           <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
-            Contact email
+            {t("superadmin.partners.fieldContactEmail")}
           </label>
           <input
             id="contactEmail"
@@ -144,20 +146,20 @@ export function CreatePartnerForm() {
         </div>
         <div>
           <label htmlFor="website" className="block text-sm font-medium text-gray-700">
-            Website
+            {t("superadmin.partners.fieldWebsite")}
           </label>
           <input
             id="website"
             type="url"
             value={form.website}
             onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-            placeholder="https://"
+            placeholder={t("superadmin.partners.websitePlaceholder")}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
         </div>
         <div>
           <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-            Country (code)
+            {t("superadmin.partner.edit.countryCode")}
           </label>
           <input
             id="country"
@@ -165,13 +167,13 @@ export function CreatePartnerForm() {
             maxLength={2}
             value={form.country}
             onChange={(e) => setForm((f) => ({ ...f, country: e.target.value.toUpperCase() }))}
-            placeholder="e.g. US, CO"
+            placeholder={t("superadmin.partners.countryCodePlaceholder")}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           />
         </div>
         <div>
           <label htmlFor="partnerType" className="block text-sm font-medium text-gray-700">
-            Partner type *
+            {t("superadmin.partner.edit.partnerType")}
           </label>
           <select
             id="partnerType"
@@ -182,14 +184,14 @@ export function CreatePartnerForm() {
           >
             {PARTNER_TYPES.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-gray-700">
-            Engineering fee mode
+            {t("superadmin.partner.edit.engineeringFeeMode")}
           </label>
           <select
             id="engineeringFeeMode"
@@ -200,14 +202,14 @@ export function CreatePartnerForm() {
             <option value="">—</option>
             {FEE_MODES.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-            Status
+            {t("superadmin.partner.edit.accountStatus")}
           </label>
           <select
             id="status"
@@ -215,9 +217,9 @@ export function CreatePartnerForm() {
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
           >
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="pending">Pending</option>
+            <option value="active">{t("admin.users.statusActive")}</option>
+            <option value="suspended">{t("admin.users.statusSuspended")}</option>
+            <option value="pending">{t("admin.users.statusPending")}</option>
           </select>
         </div>
       </div>
@@ -230,11 +232,11 @@ export function CreatePartnerForm() {
           className="h-4 w-4 rounded border-gray-300 text-vbt-blue focus:ring-vbt-blue"
         />
         <label htmlFor="sendInvite" className="text-sm font-medium text-gray-700">
-          Send invitation email to contact
+          {t("superadmin.partners.sendInviteLabel")}
         </label>
       </div>
       <p className="text-xs text-gray-500 -mt-2">
-        If the contact email is set, an invitation will be sent after creating the partner. If they don&apos;t have an account yet, they&apos;ll receive a link to create one and join the partner portal.
+        {t("superadmin.partners.sendInviteHelp")}
       </p>
       <div className="flex gap-3">
         <button
@@ -249,7 +251,7 @@ export function CreatePartnerForm() {
           onClick={() => router.back()}
           className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>

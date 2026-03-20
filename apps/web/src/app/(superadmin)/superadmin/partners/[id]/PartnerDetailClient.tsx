@@ -19,6 +19,61 @@ import {
 import { useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+function engineeringFeeModeLabel(t: (key: string) => string, mode: string | null | undefined): string {
+  if (!mode) return "—";
+  const key = `superadmin.partner.engineeringFee.${mode}`;
+  const out = t(key);
+  return out === key ? mode : out;
+}
+
+function partnerTypeDisplay(t: (key: string) => string, partnerType: string | null | undefined): string {
+  if (!partnerType) return "—";
+  if (partnerType === "commercial_partner") return t("superadmin.partners.commercialPartner");
+  if (partnerType === "master_partner") return t("superadmin.partners.masterPartner");
+  return partnerType.replace(/_/g, " ");
+}
+
+function organizationStatusLabel(t: (key: string) => string, status: string | null | undefined): string {
+  if (!status) return "—";
+  if (status === "active") return t("admin.users.statusActive");
+  if (status === "suspended") return t("admin.users.statusSuspended");
+  if (status === "pending") return t("admin.users.statusPending");
+  return status;
+}
+
+function onboardingStateLabel(t: (key: string) => string, state: string): string {
+  const key = `superadmin.partner.onboarding.${state}`;
+  const out = t(key);
+  return out === key ? state.replace(/_/g, " ") : out;
+}
+
+function memberRoleDisplay(t: (key: string) => string, role: string): string {
+  const map: Record<string, string> = {
+    owner: "superadmin.partner.teamRole.owner",
+    admin: "superadmin.partner.teamRole.admin",
+    sales: "superadmin.partner.teamRole.sales",
+    engineer: "superadmin.partner.teamRole.engineer",
+    viewer: "superadmin.partner.teamRole.viewer",
+    org_admin: "superadmin.partner.memberRole.org_admin",
+    sales_user: "superadmin.partner.memberRole.sales_user",
+    technical_user: "superadmin.partner.memberRole.technical_user",
+  };
+  const tr = map[role];
+  return tr ? t(tr) : role;
+}
+
+function memberStatusDisplay(t: (key: string) => string, status: string): string {
+  const key = `superadmin.partner.memberStatus.${status}`;
+  const out = t(key);
+  return out === key ? status : out;
+}
+
+function territoryTypeDisplay(t: (key: string) => string, territoryType: string): string {
+  const key = `superadmin.partner.territoryType.${territoryType}`;
+  const out = t(key);
+  return out === key ? territoryType : out;
+}
+
 type Territory = {
   id: string;
   countryCode: string;
@@ -57,19 +112,19 @@ type Partner = {
 };
 
 const TABS = [
-  { id: "overview", label: "Overview", icon: Building2 },
-  { id: "team", label: "Team", icon: Users },
-  { id: "territories", label: "Territories", icon: MapPinned },
-  { id: "onboarding", label: "Onboarding", icon: ClipboardList },
-  { id: "parameters", label: "Parameters", icon: Sliders },
+  { id: "overview" as const, labelKey: "superadmin.partner.tabs.overview" as const, icon: Building2 },
+  { id: "team" as const, labelKey: "superadmin.partner.tabs.team" as const, icon: Users },
+  { id: "territories" as const, labelKey: "superadmin.partner.tabs.territories" as const, icon: MapPinned },
+  { id: "onboarding" as const, labelKey: "superadmin.partner.tabs.onboarding" as const, icon: ClipboardList },
+  { id: "parameters" as const, labelKey: "superadmin.partner.tabs.parameters" as const, icon: Sliders },
 ] as const;
 
 const TEAM_ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
-  { value: "sales", label: "Sales" },
-  { value: "engineer", label: "Engineer" },
-  { value: "viewer", label: "Viewer" },
+  { value: "owner" as const, labelKey: "superadmin.partner.teamRole.owner" as const },
+  { value: "admin" as const, labelKey: "superadmin.partner.teamRole.admin" as const },
+  { value: "sales" as const, labelKey: "superadmin.partner.teamRole.sales" as const },
+  { value: "engineer" as const, labelKey: "superadmin.partner.teamRole.engineer" as const },
+  { value: "viewer" as const, labelKey: "superadmin.partner.teamRole.viewer" as const },
 ] as const;
 
 const ONBOARDING_STATES = [
@@ -81,7 +136,7 @@ const ONBOARDING_STATES = [
 ] as const;
 
 const AGREEMENT_STATUS_OPTIONS = [
-  { value: "", labelKey: "—" },
+  { value: "", labelKey: "superadmin.partner.agreementStatusNone" },
   { value: "active", labelKey: "superadmin.partners.agreementStatusActive" },
   { value: "expired", labelKey: "superadmin.partners.agreementStatusExpired" },
   { value: "pending", labelKey: "superadmin.partners.agreementStatusPending" },
@@ -164,7 +219,7 @@ export function PartnerDetailClient({
               }`}
             >
               <tab.icon className="h-4 w-4" />
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </nav>
@@ -174,14 +229,14 @@ export function PartnerDetailClient({
         <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
           <span>
             {inviteSent === "new"
-              ? "Invitation sent. The contact will receive an email to create their account and join the partner portal."
-              : "Invitation sent. The contact will receive an email to sign in to the partner portal."}
+              ? t("superadmin.partner.inviteBannerNewAccount")
+              : t("superadmin.partner.inviteBannerSignIn")}
           </span>
           <button
             type="button"
             onClick={() => setDismissInviteBanner(true)}
             className="text-green-600 hover:text-green-800 ml-2"
-            aria-label="Dismiss"
+            aria-label={t("common.dismiss")}
           >
             ×
           </button>
@@ -198,17 +253,17 @@ export function PartnerDetailClient({
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-gray-500">Company</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.company")}</p>
               <p className="mt-1 text-gray-900 font-medium">{partner.name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Partner type</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.partnerType")}</p>
               <p className="mt-1 text-gray-900">
-                {partner.partnerProfile?.partnerType?.replace("_", " ") ?? "—"}
+                {partnerTypeDisplay(t, partner.partnerProfile?.partnerType)}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.status")}</p>
               <p className="mt-1">
                 <span
                   className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -217,7 +272,7 @@ export function PartnerDetailClient({
                       : "bg-gray-100 text-gray-700"
                   }`}
                 >
-                  {partner.status ?? "—"}
+                  {organizationStatusLabel(t, partner.status)}
                 </span>
               </p>
             </div>
@@ -229,7 +284,7 @@ export function PartnerDetailClient({
             )}
             {partner.partnerProfile?.contactName && (
               <div>
-                <p className="text-sm font-medium text-gray-500">Contact</p>
+                <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.contact")}</p>
                 <p className="mt-1 text-gray-900">{partner.partnerProfile.contactName}</p>
               </div>
             )}
@@ -258,39 +313,36 @@ export function PartnerDetailClient({
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-500">Engineering fee mode</p>
+              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.engineeringFeeMode")}</p>
               <p className="mt-1 text-gray-900">
-                {partner.partnerProfile?.engineeringFeeMode ?? "—"}
+                {engineeringFeeModeLabel(t, partner.partnerProfile?.engineeringFeeMode)}
               </p>
             </div>
           </div>
 
-          {/* Comisión Vision Latam: % sobre factory cost → el partner solo ve base = factory × (1 + %/100) */}
           <div className="rounded-lg border border-gray-100 bg-amber-50/50 p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900">Comisión Vision Latam (precio base para el partner)</h3>
+              <h3 className="text-sm font-medium text-gray-900">{t("superadmin.partner.commissionSectionTitle")}</h3>
               <Link
                 href={`/superadmin/partners/${partnerId}/edit`}
                 className="text-sm text-vbt-blue hover:underline"
               >
-                Editar
+                {t("common.edit")}
               </Link>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
-              % sobre factory cost. El partner no ve el factory cost ni este %; solo ve el precio base resultante.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">{t("superadmin.partner.commissionSectionHelp")}</p>
             <div className="mt-2 flex flex-wrap gap-4">
               <div>
-                <p className="text-xs text-gray-500">Comisión %</p>
+                <p className="text-xs text-gray-500">{t("superadmin.partner.commissionPctLabel")}</p>
                 <p className="font-medium text-gray-900">
                   {partner.partnerProfile?.visionLatamCommissionPct != null
                     ? `${partner.partnerProfile.visionLatamCommissionPct}%`
-                    : "— (usa valor global)"}
+                    : t("superadmin.partner.commissionUsesGlobal")}
                 </p>
               </div>
               {partner.partnerProfile?.visionLatamCommissionFixedUsd != null && partner.partnerProfile.visionLatamCommissionFixedUsd > 0 && (
                 <div>
-                  <p className="text-xs text-gray-500">Comisión fija (USD)</p>
+                  <p className="text-xs text-gray-500">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
                   <p className="font-medium text-gray-900">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(partner.partnerProfile.visionLatamCommissionFixedUsd)}
                   </p>
@@ -304,19 +356,19 @@ export function PartnerDetailClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-indigo-600" />
-                <h3 className="text-sm font-medium text-gray-900">Annual goals</h3>
+                <h3 className="text-sm font-medium text-gray-900">{t("superadmin.partner.detail.annualGoals")}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTab("parameters")}
                 className="text-sm text-vbt-blue hover:underline"
               >
-                Edit in Parameters
+                {t("superadmin.partner.detail.editInParameters")}
               </button>
             </div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div>
-                <p className="text-xs text-gray-500">Sales target (USD)</p>
+                <p className="text-xs text-gray-500">{t("superadmin.partner.detail.salesTargetUsd")}</p>
                 <p className="mt-0.5 font-medium text-gray-900">
                   {partner.partnerProfile?.salesTargetAnnualUsd != null
                     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(partner.partnerProfile.salesTargetAnnualUsd)
@@ -324,7 +376,7 @@ export function PartnerDetailClient({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Sales target (m²)</p>
+                <p className="text-xs text-gray-500">{t("superadmin.partner.detail.salesTargetM2")}</p>
                 <p className="mt-0.5 font-medium text-gray-900">
                   {partner.partnerProfile?.salesTargetAnnualM2 != null
                     ? partner.partnerProfile.salesTargetAnnualM2.toLocaleString()
@@ -339,7 +391,7 @@ export function PartnerDetailClient({
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
           >
             <Settings className="h-4 w-4" />
-            Edit partner
+            {t("superadmin.partner.editPartner")}
           </Link>
         </div>
       )}
@@ -362,9 +414,9 @@ export function PartnerDetailClient({
 
       {activeTab === "onboarding" && (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900">Onboarding state</h3>
+          <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.onboardingState")}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Update the current onboarding stage for this partner.
+            {t("superadmin.partner.onboardingHelp")}
           </p>
           <div className="mt-4">
             <select
@@ -373,14 +425,14 @@ export function PartnerDetailClient({
               disabled={saving}
               className="block w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
             >
-              <option value="">— Not set —</option>
+              <option value="">{t("superadmin.partner.onboardingNotSet")}</option>
               {ONBOARDING_STATES.map((s) => (
                 <option key={s} value={s}>
-                  {s.replace(/_/g, " ")}
+                  {onboardingStateLabel(t, s)}
                 </option>
               ))}
             </select>
-            {saving && <p className="mt-2 text-sm text-gray-500">Saving...</p>}
+            {saving && <p className="mt-2 text-sm text-gray-500">{t("superadmin.partner.detail.saving")}</p>}
           </div>
         </div>
       )}
@@ -452,7 +504,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
       setInviteRole("viewer");
       setInviteOpen(false);
       if (data.pendingInvite) {
-        setInviteSuccess(data.message ?? "Invitation sent. They will receive an email to create their account.");
+        setInviteSuccess(data.message ?? t("superadmin.partner.inviteSuccessNewUser"));
       } else {
         setMembers((prev) => [...prev, { ...data, user: data.user ?? { id: data.userId, fullName: null, email: inviteEmail.trim() } }]);
         setTotal((prev) => prev + 1);
@@ -467,20 +519,22 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Team</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.team")}</h3>
         <button
           type="button"
           onClick={() => setInviteOpen(true)}
           className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90"
         >
           <UserPlus className="h-4 w-4" />
-          Invite by email
+          {t("partner.team.inviteByEmail")}
         </button>
       </div>
 
       {inviteOpen && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700">Invite member to {partnerName}</p>
+          <p className="text-sm font-medium text-gray-700">
+            {t("superadmin.partner.inviteMemberTo", { partner: partnerName })}
+          </p>
           {inviteError && (
             <p className="text-sm text-red-600">{inviteError}</p>
           )}
@@ -489,18 +543,18 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
           )}
           <form onSubmit={handleInvite} className="flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-500">Email</label>
+              <label className="block text-xs font-medium text-gray-500">{t("auth.email")}</label>
               <input
                 type="email"
                 required
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="user@example.com"
+                placeholder={t("superadmin.partner.detail.inviteEmailPlaceholder")}
                 className="mt-1 block w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Role</label>
+              <label className="block text-xs font-medium text-gray-500">{t("admin.users.role")}</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
@@ -508,7 +562,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
               >
                 {TEAM_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {t(r.labelKey)}
                   </option>
                 ))}
               </select>
@@ -518,18 +572,18 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
               disabled={submitting}
               className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
             >
-              {submitting ? "Sending..." : "Send invite"}
+              {submitting ? t("partner.team.inviting") : t("partner.team.invite")}
             </button>
             <button
               type="button"
               onClick={() => { setInviteOpen(false); setInviteError(null); }}
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </form>
           <p className="text-xs text-gray-500">
-            If they already have an account, they&apos;ll get a sign-in link. If not, they&apos;ll receive a link to create their account and join the partner portal.
+            {t("superadmin.partner.teamInviteHelp")}
           </p>
         </div>
       )}
@@ -555,7 +609,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
                 </p>
               </div>
               <span className="text-xs rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-700">
-                {m.role}
+                {memberRoleDisplay(t, m.role)}
               </span>
               <span
                 className={`text-xs rounded-full px-2.5 py-0.5 ${
@@ -566,7 +620,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
                       : "bg-gray-100 text-gray-700"
                 }`}
               >
-                {m.status}
+                {memberStatusDisplay(t, m.status)}
               </span>
             </li>
           ))}
@@ -599,7 +653,7 @@ function TerritoriesSection({
 
   async function handleAdd() {
     if (!countryCode.trim() || countryCode.length !== 2) {
-      setErr("Country code must be 2 characters");
+      setErr(t("superadmin.partner.countryCodeTwoChars"));
       return;
     }
     setErr(null);
@@ -655,14 +709,14 @@ function TerritoriesSection({
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Territories</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.territories")}</h3>
         {!adding ? (
           <button
             type="button"
             onClick={() => setAdding(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90"
           >
-            Add territory
+            {t("superadmin.partner.addTerritory")}
           </button>
         ) : null}
       </div>
@@ -672,7 +726,7 @@ function TerritoriesSection({
           {err && <p className="text-sm text-red-600">{err}</p>}
           <div className="flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-500">Country (2 letters)</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.countryCode")}</label>
               <input
                 type="text"
                 maxLength={2}
@@ -682,7 +736,7 @@ function TerritoriesSection({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Region</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.region")}</label>
               <input
                 type="text"
                 value={region}
@@ -691,15 +745,15 @@ function TerritoriesSection({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Type</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.territoryType")}</label>
               <select
                 value={territoryType}
                 onChange={(e) => setTerritoryType(e.target.value as "exclusive" | "open" | "referral")}
                 className="mt-1 block rounded border border-gray-300 px-2 py-1.5 text-sm"
               >
-                <option value="exclusive">Exclusive</option>
-                <option value="open">Open</option>
-                <option value="referral">Referral</option>
+                <option value="exclusive">{t("superadmin.partner.territoryType.exclusive")}</option>
+                <option value="open">{t("superadmin.partner.territoryType.open")}</option>
+                <option value="referral">{t("superadmin.partner.territoryType.referral")}</option>
               </select>
             </div>
             <button
@@ -708,34 +762,36 @@ function TerritoriesSection({
               disabled={submitting}
               className="rounded-lg bg-vbt-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
             >
-              {submitting ? "Adding..." : "Add"}
+              {submitting ? t("superadmin.partner.adding") : t("superadmin.partner.add")}
             </button>
             <button
               type="button"
               onClick={() => { setAdding(false); setErr(null); }}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
       )}
 
       {territories.length === 0 ? (
-        <p className="text-sm text-gray-500">No territories assigned yet.</p>
+        <p className="text-sm text-gray-500">{t("superadmin.partner.detail.noTerritoriesYet")}</p>
       ) : (
         <ul className="divide-y divide-gray-200">
-          {territories.map((t) => (
-            <li key={t.id} className="py-3 flex items-center justify-between">
-              <span className="font-medium">{t.countryCode}</span>
-              {t.region && <span className="text-gray-500">{t.region}</span>}
-              <span className="text-xs rounded bg-gray-100 px-2 py-0.5">{t.territoryType}</span>
+          {territories.map((territory) => (
+            <li key={territory.id} className="py-3 flex items-center justify-between">
+              <span className="font-medium">{territory.countryCode}</span>
+              {territory.region && <span className="text-gray-500">{territory.region}</span>}
+              <span className="text-xs rounded bg-gray-100 px-2 py-0.5">
+                {territoryTypeDisplay(t, territory.territoryType)}
+              </span>
               <button
                 type="button"
-                onClick={() => setRemoveTerritoryId(t.id)}
+                onClick={() => setRemoveTerritoryId(territory.id)}
                 className="text-sm text-red-600 hover:underline"
               >
-                Remove
+                {t("superadmin.partner.removeTerritory")}
               </button>
             </li>
           ))}
@@ -759,10 +815,10 @@ function TerritoriesSection({
 }
 
 const ENGINEERING_FEE_MODES = [
-  { value: "fixed", label: "Fixed" },
-  { value: "percent", label: "Percent" },
-  { value: "per_request", label: "Per request" },
-  { value: "included", label: "Included" },
+  { value: "fixed" as const, labelKey: "superadmin.partner.engineeringFee.fixed" as const },
+  { value: "percent" as const, labelKey: "superadmin.partner.engineeringFee.percent" as const },
+  { value: "per_request" as const, labelKey: "superadmin.partner.engineeringFee.per_request" as const },
+  { value: "included" as const, labelKey: "superadmin.partner.engineeringFee.included" as const },
 ] as const;
 
 type PlatformDefaults = {
@@ -869,9 +925,9 @@ function ParametersSection({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">Partner parameters</h3>
+      <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.parametersTitle")}</h3>
       <p className="text-sm text-gray-500">
-        Partner-specific variables and overrides. These override platform defaults when set.
+        {t("superadmin.partner.parametersIntro")}
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {successMessage && (
@@ -881,101 +937,109 @@ function ParametersSection({
       )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Fees</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.fees")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500">
-                Entry fee (USD)
+                {t("superadmin.partner.paramEntryFeeUsd")}
                 {defaults?.pricing?.defaultEntryFeeUsd != null && entryFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-gray-400">(Default: {defaults.pricing.defaultEntryFeeUsd})</span>
+                  <span className="ml-1 font-normal text-gray-400">
+                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultEntryFeeUsd })}
+                  </span>
                 )}
               </label>
               <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">
-                Training fee (USD)
+                {t("superadmin.partner.paramTrainingFeeUsd")}
                 {defaults?.pricing?.defaultTrainingFeeUsd != null && trainingFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-gray-400">(Default: {defaults.pricing.defaultTrainingFeeUsd})</span>
+                  <span className="ml-1 font-normal text-gray-400">
+                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultTrainingFeeUsd })}
+                  </span>
                 )}
               </label>
               <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Material credit (USD)</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.materialCreditUsd")}</label>
               <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Engineering fee mode</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
               <select value={engineeringFeeMode} onChange={(e) => setEngineeringFeeMode(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                <option value="">— Not set —</option>
+                <option value="">{t("superadmin.partner.onboardingNotSet")}</option>
                 {ENGINEERING_FEE_MODES.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                  <option key={m.value} value={m.value}>{t(m.labelKey)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Engineering fee value</label>
-              <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Fixed USD or %" />
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
+              <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")} />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Margins & pricing</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.marginsPricing")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500">
-                Min margin (%)
+                {t("superadmin.partner.paramMinMarginPct")}
                 {defaults?.pricing?.defaultMarginMinPct != null && marginMinPct === "" && (
-                  <span className="ml-1 font-normal text-gray-400">(Default: {defaults.pricing.defaultMarginMinPct})</span>
+                  <span className="ml-1 font-normal text-gray-400">
+                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMinPct })}
+                  </span>
                 )}
               </label>
               <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">
-                Max margin (%)
+                {t("superadmin.partner.paramMaxMarginPct")}
                 {defaults?.pricing?.defaultMarginMaxPct != null && marginMaxPct === "" && (
-                  <span className="ml-1 font-normal text-gray-400">(Default: {defaults.pricing.defaultMarginMaxPct})</span>
+                  <span className="ml-1 font-normal text-gray-400">
+                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMaxPct })}
+                  </span>
                 )}
               </label>
               <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-500">Minimum price policy</label>
-              <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="e.g. list price floor" />
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
+              <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")} />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Sales targets</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.salesTargets")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">Annual target (USD)</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetUsd")}</label>
               <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Annual target (m²)</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetM2")}</label>
               <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Agreement</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.agreement")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">Start date</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.startDate")}</label>
               <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">End date</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.endDate")}</label>
               <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">Status</label>
+              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.status")}</label>
               <select value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 {AGREEMENT_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value || "_empty"} value={opt.value}>{opt.value ? t(opt.labelKey) : opt.labelKey}</option>
+                  <option key={opt.value || "_empty"} value={opt.value}>{t(opt.labelKey)}</option>
                 ))}
               </select>
             </div>
@@ -983,7 +1047,7 @@ function ParametersSection({
         </div>
         <div className="flex justify-end">
           <button type="submit" disabled={saving} className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50">
-            {saving ? "Saving..." : "Save parameters"}
+            {saving ? t("common.saving") : t("superadmin.partner.saveParameters")}
           </button>
         </div>
       </form>

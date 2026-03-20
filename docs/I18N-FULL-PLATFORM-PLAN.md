@@ -70,7 +70,7 @@ Que el toggle de idioma (ENG/ESP) en la barra superior cambie **todo** el conten
 
 ### Parte 3 – TopBar y layout global
 - TopBar: "View as", "Platform (all)", "Loading..." (notificaciones), etc. → claves `topbar.viewAs`, `topbar.platformAll`, `common.loading`.
-- Footer del sidebar: "VBT Cost Calculator v1.0" / "Superadmin Portal" si aplica.
+- Footer del sidebar: "VBT Platform v1.0" / "Plataforma VBT v1.0" / "Superadmin Portal" si aplica.
 - Cualquier otro texto en layout compartido.
 
 ### Parte 4 – Dashboard (partner)

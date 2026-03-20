@@ -105,22 +105,20 @@ export default function Step1Method({ state, update }: Step1Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-1">Step 1: Project &amp; Method</h2>
-        <p className="text-sm text-muted-foreground">
-          Select the project, costing method, unit of measure, and warehouse for this quote.
-        </p>
+        <h2 className="text-xl font-semibold mb-1">{t("wizard.step1Title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("wizard.step1Desc")}</p>
       </div>
 
       {/* Project selector */}
       <div className="space-y-2">
-        <Label htmlFor="project-select">Project</Label>
+        <Label htmlFor="project-select">{t("projects.project")}</Label>
         <Select
           value={state.projectId}
           onValueChange={(v) => update({ projectId: v })}
           disabled={loadingProjects}
         >
           <SelectTrigger id="project-select" className="w-full">
-            <SelectValue placeholder={loadingProjects ? "Loading projects..." : "Select a project"} />
+            <SelectValue placeholder={loadingProjects ? t("wizard.loadingProjects") : t("wizard.selectProject")} />
           </SelectTrigger>
           <SelectContent>
             {projects.map((p) => (

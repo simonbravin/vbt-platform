@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AnalyticsHubClient } from "./AnalyticsHubClient";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +11,13 @@ export default async function SuperadminAnalyticsPage() {
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
 
+  const { t } = await getServerT();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Analytics & Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Global pipeline, partner performance, and quote analytics. Filter by partner and date.
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("nav.superadmin.analytics")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.analyticsSubtitle")}</p>
       </div>
       <AnalyticsHubClient />
     </div>

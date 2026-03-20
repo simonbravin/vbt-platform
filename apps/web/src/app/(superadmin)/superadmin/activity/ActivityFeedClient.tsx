@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage } from "@/lib/i18n/context";
 
 type ActivityItem = {
   id: string;
@@ -13,12 +13,34 @@ type ActivityItem = {
   user: { id: string; fullName: string | null } | null;
 };
 
-function formatAction(action: string): string {
-  return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function formatActivityAction(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  action: string
+): string {
+  const lookupKey = `superadmin.activity.action.${action.toLowerCase()}`;
+  const translated = t(lookupKey);
+  if (translated === lookupKey) {
+    return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return translated;
+}
+
+function formatActivityEntityType(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  entityType: string
+): string {
+  const norm = entityType.trim().replace(/\s+/g, "_").toLowerCase();
+  const lookupKey = `superadmin.activity.entity.${norm}`;
+  const translated = t(lookupKey);
+  if (translated === lookupKey) {
+    return entityType;
+  }
+  return translated;
 }
 
 export function ActivityFeedClient() {
-  const t = useT();
+  const { locale, t } = useLanguage();
+  const dateLocale = locale === "es" ? "es" : "en";
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,18 +98,20 @@ export function ActivityFeedClient() {
         ) : (
           items.map((item) => (
             <div key={item.id} className="px-5 py-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-              <span className="font-medium text-foreground">{formatAction(item.action)}</span>
+              <span className="font-medium text-foreground">{formatActivityAction(t, item.action)}</span>
               {item.entityType && (
                 <span className="text-muted-foreground">
-                  {item.entityType}
+                  {formatActivityEntityType(t, item.entityType)}
                   {item.entityId ? ` ${item.entityId.slice(0, 8)}…` : ""}
                 </span>
               )}
               {item.user?.fullName && (
-                <span className="text-muted-foreground">by {item.user.fullName}</span>
+                <span className="text-muted-foreground">
+                  {t("superadmin.activity.byUser", { name: item.user.fullName })}
+                </span>
               )}
               <span className="text-muted-foreground ml-auto">
-                {new Date(item.createdAt).toLocaleString()}
+                {new Date(item.createdAt).toLocaleString(dateLocale)}
               </span>
             </div>
           ))

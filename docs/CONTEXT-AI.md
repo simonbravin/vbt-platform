@@ -1,4 +1,4 @@
-# Contexto para IA – VBT Cotizador / Cost Calculator
+# Contexto para IA – Plataforma VBT / VBT Platform
 
 Este documento describe el **tech stack**, la **estructura de la aplicación**, el **dominio de negocio** y las **convenciones** del proyecto para que cualquier IA (o desarrollador) entienda de qué se trata la plataforma. La aplicación está en evolución hacia un **CRM** y se prepara para ser **multi-tenant** (cada partner verá solo sus clientes, cotizaciones, presupuestos y ventas; un superadmin verá todo).
 
@@ -6,7 +6,7 @@ Este documento describe el **tech stack**, la **estructura de la aplicación**, 
 
 ## 1. ¿Qué es esta plataforma?
 
-- **Nombre:** VBT Cost Calculator (internamente “Cotizador”).
+- **Nombre de producto:** **Plataforma VBT** (ES) / **VBT Platform** (EN). El repositorio puede seguir en una carpeta `VBT_Cotizador` por legado; no usar “Cotizador” como nombre de marca en UI ni emails.
 - **Empresa:** Vision Building Technologies (VBT).
 - **Propósito:** Herramienta interna para **cotizar** proyectos de construcción (sistemas de muros/prefabricados: S80, S150, S200), calcular costos de fábrica, flete, impuestos y comisiones, enviar cotizaciones por email (PDF), gestionar **ventas** (Sales), facturación y pagos. Incluye **clientes**, **proyectos**, **catálogo de piezas**, **inventario**, **importación desde Revit (CSV)** y **reportes**.
 - **Evolución planeada:** Migración hacia un **CRM**; modelo **multi-tenant** donde cada partner (Org) ve solo sus datos y un superadmin ve todo.
@@ -27,6 +27,7 @@ Este documento describe el **tech stack**, la **estructura de la aplicación**, 
 | **PDF** | @react-pdf/renderer |
 | **Email** | Resend |
 | **i18n** | Sistema propio en `lib/i18n` (en/es) |
+| **Emails (asunto + cuerpo)** | `User.emailLocale` (`en` \| `es`): registro, cambio de idioma en UI (`/api/saas/user/email-locale`), y restablecer contraseña. Asuntos en `lib/email-config.ts`; cuerpos HTML en `lib/email-bodies.ts` (un idioma por correo). Aviso al superadmin por nueva solicitud de cuenta: solo inglés. |
 | **Tests** | Vitest (en `@vbt/core`) |
 
 ### Variables de entorno (ver `.env.example`)

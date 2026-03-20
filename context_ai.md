@@ -1,4 +1,4 @@
-# VBT Cotizador — AI Context Reference
+# Plataforma VBT / VBT Platform — AI Context Reference
 
 > **Propósito:** Documento de referencia completo para que cualquier IA (o desarrollador) pueda entender la aplicación, su arquitectura, modelos de datos, flujos y convenciones sin necesidad de explorar el código fuente.
 
@@ -6,7 +6,18 @@
 
 ## 1. Visión General
 
-**VBT Cotizador** es una plataforma SaaS B2B para **Vision Building Technologies (VBT)**. Su función principal es generar cotizaciones de exportación de paneles de muros prefabricados de concreto (sistemas VBT 80mm, 150mm y 200mm) para proyectos de construcción en Latinoamérica.
+**Plataforma VBT** (inglés: **VBT Platform**) es una plataforma SaaS B2B para **Vision Building Technologies (VBT)**. Sirve para que **Vision Latam y los distribuidores** gestionen **cotizaciones, clientes, proyectos, ventas e inventario**; el núcleo sigue siendo cotizar exportación de paneles de muros prefabricados de concreto (sistemas VBT 80mm, 150mm y 200mm) para proyectos en Latinoamérica.
+
+### Nombre de producto (siempre)
+
+| Idioma / contexto | Texto |
+|-------------------|--------|
+| UI y copy en **español** | **Plataforma VBT** |
+| UI y copy en **inglés** (incl. emails en inglés, `metadata` por defecto) | **VBT Platform** |
+
+No usar como marca: “VBT Cotizador”, “Cotizador” (solo producto), ni “VBT Cost Calculator”. Los textos visibles deben ir por i18n (`topbar.title`, etc.) salvo emails/APIs que estén fijados en inglés.
+
+**Emails — idioma (asunto + cuerpo HTML):** el modelo `User` tiene `emailLocale` (`en` \| `es`). Se asigna en el **signup** y se sincroniza al cambiar idioma en la UI (`/api/saas/user/email-locale`). **“Olvidé mi contraseña”** envía el `locale` actual y actualiza `emailLocale`. Invitaciones: usuario existente = idioma del **invitado**; correo nuevo = idioma del **superadmin que invita**. Cotización e informe por email: locale del `fetch` o del remitente. Plantillas localizadas en `apps/web/src/lib/email-bodies.ts` (un solo idioma por mensaje). Notificación al superadmin por nuevo registro: **solo inglés** (asunto + cuerpo).
 
 ### Flujo principal de negocio
 

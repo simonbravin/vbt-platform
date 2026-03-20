@@ -15,17 +15,25 @@ type LevelRow = {
 };
 type CatalogPieceRow = { id: string; canonicalName: string; systemCode: string };
 
-const TRANSACTION_TYPES = [
-  { value: "purchase_in", label: "Entrada (compra)" },
-  { value: "adjustment_in", label: "Ajuste entrada" },
-  { value: "sale_out", label: "Salida (venta)" },
-  { value: "adjustment_out", label: "Ajuste salida" },
-  { value: "project_consumption", label: "Consumo proyecto" },
-  { value: "project_surplus", label: "Sobrante proyecto" },
+const SUPERADMIN_TX_ORDER = [
+  "purchase_in",
+  "adjustment_in",
+  "sale_out",
+  "adjustment_out",
+  "project_consumption",
+  "project_surplus",
 ] as const;
 
 export function SuperadminInventoryClient() {
   const t = useT();
+  const txTypes = useMemo(
+    () =>
+      SUPERADMIN_TX_ORDER.map((value) => ({
+        value,
+        label: t(`admin.inventory.txType.${value}`),
+      })),
+    [t]
+  );
   const [visionLatamOrg, setVisionLatamOrg] = useState<Org | null>(null);
   const [partnerOrgs, setPartnerOrgs] = useState<Org[]>([]);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
@@ -138,11 +146,11 @@ export function SuperadminInventoryClient() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) setAffectResult("Error: " + data.error);
-        else setAffectResult(`Creadas ${data.created} transacciones.`);
+        if (data.error) setAffectResult(t("admin.inventory.apiError", { message: String(data.error) }));
+        else setAffectResult(t("admin.inventory.transactionsCreated", { count: Number(data.created) || 0 }));
         if (data.created > 0) fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
       })
-      .catch(() => setAffectResult("Error al afectar inventario."))
+      .catch(() => setAffectResult(t("admin.inventory.affectInventoryError")))
       .finally(() => setTxSaving(false));
   };
 
@@ -170,7 +178,13 @@ export function SuperadminInventoryClient() {
         setTxForm({ ...txForm, quantityDelta: 0, notes: "" });
         fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
       })
-      .catch((e) => setAffectResult("Error: " + (e.message || "transacción")))
+      .catch((e) =>
+        setAffectResult(
+          t("admin.inventory.apiError", {
+            message: e.message || t("admin.inventory.errorTransactionFallback"),
+          })
+        )
+      )
       .finally(() => setTxSaving(false));
   };
 
@@ -208,7 +222,7 @@ export function SuperadminInventoryClient() {
   if (!visionLatamOrg) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        No se encontró la organización Vision Latam. Solo superadmin puede gestionar inventario.
+        {t("admin.inventory.vlOrgNotFound")}
       </div>
     );
   }
@@ -217,7 +231,7 @@ export function SuperadminInventoryClient() {
     <div className="space-y-6">
       {partnerOrgs.length > 0 && (
         <div className="rounded-lg border border-border bg-muted/30 p-3">
-          <p className="text-sm font-medium text-foreground mb-2">Ver también inventario de (solo lectura):</p>
+          <p className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.viewPartnerInventoryHint")}</p>
           <div className="relative max-w-md">
             <button
               type="button"
@@ -226,8 +240,8 @@ export function SuperadminInventoryClient() {
             >
               <span className="text-muted-foreground">
                 {selectedPartnerIds.length === 0
-                  ? "Buscar y seleccionar partners…"
-                  : `${selectedPartnerIds.length} partner(s) seleccionado(s)`}
+                  ? t("admin.inventory.selectPartnersPlaceholder")
+                  : t("admin.inventory.partnersSelected", { count: selectedPartnerIds.length })}
               </span>
               <span className="text-muted-foreground">{partnerDropdownOpen ? "▲" : "▼"}</span>
             </button>
@@ -237,7 +251,7 @@ export function SuperadminInventoryClient() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Buscar partner…"
+                    placeholder={t("admin.inventory.searchPartnerPlaceholder")}
                     value={partnerSearchQuery}
                     onChange={(e) => setPartnerSearchQuery(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 rounded border border-input bg-background text-sm"
@@ -245,7 +259,7 @@ export function SuperadminInventoryClient() {
                 </div>
                 <div className="overflow-y-auto p-2">
                   {filteredPartnersForDropdown.length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-2">Ningún resultado</p>
+                    <p className="text-xs text-muted-foreground py-2">{t("admin.inventory.noResults")}</p>
                   ) : (
                     filteredPartnersForDropdown.map((org) => (
                       <label
@@ -291,7 +305,7 @@ export function SuperadminInventoryClient() {
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <h3 className="px-4 py-2 text-sm font-semibold text-foreground border-b border-border bg-muted/30">
-          Mi inventario (Vision Latam) — Stock por bodega
+          {t("admin.inventory.myVlStockTitle")}
         </h3>
         {loadingLevels ? (
           <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
@@ -300,20 +314,28 @@ export function SuperadminInventoryClient() {
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Bodega</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Pieza</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Sistema</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Cantidad</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Unidad</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.warehouse")}
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.piece")}
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.system")}
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.quantityColumn")}
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.unitColumn")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
                 {filteredLevels.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      {levels.length === 0
-                        ? "No hay niveles de inventario. Usá \"Agregar ítem\" para cargar stock (solo piezas del catálogo)."
-                        : "Ningún resultado con el filtro."}
+                      {levels.length === 0 ? t("admin.inventory.noLevelsAddItem") : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
@@ -336,26 +358,26 @@ export function SuperadminInventoryClient() {
       {selectedPartnerIds.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden mt-4">
           <h3 className="text-sm font-semibold text-foreground px-4 py-2 bg-muted/50 border-b border-border">
-            Inventario de partners seleccionados (solo lectura)
+            {t("admin.inventory.partnerLevelsReadOnlyTitle")}
           </h3>
           {loadingPartnerLevels ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">Cargando…</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">{t("admin.inventory.loadingShort")}</div>
           ) : (
             <div className="divide-y divide-border">
               {partnerLevels.map(({ organizationId: partnerOrgId, levels: pl }) => (
                 <div key={partnerOrgId} className="p-4">
                   <p className="text-sm font-medium text-foreground mb-2">{partnerOrgs.find((o) => o.id === partnerOrgId)?.name ?? partnerOrgId}</p>
                   {pl.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Sin niveles.</p>
+                    <p className="text-xs text-muted-foreground">{t("admin.inventory.noLevelsShort")}</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <thead>
                           <tr className="border-b border-border">
-                            <th className="text-left py-1 pr-4 text-muted-foreground">Bodega</th>
-                            <th className="text-left py-1 pr-4 text-muted-foreground">Pieza</th>
-                            <th className="text-left py-1 pr-4 text-muted-foreground">Sistema</th>
-                            <th className="text-right py-1 text-muted-foreground">Cantidad</th>
+                            <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.warehouse")}</th>
+                            <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.piece")}</th>
+                            <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.system")}</th>
+                            <th className="text-right py-1 text-muted-foreground">{t("admin.inventory.quantityColumn")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -382,7 +404,7 @@ export function SuperadminInventoryClient() {
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-foreground">
-                  {t("admin.inventory.addItem")} — solo piezas del catálogo
+                  {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
                 </h3>
                 <button
                   type="button"
@@ -392,12 +414,10 @@ export function SuperadminInventoryClient() {
                   {t("admin.inventory.close")}
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Elegí bodega y pieza del catálogo; el ítem se agrega o ajusta según tipo y cantidad.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("admin.inventory.txFormHelpSuperadmin")}</p>
               <div className="flex flex-wrap gap-3 items-end">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Bodega</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
                   <select
                     value={txForm.warehouseId}
                     onChange={(e) => setTxForm((f) => ({ ...f, warehouseId: e.target.value }))}
@@ -410,7 +430,7 @@ export function SuperadminInventoryClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Pieza</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
                   <select
                     value={txForm.catalogPieceId}
                     onChange={(e) => setTxForm((f) => ({ ...f, catalogPieceId: e.target.value }))}
@@ -423,19 +443,19 @@ export function SuperadminInventoryClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Tipo</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
                   <select
                     value={txForm.type}
                     onChange={(e) => setTxForm((f) => ({ ...f, type: e.target.value }))}
                     className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[160px]"
                   >
-                    {TRANSACTION_TYPES.map((opt) => (
+                    {txTypes.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Cantidad</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
                   <input
                     type="number"
                     min={0}
@@ -446,12 +466,12 @@ export function SuperadminInventoryClient() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Notas</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
                   <input
                     type="text"
                     value={txForm.notes}
                     onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
-                    placeholder="Opcional"
+                    placeholder={t("admin.inventory.optional")}
                     className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-40"
                   />
                 </div>
@@ -461,17 +481,17 @@ export function SuperadminInventoryClient() {
                   disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
                   className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
                 >
-                  <Plus className="h-4 w-4" /> Aplicar
+                  <Plus className="h-4 w-4" /> {t("admin.inventory.apply")}
                 </button>
               </div>
 
               <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-medium text-foreground mb-2">Afectar inventario por cotización</h4>
-                <p className="text-xs text-muted-foreground mb-2">Solo aplica si la cotización tiene ítems ligados a piezas del catálogo (ej. importación CSV). Cotizar solo por m² es estimación y no genera requeridos por pieza.</p>
+                <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.affectByQuoteTitle")}</h4>
+                <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.affectByQuoteDescription")}</p>
                 <div className="flex flex-wrap gap-2 items-center">
                   <input
                     type="text"
-                    placeholder="ID de cotización"
+                    placeholder={t("admin.inventory.quoteIdPlaceholder")}
                     value={affectQuoteId}
                     onChange={(e) => setAffectQuoteId(e.target.value)}
                     className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
@@ -482,19 +502,19 @@ export function SuperadminInventoryClient() {
                     disabled={txSaving || !affectQuoteId.trim()}
                     className="rounded-lg px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1"
                   >
-                    <ArrowDownToLine className="h-4 w-4" /> Afectar
+                    <ArrowDownToLine className="h-4 w-4" /> {t("admin.inventory.affectButton")}
                   </button>
                   {affectResult && <span className="text-sm text-muted-foreground">{affectResult}</span>}
                 </div>
               </div>
 
               <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-medium text-foreground mb-2">Simular sobrante/faltante por cotización</h4>
-                <p className="text-xs text-muted-foreground mb-2">Usa ítems de la cotización con pieza de catálogo asignada. Si la cotización es solo por m² (estimación), no habrá requeridos por pieza.</p>
+                <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.simulateByQuoteTitle")}</h4>
+                <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.simulateByQuoteDescription")}</p>
                 <div className="flex flex-wrap gap-2 items-center">
                   <input
                     type="text"
-                    placeholder="ID de cotización"
+                    placeholder={t("admin.inventory.quoteIdPlaceholder")}
                     value={simulateQuoteId}
                     onChange={(e) => setSimulateQuoteId(e.target.value)}
                     className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
@@ -505,26 +525,45 @@ export function SuperadminInventoryClient() {
                     disabled={!simulateQuoteId.trim()}
                     className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 flex items-center gap-1"
                   >
-                    <Calculator className="h-4 w-4" /> Simular
+                    <Calculator className="h-4 w-4" /> {t("admin.inventory.simulateButton")}
                   </button>
                 </div>
                 {simulateResult && (
                   <div className="mt-3 p-3 rounded-lg bg-muted/50 text-sm space-y-2">
-                    <p className="font-medium">Requerido por pieza:</p>
+                    <p className="font-medium">{t("admin.inventory.simulateRequiredByPiece")}</p>
                     <ul className="list-disc list-inside">
                       {simulateResult.required.map((r, i) => (
-                        <li key={i}>{r.pieceName} ({r.systemCode}): {r.quantity}</li>
+                        <li key={i}>
+                          {t("admin.inventory.simulatePieceLine", {
+                            name: r.pieceName,
+                            code: r.systemCode,
+                            quantity: r.quantity,
+                          })}
+                        </li>
                       ))}
                     </ul>
                     {simulateResult.byWarehouse.length > 0 && (
                       <>
-                        <p className="font-medium mt-2">Por bodega:</p>
+                        <p className="font-medium mt-2">{t("admin.inventory.simulateByWarehouse")}</p>
                         {simulateResult.byWarehouse.map((wh, wi) => (
                           <div key={wi} className="ml-2">
-                            <p className="font-medium">{wh.warehouseName} — {wh.organizationName}</p>
+                            <p className="font-medium">
+                              {t("admin.inventory.simulateWarehouseOrg", {
+                                warehouse: wh.warehouseName,
+                                organization: wh.organizationName,
+                              })}
+                            </p>
                             <ul className="list-disc list-inside text-muted-foreground">
                               {wh.levels.map((lev, li) => (
-                                <li key={li}>{lev.pieceName}: en mano {lev.onHand}, requerido {lev.required}, sobrante {lev.surplus}, faltante {lev.shortage}</li>
+                                <li key={li}>
+                                  {t("admin.inventory.simulateLevelLine", {
+                                    piece: lev.pieceName,
+                                    onHand: lev.onHand,
+                                    required: lev.required,
+                                    surplus: lev.surplus,
+                                    shortage: lev.shortage,
+                                  })}
+                                </li>
                               ))}
                             </ul>
                           </div>

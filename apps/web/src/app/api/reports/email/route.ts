@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
-import { buildVbtEmailHtml } from "@/lib/email-templates";
-import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import { buildProjectsReportEmailHtml } from "@/lib/email-bodies";
+import { getResendFrom, emailSubjectReport, parseEmailLocale } from "@/lib/email-config";
 import { Resend } from "resend";
 import type { SessionUser } from "@/lib/auth";
 import { z } from "zod";
@@ -19,6 +19,7 @@ const bodySchema = z.object({
   soldFrom: z.string().optional(),
   soldTo: z.string().optional(),
   search: z.string().optional(),
+  locale: z.enum(["en", "es"]).optional(),
 });
 
 const STATUS_MAP: Record<string, string> = {
@@ -164,17 +165,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email not configured (RESEND_API_KEY)" }, { status: 503 });
   }
 
-  const subject = body.subject?.trim() || EMAIL_SUBJECTS.report;
-  const bodyHtml = `
-    <p style="margin: 0 0 16px 0;">Please find the projects report attached (${rows.length} row(s)).</p>
-    <p style="margin: 0; color: #555;">Filters applied: ${body.status ? `Status ${body.status}` : "All statuses"}${countryCode ? `, Country ${countryCode}` : ""}${body.clientId ? ", Client filter" : ""}${body.search?.trim() ? ", Search" : ""}${body.soldFrom || body.soldTo ? ", Sold date range" : ""}.</p>
-  `.trim();
-
-  const htmlBody = buildVbtEmailHtml({
-    title: "Projects Report",
-    subtitle: "Vision Building Technologies",
-    bodyHtml,
-    attachmentDescription: "The report is attached as a CSV file.",
+  const senderPrefs = await prisma.user.findUnique({
+    where: { id: (user as { id: string }).id },
+    select: { emailLocale: true },
+  });
+  const reportMailLocale = parseEmailLocale(body.locale ?? senderPrefs?.emailLocale);
+  const subject = body.subject?.trim() || emailSubjectReport(reportMailLocale);
+  const htmlBody = buildProjectsReportEmailHtml(reportMailLocale, {
+    rowCount: rows.length,
+    filterParts: {
+      status: body.status ?? null,
+      countryCode,
+      hasClientFilter: Boolean(body.clientId),
+      hasSearch: Boolean(body.search?.trim()),
+      hasSoldRange: Boolean(body.soldFrom || body.soldTo),
+    },
   });
 
   try {

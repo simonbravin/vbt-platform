@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ActivityFeedClient } from "./ActivityFeedClient";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +11,13 @@ export default async function SuperadminActivityPage() {
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
 
+  const { t } = await getServerT();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Global activity</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Recent platform activity across all partners. Use this to audit key events.
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("superadmin.page.activityTitle")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.activitySubtitle")}</p>
       </div>
       <ActivityFeedClient />
     </div>

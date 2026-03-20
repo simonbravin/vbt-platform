@@ -1,0 +1,17 @@
+---
+description: Marca del producto — Plataforma VBT (ES) / VBT Platform (EN); no usar Cotizador como nombre
+globs:
+  - "**/*.tsx"
+  - "**/*.ts"
+  - "**/translations.ts"
+  - "**/*.md"
+---
+
+# Marca: Plataforma VBT / VBT Platform
+
+- **Español:** usar **Plataforma VBT** en cualquier texto visible al usuario en locale `es` (idealmente vía claves i18n, p. ej. `topbar.title`, `sidebar.footerVersion`).
+- **Inglés:** usar **VBT Platform** en locale `en`, asuntos y pies de email en inglés, y metadata por defecto de Next (`layout.tsx`).
+- **No** usar como nombre de producto: “VBT Cotizador”, “Cotizador” (como marca), “VBT Cost Calculator”, “Cost Calculator” (como nombre de app).
+- El monorepo npm raíz se llama `vbt-platform`; la carpeta local del repo puede seguir siendo `VBT_Cotizador` por legado — no implica el nombre de producto en UI.
+
+Ver también `context_ai.md` (sección de marca) y `docs/CONTEXT-AI.md`.

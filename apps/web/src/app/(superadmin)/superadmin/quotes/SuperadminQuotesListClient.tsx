@@ -62,15 +62,15 @@ export function SuperadminQuotesListClient() {
       const data = await res.json().catch(() => ({}));
       setQuotes(data.quotes ?? []);
       setTotal(data.total ?? 0);
-      setError(!res.ok || data.error ? (data.message ?? "Failed to load quotes") : null);
+      setError(!res.ok || data.error ? (data.message ?? t("superadmin.quotesList.failedLoad")) : null);
     } catch {
       setQuotes([]);
       setTotal(0);
-      setError("Failed to load quotes");
+      setError(t("superadmin.quotesList.failedLoad"));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, organizationId]);
+  }, [statusFilter, search, organizationId, t]);
 
   useEffect(() => {
     fetchQuotes();
@@ -82,14 +82,14 @@ export function SuperadminQuotesListClient() {
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
           <span>
             {error}
-            {quotes.length === 0 && " Showing empty list."}
+            {quotes.length === 0 && t("superadmin.quotesList.emptyListHint")}
           </span>
           <button
             type="button"
             onClick={() => fetchQuotes()}
             className="rounded-lg px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
           >
-            Retry
+            {t("superadmin.quotesList.retry")}
           </button>
         </div>
       )}
@@ -99,14 +99,14 @@ export function SuperadminQuotesListClient() {
           onChange={(e) => setOrganizationId(e.target.value)}
           className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[180px]"
         >
-          <option value="">All companies</option>
+          <option value="">{t("superadmin.quotesList.allCompanies")}</option>
           {partners.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
         <input
           type="search"
-          placeholder="Search by quote number or project..."
+          placeholder={t("superadmin.quotesList.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && fetchQuotes()}
@@ -117,14 +117,14 @@ export function SuperadminQuotesListClient() {
           onClick={() => fetchQuotes()}
           className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
         >
-          Search
+          {t("superadmin.quotesList.search")}
         </button>
         <button
           type="button"
           onClick={() => setStatusFilter("")}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
         >
-          All
+          {t("superadmin.quotesList.all")}
         </button>
         {(["draft", "sent", "accepted", "rejected", "expired"] as const).map((s) => (
           <button
@@ -140,13 +140,13 @@ export function SuperadminQuotesListClient() {
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-sm text-muted-foreground">Loading quotes…</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.quotesList.loading")}</div>
         ) : quotes.length === 0 ? (
           <div className="p-12 text-center">
             <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">No quotes found</p>
+            <p className="mt-2 text-sm font-medium text-foreground">{t("superadmin.quotesList.noQuotes")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {statusFilter ? `No quotes with status "${statusFilter}".` : "There are no quotes yet."}
+              {statusFilter ? t("superadmin.quotesList.noMatchStatus", { status: statusFilter }) : t("superadmin.quotesList.noQuotesYet")}
             </p>
           </div>
         ) : (
@@ -155,25 +155,25 @@ export function SuperadminQuotesListClient() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Partner
+                    {t("superadmin.quotesList.colPartner")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Quote
+                    {t("superadmin.quotesList.colQuote")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Project
+                    {t("superadmin.quotesList.colProject")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Status
+                    {t("superadmin.quotesList.colStatus")}
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    VL %
+                    {t("superadmin.quotesList.colVlPct")}
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Total
+                    {t("superadmin.quotesList.colTotal")}
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Actions
+                    {t("superadmin.quotesList.colActions")}
                   </th>
                 </tr>
               </thead>
@@ -217,7 +217,7 @@ export function SuperadminQuotesListClient() {
                           href={`/superadmin/quotes/${q.id}`}
                           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                         >
-                          Ver <ChevronRight className="h-4 w-4" />
+                          {t("superadmin.quotesList.view")} <ChevronRight className="h-4 w-4" />
                         </Link>
                       </td>
                     </tr>
@@ -230,7 +230,7 @@ export function SuperadminQuotesListClient() {
       </div>
       {!loading && total > 0 && (
         <p className="text-sm text-muted-foreground">
-          Showing {quotes.length} of {total} quotes
+          {t("superadmin.quotesList.showingCount", { shown: quotes.length, total })}
         </p>
       )}
     </div>

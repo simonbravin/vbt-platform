@@ -5,7 +5,13 @@ import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { z } from "zod";
 import { createActivityLog } from "@/lib/audit";
-import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import {
+  getResendFrom,
+  emailSubjectAccountApproved,
+  emailSubjectAccountRejected,
+  parseEmailLocale,
+} from "@/lib/email-config";
+import { buildAccountStatusEmailHtml } from "@/lib/email-bodies";
 import { Resend } from "resend";
 
 const updateSchema = z.object({
@@ -111,36 +117,23 @@ export async function PATCH(
       const resend = new Resend(process.env.RESEND_API_KEY);
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.visionlatam.com";
       const approved = status === "ACTIVE";
+      const mailLocale = parseEmailLocale(targetUser.emailLocale);
+      const recipientGreeting = targetUser.fullName ?? targetUser.email;
+      const supportEmail =
+        process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com";
 
       await resend.emails.send({
         from: getResendFrom(),
         to: targetUser.email,
-        subject: approved ? EMAIL_SUBJECTS.accountApproved : EMAIL_SUBJECTS.accountRejected,
-        html: approved
-          ? `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #1a3a5c; padding: 24px; border-radius: 8px 8px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 22px;">Vision Latam – VBT Cotizador</h1>
-              </div>
-              <div style="background-color: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px;">
-                <h2 style="color: #1a3a5c;">Account Approved!</h2>
-                <p>Hi ${(targetUser as { fullName?: string }).fullName ?? targetUser.email},</p>
-                <p>Your account has been approved. You can now sign in to the VBT Cotizador platform.</p>
-                <a href="${appUrl}/login" style="display: inline-block; background-color: #1a3a5c; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 16px;">Sign In</a>
-              </div>
-            </div>
-          `
-          : `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #1a3a5c; padding: 24px; border-radius: 8px 8px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 22px;">Vision Latam – VBT Cotizador</h1>
-              </div>
-              <div style="background-color: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px;">
-                <p>Hi ${(targetUser as { fullName?: string }).fullName ?? targetUser.email},</p>
-                <p>Unfortunately, your account request could not be approved at this time. Please contact <a href="mailto:${process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com"}">${process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com"}</a> for more information.</p>
-              </div>
-            </div>
-          `,
+        subject: approved
+          ? emailSubjectAccountApproved(mailLocale)
+          : emailSubjectAccountRejected(mailLocale),
+        html: buildAccountStatusEmailHtml(mailLocale, {
+          approved,
+          appUrl,
+          recipientGreeting,
+          supportEmail,
+        }),
       });
     } catch (emailErr) {
       console.warn("Failed to send user notification email:", emailErr);

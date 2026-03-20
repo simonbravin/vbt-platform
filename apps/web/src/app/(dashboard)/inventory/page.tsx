@@ -18,11 +18,7 @@ export default async function InventoryPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">{t("nav.inventory")}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {locale === "es"
-            ? "Gestiona las bodegas e inventario de tu organización."
-            : "Manage your organization's warehouses and inventory."}
-        </p>
+        <p className="mt-1 text-sm text-gray-500">{t("partner.inventory.pageSubtitle")}</p>
       </div>
       <InventoryClient />
     </div>

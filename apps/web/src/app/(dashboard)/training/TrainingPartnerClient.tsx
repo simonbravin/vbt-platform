@@ -70,10 +70,10 @@ export function TrainingPartnerClient() {
     <div className="space-y-8">
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">My enrollments</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.myEnrollments")}</h2>
         </div>
         {enrollments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">You are not enrolled in any program yet.</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("partner.training.notEnrolledYet")}</div>
         ) : (
           <ul className="divide-y divide-gray-100">
             {enrollments.map((e) => (
@@ -81,7 +81,7 @@ export function TrainingPartnerClient() {
                 <div className="flex items-center gap-3">
                   <BookOpen className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="font-medium text-gray-900">{e.trainingProgram?.title ?? "Program"}</p>
+                    <p className="font-medium text-gray-900">{e.trainingProgram?.title ?? t("partner.training.programFallback")}</p>
                     <p className="text-sm text-gray-500">{e.status} · {e.progressPct}%</p>
                   </div>
                 </div>
@@ -94,10 +94,10 @@ export function TrainingPartnerClient() {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Available programs</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.availablePrograms")}</h2>
         </div>
         {programs.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">No programs available.</div>
+          <div className="p-8 text-center text-sm text-gray-500">{t("partner.training.noProgramsAvailable")}</div>
         ) : (
           <ul className="divide-y divide-gray-100">
             {programs.map((p) => {
@@ -107,7 +107,9 @@ export function TrainingPartnerClient() {
                   <div>
                     <p className="font-medium text-gray-900">{p.title}</p>
                     {p.description && <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>}
-                    {p.level && <p className="text-xs text-gray-400 mt-1">Level: {p.level}</p>}
+                    {p.level && (
+                      <p className="text-xs text-gray-400 mt-1">{t("partner.training.levelLabel", { level: p.level })}</p>
+                    )}
                   </div>
                   {!enrolled && (
                     <button
@@ -117,7 +119,7 @@ export function TrainingPartnerClient() {
                       className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-vbt-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
                     >
                       <UserPlus className="h-4 w-4" />
-                      {enrollingId === p.id ? "Enrolling..." : "Enroll"}
+                      {enrollingId === p.id ? t("partner.training.enrolling") : t("partner.training.enroll")}
                     </button>
                   )}
                 </li>

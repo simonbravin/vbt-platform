@@ -1,4 +1,4 @@
-# VBT Cost Calculator – Implementation Assumptions
+# VBT Platform – Implementation Assumptions
 
 ## Architecture
 

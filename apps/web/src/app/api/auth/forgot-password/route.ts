@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { Resend } from "resend";
-import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
-import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import { buildForgotPasswordEmailHtml } from "@/lib/email-bodies";
+import { getResendFrom, emailSubjectPasswordReset, parseEmailLocale, type EmailLocale } from "@/lib/email-config";
 import { z } from "zod";
 import crypto from "crypto";
 import { createPasswordResetToken } from "@/lib/password-reset-token";
@@ -10,6 +10,7 @@ import { checkRateLimit, getRateLimitIdentifier, RateLimitExceededError } from "
 
 const bodySchema = z.object({
   email: z.string().email("Invalid email address"),
+  locale: z.enum(["en", "es"]).optional(),
 });
 
 const TOKEN_EXPIRY_HOURS = 1;
@@ -32,17 +33,32 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const { email } = parsed.data;
+    const { email, locale: requestedLocale } = parsed.data;
 
-    // Select only id and email so we don't require columns that may not exist in all DBs (e.g. full_name vs name)
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
-      select: { id: true, email: true },
+      select: { id: true, email: true, emailLocale: true },
     });
     // Always return success to avoid email enumeration
     if (!user) {
       return NextResponse.json({ ok: true, message: "If that email exists, we sent a reset link." });
     }
+
+    if (requestedLocale === "es" || requestedLocale === "en") {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailLocale: requestedLocale },
+        });
+      } catch {
+        // ignore if column missing before migration
+      }
+    }
+
+    const mailLocale: EmailLocale =
+      requestedLocale === "es" || requestedLocale === "en"
+        ? requestedLocale
+        : parseEmailLocale(user.emailLocale);
 
     let token: string;
     let usedDbToken = false;
@@ -79,21 +95,14 @@ export async function POST(req: Request) {
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const html = buildVbtEmailHtml({
-          title: "Reset your password",
-          subtitle: "Vision Building Technologies",
-          bodyHtml: `
-            <p style="margin: 0 0 12px 0;">Hi,</p>
-            <p style="margin: 0 0 16px 0;">You requested a password reset. Click the link below to set a new password. This link expires in ${TOKEN_EXPIRY_HOURS} hour(s).</p>
-            <p style="margin: 0 0 16px 0;"><a href="${escapeHtml(resetUrl)}" style="color: ${VBT_EMAIL.accent}; font-weight: 600;">Reset password</a></p>
-            <p style="margin: 0; color: #666; font-size: 13px;">If you didn't request this, you can ignore this email.</p>
-          `.trim(),
-          footerText: "This notification was sent by the VBT Cotizador.",
+        const html = buildForgotPasswordEmailHtml(mailLocale, {
+          resetUrl,
+          hours: TOKEN_EXPIRY_HOURS,
         });
         await resend.emails.send({
           from: getResendFrom(),
           to: user.email,
-          subject: EMAIL_SUBJECTS.passwordReset,
+          subject: emailSubjectPasswordReset(mailLocale),
           html,
         });
       } catch (emailErr) {

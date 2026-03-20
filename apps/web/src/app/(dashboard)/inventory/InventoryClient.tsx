@@ -23,17 +23,25 @@ type TxRow = {
   catalogPiece: { canonicalName: string; systemCode: string };
 };
 
-const TX_TYPES: { value: string; label: string }[] = [
-  { value: "purchase_in", label: "Entrada (compra)" },
-  { value: "project_surplus", label: "Sobrante proyecto" },
-  { value: "adjustment_in", label: "Ajuste entrada" },
-  { value: "sale_out", label: "Salida (venta)" },
-  { value: "project_consumption", label: "Consumo proyecto" },
-  { value: "adjustment_out", label: "Ajuste salida" },
-];
+const TX_TYPE_VALUES = [
+  "purchase_in",
+  "project_surplus",
+  "adjustment_in",
+  "sale_out",
+  "project_consumption",
+  "adjustment_out",
+] as const;
 
 export function InventoryClient() {
   const t = useT();
+  const txTypes = useMemo(
+    () =>
+      TX_TYPE_VALUES.map((value) => ({
+        value,
+        label: t(`admin.inventory.txType.${value}`),
+      })),
+    [t]
+  );
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
   const [levels, setLevels] = useState<LevelRow[]>([]);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
@@ -118,7 +126,7 @@ export function InventoryClient() {
         loadLevels();
         loadTransactions();
       })
-      .catch((e) => setError(e.message ?? "Error al crear transacción"))
+      .catch((e) => setError(e.message ?? t("admin.inventory.errorCreateTransaction")))
       .finally(() => setTxSaving(false));
   };
 
@@ -150,13 +158,13 @@ export function InventoryClient() {
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {t("partner.settings.warehouses")} — {t("common.readOnly") ?? "Solo lectura"}
+          {t("partner.settings.warehouses")} — {t("common.readOnly")}
         </p>
         <Link
           href="/settings/warehouses"
           className="inline-flex items-center gap-2 px-4 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-muted"
         >
-          <Settings className="w-4 h-4" /> {t("partner.settings.configureWarehouses") ?? "Configurar bodegas"}
+          <Settings className="w-4 h-4" /> {t("partner.settings.configureWarehouses")}
         </Link>
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -168,7 +176,7 @@ export function InventoryClient() {
             </p>
             <p className="text-sm mt-1">
               <Link href="/settings/warehouses" className="text-primary hover:underline">
-                {t("partner.settings.configureWarehouses") ?? "Configurar bodegas en Ajustes"}
+                {t("partner.settings.configureWarehouses")}
               </Link>
             </p>
           </div>
@@ -189,7 +197,7 @@ export function InventoryClient() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Package className="h-4 w-4" /> Stock por bodega
+            <Package className="h-4 w-4" /> {t("admin.inventory.stockByWarehouse")}
           </h3>
           <div className="relative flex-1 min-w-[180px] max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -216,10 +224,18 @@ export function InventoryClient() {
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Bodega</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Pieza</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Sistema</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Cantidad</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.warehouse")}
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.piece")}
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.system")}
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.quantityColumn")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
@@ -228,7 +244,7 @@ export function InventoryClient() {
                     <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       {levels.length === 0
                         ? t("admin.inventory.noItemsAddOne")
-                        : "Ningún resultado con el filtro."}
+                        : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
@@ -251,7 +267,7 @@ export function InventoryClient() {
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" /> {t("admin.inventory.addItem")} — solo piezas del catálogo
+              <ArrowRightLeft className="h-4 w-4" /> {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
             </h3>
             <button
               type="button"
@@ -261,12 +277,10 @@ export function InventoryClient() {
               {t("admin.inventory.close")}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mb-3">
-            Elegí bodega y pieza del catálogo; tipo y cantidad definen entrada o salida.
-          </p>
+          <p className="text-xs text-muted-foreground mb-3">{t("admin.inventory.txFormHelpPartner")}</p>
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Bodega</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
             <select
               value={txForm.warehouseId}
               onChange={(e) => setTxForm((f) => ({ ...f, warehouseId: e.target.value }))}
@@ -279,7 +293,7 @@ export function InventoryClient() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Pieza</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
             <select
               value={txForm.catalogPieceId}
               onChange={(e) => setTxForm((f) => ({ ...f, catalogPieceId: e.target.value }))}
@@ -292,19 +306,19 @@ export function InventoryClient() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Tipo</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
             <select
               value={txForm.type}
               onChange={(e) => setTxForm((f) => ({ ...f, type: e.target.value }))}
               className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[140px]"
             >
-              {TX_TYPES.map((opt) => (
+              {txTypes.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Cantidad</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
             <input
               type="number"
               min={0}
@@ -315,22 +329,22 @@ export function InventoryClient() {
             />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">ID Proyecto (opc.)</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.referenceProjectId")}</label>
             <input
               type="text"
               value={txForm.referenceProjectId}
               onChange={(e) => setTxForm((f) => ({ ...f, referenceProjectId: e.target.value }))}
-              placeholder="Opcional"
+              placeholder={t("admin.inventory.optional")}
               className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-36"
             />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Notas</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
             <input
               type="text"
               value={txForm.notes}
               onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
-              placeholder="Opcional"
+              placeholder={t("admin.inventory.optional")}
               className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
             />
           </div>
@@ -340,12 +354,12 @@ export function InventoryClient() {
             disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
             className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {txSaving ? t("common.saving") : "Aplicar"}
+            {txSaving ? t("common.saving") : t("admin.inventory.apply")}
           </button>
         </div>
         {transactions.length > 0 && (
           <div className="mt-4 pt-4 border-t border-border">
-            <h4 className="text-xs font-medium text-muted-foreground mb-2">Últimos movimientos</h4>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">{t("admin.inventory.recentMovements")}</h4>
             <ul className="space-y-1 text-sm">
               {transactions.slice(0, 10).map((tx) => (
                 <li key={tx.id} className="flex flex-wrap gap-2 text-foreground">

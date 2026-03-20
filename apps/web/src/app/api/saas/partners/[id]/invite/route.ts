@@ -3,8 +3,13 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, requirePlatformSuperadmin, TenantError, tenantErrorStatus } from "@/lib/tenant";
 import { inviteOrgMember, ORG_ROLE_TO_API } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
-import { buildPartnerInviteEmailHtml, buildPartnerInviteNewUserEmailHtml } from "@/lib/email-templates";
-import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import { buildPartnerInviteEmailHtml, buildPartnerInviteNewUserEmailHtml } from "@/lib/email-bodies";
+import {
+  getResendFrom,
+  emailSubjectPartnerInviteExisting,
+  emailSubjectPartnerInviteNewUser,
+  parseEmailLocale,
+} from "@/lib/email-config";
 import { Resend } from "resend";
 import { z } from "zod";
 import { randomBytes } from "crypto";
@@ -22,9 +27,15 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getTenantContext();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const tenantCtx = await getTenantContext();
+    if (!tenantCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     await requirePlatformSuperadmin();
+
+    const inviter = await prisma.user.findUnique({
+      where: { id: tenantCtx.userId },
+      select: { emailLocale: true },
+    });
+    const inviterLocale = parseEmailLocale(inviter?.emailLocale);
 
     const partner = await prisma.organization.findFirst({
       where: {
@@ -49,19 +60,19 @@ export async function POST(
     const emailNorm = parsed.data.email.trim().toLowerCase();
     const existingUser = await prisma.user.findFirst({
       where: { email: { equals: emailNorm, mode: "insensitive" } },
-      select: { id: true },
+      select: { id: true, emailLocale: true },
     });
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
     const roleLabel = parsed.data.role.charAt(0).toUpperCase() + parsed.data.role.slice(1);
 
     if (existingUser) {
-      const tenantCtx = {
-        userId: user.userId,
+      const inviteCtx = {
+        userId: tenantCtx.userId,
         organizationId: null,
         isPlatformSuperadmin: true,
       };
-      const member = await inviteOrgMember(prisma, tenantCtx, {
+      const member = await inviteOrgMember(prisma, inviteCtx, {
         userId: existingUser.id,
         role: parsed.data.role,
         organizationId: partner.id,
@@ -69,7 +80,7 @@ export async function POST(
 
       await createActivityLog({
         organizationId: partner.id,
-        userId: user.userId,
+        userId: tenantCtx.userId,
         action: "member_invited",
         entityType: "org_member",
         entityId: member.id,
@@ -79,7 +90,7 @@ export async function POST(
       if (process.env.RESEND_API_KEY) {
         try {
           const resend = new Resend(process.env.RESEND_API_KEY);
-          const html = buildPartnerInviteEmailHtml({
+          const html = buildPartnerInviteEmailHtml(parseEmailLocale(existingUser.emailLocale), {
             partnerName: partner.name,
             inviteeEmail: parsed.data.email,
             role: roleLabel,
@@ -88,7 +99,10 @@ export async function POST(
           await resend.emails.send({
             from: getResendFrom(),
             to: parsed.data.email,
-            subject: EMAIL_SUBJECTS.partnerInviteExisting(partner.name),
+            subject: emailSubjectPartnerInviteExisting(
+              parseEmailLocale(existingUser.emailLocale),
+              partner.name
+            ),
             html,
           });
         } catch (emailErr) {
@@ -119,7 +133,7 @@ export async function POST(
 
     await createActivityLog({
       organizationId: partner.id,
-      userId: user.userId,
+      userId: tenantCtx.userId,
       action: "partner_invite_sent",
       entityType: "partner_invite",
       entityId: partner.id,
@@ -130,7 +144,7 @@ export async function POST(
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const acceptUrl = `${appUrl}/invite/accept?token=${encodeURIComponent(token)}`;
-        const html = buildPartnerInviteNewUserEmailHtml({
+        const html = buildPartnerInviteNewUserEmailHtml(inviterLocale, {
           partnerName: partner.name,
           inviteeEmail: parsed.data.email,
           role: roleLabel,
@@ -139,7 +153,7 @@ export async function POST(
         await resend.emails.send({
           from: getResendFrom(),
           to: parsed.data.email,
-          subject: EMAIL_SUBJECTS.partnerInviteNewUser(partner.name),
+          subject: emailSubjectPartnerInviteNewUser(inviterLocale, partner.name),
           html,
         });
       } catch (emailErr) {

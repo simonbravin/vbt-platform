@@ -64,7 +64,10 @@ export default async function DashboardLayout({
 
     return (
       <div className="flex h-screen bg-muted overflow-hidden">
-        <Sidebar role={safeUser.role} />
+        <Sidebar
+          role={safeUser.role}
+          userDisplayName={safeUser.name?.trim() || safeUser.email?.trim() || null}
+        />
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopBar user={safeUser} activeOrgName={safeUser.activeOrgName} />
           <main className="flex-1 overflow-y-auto p-6">{children}</main>

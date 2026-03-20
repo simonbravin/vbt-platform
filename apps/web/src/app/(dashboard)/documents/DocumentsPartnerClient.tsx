@@ -67,7 +67,11 @@ export function DocumentsPartnerClient() {
           ))}
         </ul>
       )}
-      {documents.length > 0 && <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">{total} document(s)</p>}
+      {documents.length > 0 && (
+        <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+          {t("partner.documents.totalCount", { count: total })}
+        </p>
+      )}
     </div>
   );
 }

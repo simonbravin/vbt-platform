@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PartnerDetailClient } from "./PartnerDetailClient";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,8 @@ export default async function PartnerDetailPage({ params, searchParams }: PagePr
 
   if (!partner) notFound();
 
+  const { t } = await getServerT();
+
   return (
     <div className="space-y-6">
       <div>
@@ -35,11 +38,11 @@ export default async function PartnerDetailPage({ params, searchParams }: PagePr
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to partners
+          {t("superadmin.page.backToPartners")}
         </Link>
         <h1 className="text-2xl font-semibold text-gray-900">{partner.name}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Manage territories, onboarding, and partner-specific parameters
+          {t("superadmin.page.partnerDetailSubtitle")}
         </p>
       </div>
       <PartnerDetailClient

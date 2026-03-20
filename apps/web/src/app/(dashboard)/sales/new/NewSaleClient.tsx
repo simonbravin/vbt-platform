@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
+import { useT } from "@/lib/i18n/context";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 type Client = { id: string; name: string };
@@ -15,6 +16,7 @@ type Entity = { id: string; name: string; slug: string };
 type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; referenceNumber: string; notes: string };
 
 export function NewSaleClient() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
@@ -94,10 +96,10 @@ export function NewSaleClient() {
   }, [quoteId, quantity, quotes]);
 
   const validateFinancials = () => {
-    if (exwUsd < 0 || fobUsd < 0 || cifUsd < 0 || landedDdpUsd < 0) return "Amounts cannot be negative.";
-    if (landedDdpUsd < cifUsd) return "Landed DDP must be ≥ CIF.";
-    if (cifUsd < fobUsd) return "CIF must be ≥ FOB.";
-    if (fobUsd < exwUsd) return "FOB must be ≥ EXW.";
+    if (exwUsd < 0 || fobUsd < 0 || cifUsd < 0 || landedDdpUsd < 0) return t("partner.sales.new.validation.nonNegative");
+    if (landedDdpUsd < cifUsd) return t("partner.sales.new.validation.ddpGteCif");
+    if (cifUsd < fobUsd) return t("partner.sales.new.validation.cifGteFob");
+    if (fobUsd < exwUsd) return t("partner.sales.new.validation.fobGteExw");
     return null;
   };
 
@@ -113,7 +115,7 @@ export function NewSaleClient() {
     e.preventDefault();
     setError(null);
     if (!clientId || !projectId) {
-      setError("Client and Project are required");
+      setError(t("partner.sales.new.errorClientProjectRequired"));
       return;
     }
     const validationErr = validateFinancials();
@@ -125,7 +127,12 @@ export function NewSaleClient() {
     const invoicesSum = validInvoices.reduce((a, inv) => a + Number(inv.amountUsd), 0);
     const maxInvoiced = getMaxInvoiced();
     if (validInvoices.length > 0 && invoicesSum > maxInvoiced) {
-      setError(`Sum of invoice amounts (${invoicesSum.toFixed(2)}) cannot exceed invoiced amount for selected basis (${maxInvoiced.toFixed(2)}).`);
+      setError(
+        t("partner.sales.new.errorInvoiceCap", {
+          sum: invoicesSum.toFixed(2),
+          max: maxInvoiced.toFixed(2),
+        })
+      );
       return;
     }
     setSaving(true);
@@ -163,10 +170,10 @@ export function NewSaleClient() {
       });
       const text = await res.text();
       const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
-      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error al crear la venta");
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? t("partner.sales.new.failedToCreate"));
       router.push(`/sales/${(data as { id: string }).id}`);
     } catch (err: any) {
-      setError(err.message ?? "Failed to save");
+      setError(err.message ?? t("partner.sales.new.failedToSave"));
     } finally {
       setSaving(false);
     }
@@ -176,7 +183,7 @@ export function NewSaleClient() {
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <div className="flex gap-4">
         <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Back to Sales
+          <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
         </Link>
       </div>
 
@@ -187,51 +194,51 @@ export function NewSaleClient() {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">Sale details</h2>
+        <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionDetails")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.clientLabel")}</label>
             <select
               value={clientId}
               onChange={(e) => { setClientId(e.target.value); setProjectId(""); }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               required
             >
-              <option value="">Select client</option>
+              <option value="">{t("partner.sales.new.selectClient")}</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Project *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.projectLabel")}</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               required
             >
-              <option value="">Select project</option>
+              <option value="">{t("partner.sales.new.selectProject")}</option>
               {projectsForClient.map((p) => (
                 <option key={p.id} value={p.id}>{(p as any).name ?? p.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quote (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.quoteOptional")}</label>
             <select
               value={quoteId}
               onChange={(e) => setQuoteId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="">None – enter values manually</option>
+              <option value="">{t("partner.sales.new.quoteNoneManual")}</option>
               {quotes.map((q) => (
                 <option key={q.id} value={q.id}>{q.quoteNumber ?? q.id.slice(0, 8)} – {formatCurrency(q.landedDdpUsd)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.quantity")}</label>
             <input
               type="number"
               min={1}
@@ -241,18 +248,18 @@ export function NewSaleClient() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.colStatus")}</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as "DRAFT" | "CONFIRMED")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="DRAFT">Draft</option>
-              <option value="CONFIRMED">Confirmed</option>
+              <option value="DRAFT">{t("partner.sales.status.DRAFT")}</option>
+              <option value="CONFIRMED">{t("partner.sales.status.CONFIRMED")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sales condition (Incoterm for invoiced amount)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.salesConditionLabel")}</label>
             <select
               value={invoicedBasis}
               onChange={(e) => setInvoicedBasis(e.target.value as "EXW" | "FOB" | "CIF" | "DDP")}
@@ -262,28 +269,28 @@ export function NewSaleClient() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-0.5">Determines which amount is used as &quot;Invoiced&quot; and for Fully paid / Partially paid status.</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("partner.sales.new.salesConditionHelp")}</p>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">Financials (USD)</h2>
+        <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionFinancials")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
             [
-              ["EXW", exwUsd, setExwUsd, true],
-              ["Commission %", commissionPct, setCommissionPct, false],
-              ["Commission amount", commissionAmountUsd, setCommissionAmountUsd, true],
-              ["FOB", fobUsd, setFobUsd, true],
-              ["Freight", freightUsd, setFreightUsd, true],
-              ["CIF", cifUsd, setCifUsd, true],
-              ["Taxes & fees", taxesFeesUsd, setTaxesFeesUsd, true],
-              ["Landed DDP", landedDdpUsd, setLandedDdpUsd, true],
+              ["partner.sales.new.fin.exw", exwUsd, setExwUsd, true],
+              ["partner.sales.new.fin.commissionPct", commissionPct, setCommissionPct, false],
+              ["partner.sales.new.fin.commissionAmount", commissionAmountUsd, setCommissionAmountUsd, true],
+              ["partner.sales.new.fin.fob", fobUsd, setFobUsd, true],
+              ["partner.sales.new.fin.freight", freightUsd, setFreightUsd, true],
+              ["partner.sales.new.fin.cif", cifUsd, setCifUsd, true],
+              ["partner.sales.new.fin.taxesFees", taxesFeesUsd, setTaxesFeesUsd, true],
+              ["partner.sales.new.fin.landedDdp", landedDdpUsd, setLandedDdpUsd, true],
             ] as [string, number, (n: number) => void, boolean][]
-          ).map(([label, val, setter, isCurrency]) => (
-            <div key={label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+          ).map(([labelKey, val, setter, isCurrency]) => (
+            <div key={labelKey}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t(labelKey)}</label>
               {isCurrency ? (
                 <div className="relative rounded-lg border border-gray-300">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">$</span>
@@ -310,7 +317,7 @@ export function NewSaleClient() {
           ))}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -322,42 +329,50 @@ export function NewSaleClient() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Invoices / due dates</h2>
+          <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
           <button
             type="button"
             onClick={() => setInvoices((prev) => [...prev, { entityId: "", amountUsd: 0, dueDate: "", sequence: prev.length + 1, referenceNumber: "", notes: "" }])}
             className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium text-vbt-blue hover:bg-blue-50 rounded-lg"
           >
-            <Plus className="w-4 h-4" /> Add line
+            <Plus className="w-4 h-4" /> {t("partner.sales.new.addLine")}
           </button>
         </div>
-        <p className="text-xs text-gray-500">Optional. Sum of amounts cannot exceed the invoiced amount for the selected sales condition.</p>
+        <p className="text-xs text-gray-500">{t("partner.sales.new.invoicesHint")}</p>
         {invoices.filter((i) => i.entityId).length > 0 && (() => {
           const sum = invoices.filter((i) => i.entityId).reduce((a, i) => a + Number(i.amountUsd), 0);
           const max = getMaxInvoiced();
-          return sum > max ? <p className="text-sm text-amber-600">Sum (${sum.toFixed(2)}) exceeds max for {invoicedBasis} (${max.toFixed(2)}). Reduce amounts or change sales condition.</p> : null;
+          return sum > max ? (
+            <p className="text-sm text-amber-600">
+              {t("partner.sales.new.invoiceSumExceeds", {
+                sum: sum.toFixed(2),
+                basis: invoicedBasis,
+                max: max.toFixed(2),
+              })}
+            </p>
+          ) : null;
         })()}
         {invoices.length === 0 ? (
-          <p className="text-sm text-gray-500">No invoice lines. Click &quot;Add line&quot; to define due dates by entity.</p>
+          <p className="text-sm text-gray-500">{t("partner.sales.new.noInvoiceLines")}</p>
         ) : (
           <ul className="space-y-3">
             {invoices.map((inv, idx) => (
               <li key={idx} className="flex flex-wrap items-end gap-2 p-3 bg-gray-50 rounded-lg">
                 <div className="min-w-[140px] flex-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Entity</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.entity")}</label>
                   <select
                     value={inv.entityId}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, entityId: e.target.value } : p)))}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
                   >
-                    <option value="">Select entity</option>
+                    <option value="">{t("partner.sales.new.selectEntity")}</option>
                     {entities.map((e) => (
                       <option key={e.id} value={e.id}>{e.name}</option>
                     ))}
                   </select>
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Amount $</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.amountUsd")}</label>
                   <input
                     type="number"
                     min={0}
@@ -368,7 +383,7 @@ export function NewSaleClient() {
                   />
                 </div>
                 <div className="w-36">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Due date</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.dueDate")}</label>
                   <input
                     type="date"
                     value={inv.dueDate}
@@ -377,7 +392,7 @@ export function NewSaleClient() {
                   />
                 </div>
                 <div className="w-16">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Seq</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.seq")}</label>
                   <input
                     type="number"
                     min={1}
@@ -387,30 +402,30 @@ export function NewSaleClient() {
                   />
                 </div>
                 <div className="min-w-[120px] flex-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Ref. number</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.refNumber")}</label>
                   <input
                     type="text"
                     value={inv.referenceNumber}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, referenceNumber: e.target.value } : p)))}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                    placeholder="External invoice #"
+                    placeholder={t("partner.sales.new.externalInvoicePlaceholder")}
                   />
                 </div>
                 <div className="flex-1 min-w-[100px]">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">Notes</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("common.notes")}</label>
                   <input
                     type="text"
                     value={inv.notes}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, notes: e.target.value } : p)))}
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                    placeholder="Optional"
+                    placeholder={t("partner.sales.new.lineNotesPlaceholder")}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => setInvoices((prev) => prev.filter((_, i) => i !== idx))}
                   className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                  title="Remove line"
+                  title={t("partner.sales.new.removeLineTitle")}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -426,10 +441,10 @@ export function NewSaleClient() {
           disabled={saving}
           className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Create sale"}
+          {saving ? t("common.saving") : t("partner.sales.new.createSale")}
         </button>
         <Link href="/sales" className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-          Cancel
+          {t("common.cancel")}
         </Link>
       </div>
     </form>

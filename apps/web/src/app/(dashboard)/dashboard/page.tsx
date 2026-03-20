@@ -79,7 +79,7 @@ export default async function DashboardPage(props: PageProps) {
     <div className="space-y-6">
       {accessDeniedSuperadmin && (
         <div className="bg-destructive/15 border border-destructive/30 text-destructive rounded-xl px-4 py-3 text-sm">
-          No tenés acceso al portal de administración. Estás en tu panel de partner.
+          {t("dashboard.accessDeniedSuperadmin")}
         </div>
       )}
       {dataLoadError && (projectCount > 0 || quoteCount > 0) && (

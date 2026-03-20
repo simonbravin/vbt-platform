@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { EditPartnerForm } from "./EditPartnerForm";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export default async function EditPartnerPage({ params }: PageProps) {
 
   if (!partner) notFound();
 
+  const { t } = await getServerT();
+
   return (
     <div className="space-y-6">
       <div>
@@ -33,9 +36,9 @@ export default async function EditPartnerPage({ params }: PageProps) {
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to partner
+          {t("superadmin.page.backToPartner")}
         </Link>
-        <h1 className="text-2xl font-semibold text-gray-900">Edit partner</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{t("superadmin.page.editPartnerTitle")}</h1>
         <p className="mt-1 text-sm text-gray-500">{partner.name}</p>
       </div>
       <EditPartnerForm

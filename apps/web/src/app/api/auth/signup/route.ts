@@ -3,8 +3,8 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Resend } from "resend";
-import { buildVbtEmailHtml, escapeHtml, VBT_EMAIL } from "@/lib/email-templates";
-import { getResendFrom, EMAIL_SUBJECTS } from "@/lib/email-config";
+import { buildSignupRequestAdminEmailHtml } from "@/lib/email-bodies";
+import { getResendFrom, emailSubjectSignupRequest, parseEmailLocale } from "@/lib/email-config";
 import { checkRateLimit, getRateLimitIdentifier, RateLimitExceededError } from "@/lib/rate-limit";
 
 const signupSchema = z.object({
@@ -15,6 +15,8 @@ const signupSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Must contain uppercase letter")
     .regex(/[0-9]/, "Must contain a number"),
+  /** UI locale — stored as preferred language for future emails */
+  locale: z.enum(["en", "es"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, locale: signupLocale } = parsed.data;
 
     // Check for existing user
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
         email,
         passwordHash,
         isActive: false, // pending approval
+        emailLocale: parseEmailLocale(signupLocale),
       },
     });
 
@@ -81,20 +84,22 @@ export async function POST(req: Request) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-        const html = buildVbtEmailHtml({
-          title: "New account request",
-          subtitle: "Vision Building Technologies",
-          bodyHtml: `
-            <p style="margin: 0 0 12px 0;"><strong>Name:</strong> ${escapeHtml(name)}</p>
-            <p style="margin: 0 0 16px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
-            <p style="margin: 0;"><a href="${escapeHtml(`${appUrl}/superadmin/admin/users`)}" style="color: ${VBT_EMAIL.accent}; font-weight: 600;">Review in Admin Panel</a></p>
-          `.trim(),
-          footerText: "This notification was sent by the VBT Cotizador signup flow.",
+        const adminUsersUrl = `${appUrl.replace(/\/$/, "")}/superadmin/admin/users`;
+        const superadminEmail = process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com";
+        const superadminUser = await prisma.user.findFirst({
+          where: { email: { equals: superadminEmail, mode: "insensitive" } },
+          select: { emailLocale: true },
+        });
+        const adminLocale = parseEmailLocale(superadminUser?.emailLocale);
+        const html = buildSignupRequestAdminEmailHtml(adminLocale, {
+          applicantName: name,
+          applicantEmail: email,
+          adminUsersUrl,
         });
         await resend.emails.send({
           from: getResendFrom(),
-          to: process.env.SUPERADMIN_EMAIL ?? "admin@visionbuildingtechs.com",
-          subject: EMAIL_SUBJECTS.signupRequest,
+          to: superadminEmail,
+          subject: emailSubjectSignupRequest(adminLocale),
           html,
         });
       } catch (emailErr) {

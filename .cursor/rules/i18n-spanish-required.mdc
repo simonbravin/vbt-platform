@@ -1,0 +1,46 @@
+---
+description: Regla de idiomas - toda la plataforma debe soportar español e inglés
+globs: 
+  - "**/*.tsx"
+  - "**/*.ts"
+  - "**/translations.ts"
+---
+
+# i18n: siempre traducción al español
+
+## Definición de hecho (mismo PR)
+
+- Toda clave nueva debe existir en el bloque **`en`** y en el bloque **`es`** de `translations.ts` en el **mismo cambio** (paridad obligatoria).
+- Antes de cerrar la tarea, ejecutar desde la raíz del monorepo: `pnpm --filter web i18n:check` (falla si falta o sobra una clave en cualquier idioma o hay duplicados dentro de un locale).
+- No asumir “solo inglés”: placeholders, `aria-label`, `title`, mensajes de error mostrados al usuario y textos de ayuda van siempre por `t()` / `getServerT().t` con claves en ambos idiomas.
+
+## Regla obligatoria
+
+**Para cualquier cambio que agregue o modifique texto visible al usuario:**
+
+1. **No hardcodear** cadenas en inglés (o español) en JSX/TS. Usar el sistema de claves i18n.
+2. **Añadir la clave en los dos idiomas** en `apps/web/src/lib/i18n/translations.ts`:
+   - En el bloque `en`: clave con valor en **inglés**.
+   - En el bloque `es`: misma clave con valor en **español**.
+3. En componentes **client**: usar `useT()` de `@/lib/i18n/context` y `t("namespace.key")` (opcional segundo argumento para `{{variables}}`).
+4. En **Server Components** de App Router: usar `getServerT()` de `@/lib/i18n/server` y luego `t("namespace.key")` (lee la cookie `NEXT_LOCALE` y delega en `getT`). No duplicar lógica de cookie salvo que haya un motivo documentado.
+
+## Dónde están las traducciones
+
+- Archivo: `apps/web/src/lib/i18n/translations.ts`
+- Namespaces usados: `common.*`, `auth.*`, `nav.*`, `topbar.*`, `dashboard.*`, `projects.*`, `clients.*`, `quotes.*`, `wizard.*`, `admin.*`, `superadmin.*`, `notifications.*`, etc.
+
+## Ejemplo
+
+Al añadir un nuevo botón "Save changes":
+
+1. En `translations.ts` (bloque `en`): `"common.saveChanges": "Save changes"`
+2. En `translations.ts` (bloque `es`): `"common.saveChanges": "Guardar cambios"`
+3. En el componente: `t("common.saveChanges")`
+
+Nunca dejar solo la versión en inglés; **siempre** incluir la versión en español para mantener la plataforma bilingüe.
+
+## Verificación automática
+
+- Comando: `pnpm --filter web i18n:check`
+- Implementación: `apps/web/scripts/check-i18n-keys.mjs` sobre `apps/web/src/lib/i18n/translations.ts`.

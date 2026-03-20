@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getInvoicedAmount } from "@/lib/sales";
@@ -30,17 +30,18 @@ type Sale = {
   _count: { invoices: number; payments: number };
 };
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "Draft",
-  CONFIRMED: "Confirmed",
-  PARTIALLY_PAID: "Partial",
-  PAID: "Paid",
-  DUE: "Due",
-  CANCELLED: "Cancelled",
-};
+const SALE_STATUSES = ["DRAFT", "CONFIRMED", "PARTIALLY_PAID", "PAID", "DUE", "CANCELLED"] as const;
 
 export function SalesClient() {
   const t = useT();
+  const statusOptions = useMemo(
+    () =>
+      SALE_STATUSES.map((v) => ({
+        value: v,
+        label: t(`partner.sales.status.${v}`),
+      })),
+    [t]
+  );
   const [sales, setSales] = useState<Sale[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -133,13 +134,13 @@ export function SalesClient() {
             href="/sales/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
           >
-            <Plus className="w-4 h-4" /> New sale
+            <Plus className="w-4 h-4" /> {t("partner.sales.newSaleButton")}
           </Link>
           <Link
             href="/sales/statements"
             className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
           >
-            Statements
+            {t("partner.sales.statementsLink")}
           </Link>
           <a
             href={`/api/sales/export?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(status && { status }), ...(clientId && { clientId }), ...(projectId && { projectId }) }).toString()}`}
@@ -147,14 +148,14 @@ export function SalesClient() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" /> {t("partner.sales.exportCsv")}
           </a>
           {dueCount > 0 && (
             <Link
               href="/sales/statements"
               className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium"
             >
-              <Bell className="w-4 h-4" /> {dueCount} payment(s) due
+              <Bell className="w-4 h-4" /> {t("partner.sales.paymentsDue", { count: dueCount })}
             </Link>
           )}
         </div>
@@ -163,7 +164,7 @@ export function SalesClient() {
       <div className="flex flex-wrap gap-2 items-center">
         <input
           type="text"
-          placeholder="Search by sale #, client, project..."
+          placeholder={t("partner.sales.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="px-3 py-1.5 border border-border rounded-lg text-sm w-56"
@@ -173,8 +174,8 @@ export function SalesClient() {
           onChange={(e) => setStatus(e.target.value)}
           className="px-3 py-1.5 border border-border rounded-lg text-sm"
         >
-          <option value="">All statuses</option>
-          {Object.entries(statusLabel).map(([v, l]) => (
+          <option value="">{t("partner.sales.allStatuses")}</option>
+          {statusOptions.map(({ value: v, label: l }) => (
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
@@ -183,7 +184,7 @@ export function SalesClient() {
           onChange={(e) => setClientId(e.target.value)}
           className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
         >
-          <option value="">All clients</option>
+          <option value="">{t("partner.sales.allClients")}</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -193,13 +194,13 @@ export function SalesClient() {
           onChange={(e) => setProjectId(e.target.value)}
           className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
         >
-          <option value="">All projects</option>
+          <option value="">{t("partner.sales.allProjects")}</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{(p as any).name}</option>
           ))}
         </select>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="From" />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="To" />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" aria-label={t("partner.sales.dateFrom")} title={t("partner.sales.dateFrom")} />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" aria-label={t("partner.sales.dateTo")} title={t("partner.sales.dateTo")} />
       </div>
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-x-auto">
@@ -208,23 +209,23 @@ export function SalesClient() {
         ) : sales.length === 0 ? (
           <div className="p-12 text-center">
             <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No sales found</p>
+            <p className="text-muted-foreground">{t("partner.sales.noSalesFound")}</p>
             <Link href="/sales/new" className="text-vbt-orange text-sm hover:underline mt-2 block">
-              Create your first sale →
+              {t("partner.sales.createFirstSale")}
             </Link>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/80">
-                <th className="text-left px-4 py-2 font-medium text-foreground">Sale #</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">Client</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">Project</th>
-                <th className="text-center px-2 py-2 font-medium text-foreground">Qty</th>
-                <th className="text-right px-2 py-2 font-medium text-foreground">Price</th>
-                <th className="text-center px-2 py-2 font-medium text-foreground">Sales condition</th>
-                <th className="text-left px-2 py-2 font-medium text-foreground">Status</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">Actions</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colSaleNumber")}</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colClient")}</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colProject")}</th>
+                <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colQty")}</th>
+                <th className="text-right px-2 py-2 font-medium text-foreground">{t("partner.sales.colPrice")}</th>
+                <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colSalesCondition")}</th>
+                <th className="text-left px-2 py-2 font-medium text-foreground">{t("partner.sales.colStatus")}</th>
+                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -254,12 +255,14 @@ export function SalesClient() {
                         "bg-blue-100 text-blue-700"
                       }`}
                     >
-                      {statusLabel[s.status] ?? s.status}
+                      {SALE_STATUSES.includes(s.status as (typeof SALE_STATUSES)[number])
+                        ? t(`partner.sales.status.${s.status}`)
+                        : s.status}
                     </span>
                   </td>
                   <td className="px-4 py-2">
                     <Link href={`/sales/${s.id}`} className="text-primary hover:underline text-sm">
-                      View
+                      {t("partner.sales.view")}
                     </Link>
                   </td>
                 </tr>
@@ -277,10 +280,10 @@ export function SalesClient() {
             onClick={() => setPage((p) => p - 1)}
             className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
           >
-            Previous
+            {t("partner.sales.previous")}
           </button>
           <span className="py-1.5 text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(total / limit)}
+            {t("partner.sales.pageOf", { page, totalPages: Math.ceil(total / limit) || 1 })}
           </span>
           <button
             type="button"
@@ -288,7 +291,7 @@ export function SalesClient() {
             onClick={() => setPage((p) => p + 1)}
             className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
           >
-            Next
+            {t("partner.sales.next")}
           </button>
         </div>
       )}

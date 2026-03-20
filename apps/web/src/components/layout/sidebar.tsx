@@ -55,9 +55,11 @@ const navigation: NavItem[] = [
 
 interface SidebarProps {
   role: string;
+  /** Shown under the nav (name or email). */
+  userDisplayName?: string | null;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, userDisplayName }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>(["nav.settings"]);
@@ -158,11 +160,17 @@ export function Sidebar({ role }: SidebarProps) {
         })}
       </nav>
 
+      {userDisplayName?.trim() ? (
+        <div className="px-4 py-2.5 border-t border-header-foreground/10">
+          <p className="text-header-foreground/90 text-sm text-center font-medium truncate" title={userDisplayName.trim()}>
+            {userDisplayName.trim()}
+          </p>
+        </div>
+      ) : null}
+
       {/* Footer */}
       <div className="px-4 py-3 border-t border-header-foreground/10">
-        <p className="text-header-foreground/30 text-xs text-center">
-          VBT Cost Calculator v1.0
-        </p>
+        <p className="text-header-foreground/30 text-xs text-center">{t("sidebar.footerVersion")}</p>
       </div>
     </div>
   );

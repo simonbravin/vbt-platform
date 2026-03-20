@@ -118,7 +118,11 @@ export function StatementsClient() {
         data = {};
       }
       if (res.ok && data.ok) {
-        setEmailResult({ type: "success", text: data.message ?? `Sent to ${emailTo}` });
+        const toAddr = emailTo.trim();
+        setEmailResult({
+          type: "success",
+          text: data.message ?? t("partner.sales.emailSentTo", { email: toAddr }),
+        });
         setEmailTo("");
         setEmailMessage("");
       } else {
@@ -134,18 +138,18 @@ export function StatementsClient() {
   return (
     <div className="space-y-4">
       <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Back to Sales
+        <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
       </Link>
 
       <div className="flex flex-wrap gap-2 items-center">
         <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[160px]">
-          <option value="">All clients</option>
+          <option value="">{t("partner.sales.allClients")}</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
         <select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[160px]">
-          <option value="">All entities</option>
+          <option value="">{t("partner.sales.allEntities")}</option>
           {data?.entities?.map((e) => (
             <option key={e.id} value={e.id}>{e.name}</option>
           ))}
@@ -153,39 +157,39 @@ export function StatementsClient() {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
         <button type="button" onClick={fetchData} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium">
-          Apply
+          {t("partner.sales.apply")}
         </button>
         <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
-          <Download className="w-4 h-4" /> Export CSV
+          <Download className="w-4 h-4" /> {t("partner.sales.exportCsv")}
         </button>
         <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
-          <FileText className="w-4 h-4" /> Export PDF
+          <FileText className="w-4 h-4" /> {t("partner.sales.exportPdf")}
         </button>
         <button type="button" onClick={() => { setEmailOpen(true); setEmailResult(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:opacity-90">
-          <Mail className="w-4 h-4" /> Send by email
+          <Mail className="w-4 h-4" /> {t("partner.sales.sendByEmail")}
         </button>
       </div>
 
       {emailOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => !emailSending && setEmailOpen(false)}>
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-900 mb-3">Send statements by email</h3>
-            <p className="text-sm text-gray-500 mb-3">Current filters (client, entity, date range) will be applied. The PDF will be attached.</p>
+            <h3 className="font-semibold text-gray-900 mb-3">{t("partner.sales.emailStatementsTitle")}</h3>
+            <p className="text-sm text-gray-500 mb-3">{t("partner.sales.emailStatementsHint")}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (email)</label>
-                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="client@company.com" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.emailToLabel")}</label>
+                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder={t("partner.sales.emailToPlaceholder")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
-                <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder="Add a short message..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.emailMessageLabel")}</label>
+                <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder={t("partner.sales.emailMessagePlaceholder")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
               </div>
               {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-green-600" : "text-red-600"}`}>{emailResult.text}</p>}
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
+              <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">{t("common.cancel")}</button>
               <button type="button" onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                {emailSending ? "Sending..." : "Send"}
+                {emailSending ? t("partner.sales.sending") : t("partner.sales.send")}
               </button>
             </div>
           </div>
@@ -205,22 +209,22 @@ export function StatementsClient() {
                 <div className="flex justify-between items-center mb-3">
                   <h2 className="font-semibold text-gray-900">{st.client.name}</h2>
                   <div className="text-sm">
-                    <span className="text-gray-500">Invoiced: </span>
+                    <span className="text-gray-500">{t("partner.sales.statementSummaryInvoiced")} </span>
                     <span className="font-medium">{formatCurrency(st.totalInvoiced)}</span>
-                    <span className="text-gray-500 ml-3">Paid: </span>
+                    <span className="text-gray-500 ml-3">{t("partner.sales.statementSummaryPaid")} </span>
                     <span className="font-medium">{formatCurrency(st.totalPaid)}</span>
-                    <span className="text-gray-500 ml-3">Balance: </span>
+                    <span className="text-gray-500 ml-3">{t("partner.sales.statementSummaryBalance")} </span>
                     <span className={`font-medium ${st.balance > 0 ? "text-amber-600" : "text-gray-900"}`}>{formatCurrency(st.balance)}</span>
                   </div>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-500 border-b">
-                      <th className="pb-2 pr-4">Sale #</th>
-                      <th className="pb-2 pr-4">Project</th>
-                      <th className="pb-2 pr-4 text-right">Invoiced</th>
-                      <th className="pb-2 pr-4 text-right">Paid</th>
-                      <th className="pb-2 text-right">Balance</th>
+                      <th className="pb-2 pr-4">{t("partner.sales.colSaleNumber")}</th>
+                      <th className="pb-2 pr-4">{t("partner.sales.colProject")}</th>
+                      <th className="pb-2 pr-4 text-right">{t("partner.sales.colLineInvoiced")}</th>
+                      <th className="pb-2 pr-4 text-right">{t("partner.sales.colLinePaid")}</th>
+                      <th className="pb-2 text-right">{t("partner.sales.colLineBalance")}</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -34,6 +34,14 @@ export function LanguageProvider({
     setLocaleState(next);
     if (typeof document !== "undefined") {
       document.cookie = `${LOCALE_COOKIE_NAME}=${next}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+      // Keep email subject language in sync for authenticated users.
+      fetch("/api/saas/user/email-locale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale: next }),
+      }).catch(() => {
+        // Ignore network/auth errors here; locale cookie already updated.
+      });
     }
   }, []);
 

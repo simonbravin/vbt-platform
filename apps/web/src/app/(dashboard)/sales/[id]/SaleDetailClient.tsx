@@ -51,15 +51,6 @@ type Sale = {
   invoiceStatusByEntity?: Record<string, { paid: number; invoiced: number; status: string }>;
 };
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "Draft",
-  CONFIRMED: "Confirmed",
-  PARTIALLY_PAID: "Partial",
-  PAID: "Paid",
-  DUE: "Due",
-  CANCELLED: "Cancelled",
-};
-
 export function SaleDetailClient({ saleId }: { saleId: string }) {
   const t = useT();
   const [sale, setSale] = useState<Sale | null>(null);
@@ -140,7 +131,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
     e.preventDefault();
     setPayError(null);
     if (!payEntityId || !payAmountUsd || parseFloat(payAmountUsd) <= 0) {
-      setPayError("Entity and amount (USD) are required");
+      setPayError(t("partner.sales.payment.entityAmountRequired"));
       return;
     }
     setSubmitting(true);
@@ -166,7 +157,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       setPayNotes("");
       refetchSale();
     } catch (err: any) {
-      setPayError(err.message ?? "Failed");
+      setPayError(err.message ?? t("partner.sales.errorGeneric"));
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +191,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
     setInvError(null);
     const amount = parseFloat(invAmountUsd);
     if (!invEntityId || isNaN(amount) || amount < 0) {
-      setInvError("Entity and amount (USD) are required");
+      setInvError(t("partner.sales.payment.entityAmountRequired"));
       return;
     }
     setInvSubmitting(true);
@@ -234,7 +225,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       setInvoiceModalMode(null);
       refetchSale();
     } catch (err: unknown) {
-      setInvError(err instanceof Error ? err.message : "Failed");
+      setInvError(err instanceof Error ? err.message : t("partner.sales.errorGeneric"));
     } finally {
       setInvSubmitting(false);
     }
@@ -312,11 +303,11 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back to Sales
+            <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
           </Link>
           {sale.status !== "CANCELLED" && sale.status !== "PAID" && (
             <Link href={`/sales/${saleId}/edit`} className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-              <Pencil className="w-4 h-4" /> Edit
+              <Pencil className="w-4 h-4" /> {t("common.edit")}
             </Link>
           )}
           <button
@@ -324,7 +315,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
             onClick={() => setDeleteSaleOpen(true)}
             className="inline-flex items-center gap-1 px-2 py-1 border border-red-200 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50"
           >
-            <Trash2 className="w-4 h-4" /> Delete sale
+            <Trash2 className="w-4 h-4" /> {t("partner.sales.deleteSale")}
           </button>
         </div>
         <span
@@ -335,36 +326,40 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
             sale.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
           }`}
         >
-          {statusLabel[sale.status] ?? sale.status}
+          {t(`partner.sales.status.${sale.status}`)}
         </span>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h1 className="text-xl font-bold text-gray-900">{sale.saleNumber ?? sale.id}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          Client: <Link href={`/clients/${sale.clientId}`} className="text-vbt-blue hover:underline">{sale.client.name}</Link>
+          {t("partner.sales.detail.client")}: <Link href={`/clients/${sale.clientId}`} className="text-vbt-blue hover:underline">{sale.client.name}</Link>
           {" · "}
-          Project: <Link href={`/projects/${sale.projectId}`} className="text-vbt-blue hover:underline">{sale.project.name}</Link>
+          {t("partner.sales.detail.project")}: <Link href={`/projects/${sale.projectId}`} className="text-vbt-blue hover:underline">{sale.project.name}</Link>
           {sale.quote && (
-            <> · Quote: <Link href={`/quotes/${sale.quote.id}`} className="text-vbt-blue hover:underline">{sale.quote.quoteNumber ?? sale.quote.id}</Link></>
+            <>
+              {" · "}
+              {t("partner.sales.detail.quote")}: <Link href={`/quotes/${sale.quote.id}`} className="text-vbt-blue hover:underline">{sale.quote.quoteNumber ?? sale.quote.id}</Link>
+            </>
           )}
-          {" · Qty: "}{sale.quantity}
+          {" · "}
+          {t("partner.sales.detail.qty")}: {sale.quantity}
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Financial summary</h2>
+          <h2 className="font-semibold text-gray-800 mb-4">{t("partner.sales.detail.financialSummary")}</h2>
           <div className="space-y-2 text-sm">
             {[
-              ["EXW", sale.exwUsd],
-              ["Commission %", `${sale.commissionPct}%`],
-              ["Commission amount", sale.commissionAmountUsd],
-              ["FOB", sale.fobUsd, true],
-              ["Freight", sale.freightUsd],
-              ["CIF", sale.cifUsd, true],
-              ["Taxes & fees", sale.taxesFeesUsd],
-              ["Landed DDP", sale.landedDdpUsd, true],
+              [t("partner.sales.new.fin.exw"), sale.exwUsd],
+              [t("partner.sales.new.fin.commissionPct"), `${sale.commissionPct}%`],
+              [t("partner.sales.new.fin.commissionAmount"), sale.commissionAmountUsd],
+              [t("partner.sales.new.fin.fob"), sale.fobUsd, true],
+              [t("partner.sales.new.fin.freight"), sale.freightUsd],
+              [t("partner.sales.new.fin.cif"), sale.cifUsd, true],
+              [t("partner.sales.new.fin.taxesFees"), sale.taxesFeesUsd],
+              [t("partner.sales.new.fin.landedDdp"), sale.landedDdpUsd, true],
             ].map(([label, val, bold]) => (
               <div key={String(label)} className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
                 <span className="text-gray-600">{label}</span>
@@ -378,19 +373,19 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-800">Invoices / due dates</h2>
+              <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
               {sale.status !== "CANCELLED" && (
                 <button
                   type="button"
                   onClick={openAddInvoice}
                   className="inline-flex items-center gap-1 px-2 py-1 bg-vbt-orange text-white rounded text-sm font-medium hover:bg-orange-600"
                 >
-                  <Plus className="w-4 h-4" /> Add line
+                  <Plus className="w-4 h-4" /> {t("partner.sales.new.addLine")}
                 </button>
               )}
             </div>
             {sale.invoices.length === 0 ? (
-              <p className="text-gray-500 text-sm">No invoices defined. Click &quot;Add line&quot; to add invoice lines and due dates.</p>
+              <p className="text-gray-500 text-sm">{t("partner.sales.detail.noInvoices")}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {[...sale.invoices].sort((a, b) => (a.sequence ?? 1) - (b.sequence ?? 1)).map((inv) => {
@@ -401,25 +396,32 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                         <span className="font-medium">{inv.entity?.name ?? "—"}</span>
                         {" – "}
                         {formatCurrency(inv.amountUsd)}
-                        {inv.dueDate && <span className="text-gray-500"> due {new Date(inv.dueDate).toLocaleDateString()}</span>}
-                        {inv.referenceNumber && <span className="text-gray-500 block text-xs">Ref: {inv.referenceNumber}</span>}
+                        {inv.dueDate && (
+                          <span className="text-gray-500">
+                            {" "}
+                            {t("partner.sales.detail.invoiceDue", { date: new Date(inv.dueDate).toLocaleDateString() })}
+                          </span>
+                        )}
+                        {inv.referenceNumber && (
+                          <span className="text-gray-500 block text-xs">{t("partner.sales.detail.refShort", { ref: inv.referenceNumber })}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {dueStatus === "overdue" && (
-                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Overdue</span>
+                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">{t("partner.sales.detail.invoiceOverdue")}</span>
                         )}
                         {dueStatus === "due_soon" && (
-                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Due soon</span>
+                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">{t("partner.sales.detail.invoiceDueSoon")}</span>
                         )}
                         {sale.invoiceStatusByEntity?.[inv.entityId] && (
                           <span className="text-xs text-gray-500">{sale.invoiceStatusByEntity[inv.entityId].status}</span>
                         )}
                         {sale.status !== "CANCELLED" && (
                           <>
-                            <button type="button" onClick={() => openEditInvoice(inv)} className="p-1 text-gray-400 hover:text-vbt-blue rounded" title="Edit">
+                            <button type="button" onClick={() => openEditInvoice(inv)} className="p-1 text-gray-400 hover:text-vbt-blue rounded" title={t("common.edit")}>
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button type="button" onClick={() => setDeleteInvoiceId(inv.id)} className="p-1 text-gray-400 hover:text-red-600 rounded" title="Remove">
+                            <button type="button" onClick={() => setDeleteInvoiceId(inv.id)} className="p-1 text-gray-400 hover:text-red-600 rounded" title={t("partner.sales.detail.removeInvoiceTitle")}>
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </>
@@ -434,29 +436,33 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-800">Payments</h2>
+              <h2 className="font-semibold text-gray-800">{t("partner.sales.detail.payments")}</h2>
               {sale.status !== "CANCELLED" && (
                 <button
                   type="button"
                   onClick={() => setPaymentOpen(true)}
                   className="inline-flex items-center gap-1 px-2 py-1 bg-vbt-orange text-white rounded text-sm font-medium hover:bg-orange-600"
                 >
-                  <Plus className="w-4 h-4" /> Add payment
+                  <Plus className="w-4 h-4" /> {t("partner.sales.detail.addPayment")}
                 </button>
               )}
             </div>
             {sale.payments.length === 0 ? (
-              <p className="text-gray-500 text-sm">No payments recorded</p>
+              <p className="text-gray-500 text-sm">{t("partner.sales.detail.noPayments")}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {sale.payments.map((p) => (
                   <li key={p.id} className="flex justify-between items-start gap-2">
                     <span>
                       {p.entity.name} – {formatCurrency(p.amountUsd)}
-                      {p.paidAt && ` on ${new Date(p.paidAt).toLocaleDateString()}`}
+                      {p.paidAt && t("partner.sales.detail.paidOnPrefix", { date: new Date(p.paidAt).toLocaleDateString() })}
                       {p.exchangeRate != null && p.amountLocal != null && (
                         <span className="text-gray-500 block text-xs">
-                          {p.amountLocal} {p.currencyLocal ?? "local"} @ {p.exchangeRate}
+                          {t("partner.sales.detail.amountLocalLine", {
+                            amount: String(p.amountLocal),
+                            currency: p.currencyLocal ?? t("partner.sales.detail.currencyLocalFallback"),
+                            rate: String(p.exchangeRate),
+                          })}
                         </span>
                       )}
                     </span>
@@ -465,7 +471,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                         type="button"
                         onClick={() => setDeletePaymentId(p.id)}
                         className="p-1 text-gray-400 hover:text-red-600 rounded"
-                        title="Remove payment"
+                        title={t("partner.sales.detail.removePaymentTitle")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -481,20 +487,20 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       {paymentOpen && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && setPaymentOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">Add payment</h3>
+            <h3 className="font-semibold text-gray-800 mb-4">{t("partner.sales.detail.addPaymentTitle")}</h3>
             <form onSubmit={handleAddPayment} className="space-y-4">
               {payError && <p className="text-sm text-red-600">{payError}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Entity *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.entityRequired")}</label>
                 <select
                   value={payEntityId}
                   onChange={(e) => setPayEntityId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   required
                 >
-                  <option value="">Select entity</option>
+                  <option value="">{t("partner.sales.new.selectEntity")}</option>
                   {entities.filter((e) => e.isActive !== false).length === 0 ? (
-                    <option value="" disabled>No entities—add in Admin → Entities</option>
+                    <option value="" disabled>{t("partner.sales.payment.noEntitiesHint")}</option>
                   ) : (
                     entities
                       .filter((e) => e.isActive !== false)
@@ -505,7 +511,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (USD) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountUsdRequired")}</label>
                 <input
                   type="number"
                   min="0.01"
@@ -517,29 +523,29 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (local currency)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountLocalLabel")}</label>
                 <input
                   type="number"
                   step="0.01"
                   value={payAmountLocal}
                   onChange={(e) => setPayAmountLocal(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="e.g. 9425000"
+                  placeholder={t("partner.sales.payment.amountLocalPlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Exchange rate</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.exchangeRateLabel")}</label>
                 <input
                   type="number"
                   step="0.01"
                   value={payExchangeRate}
                   onChange={(e) => setPayExchangeRate(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="e.g. 1450"
+                  placeholder={t("partner.sales.payment.exchangeRatePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.dateLabel")}</label>
                 <input
                   type="datetime-local"
                   value={payPaidAt}
@@ -548,7 +554,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
                 <input
                   type="text"
                   value={payNotes}
@@ -558,10 +564,10 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="submit" disabled={submitting} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                  {submitting ? "Saving..." : "Save"}
+                  {submitting ? t("common.saving") : t("common.save")}
                 </button>
                 <button type="button" onClick={() => { setPaymentOpen(false); setPayError(null); }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>
@@ -601,45 +607,53 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       {invoiceModalMode && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !invSubmitting && setInvoiceModalMode(null)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">{invoiceModalMode === "add" ? "Add invoice line" : "Edit invoice line"}</h3>
-            <p className="text-xs text-gray-500 mb-3">Sum of invoice amounts cannot exceed the sale&apos;s invoiced amount ({sale && formatCurrency(getInvoicedAmount(sale))} for {sale?.invoicedBasis ?? "DDP"}).</p>
+            <h3 className="font-semibold text-gray-800 mb-4">
+              {invoiceModalMode === "add" ? t("partner.sales.detail.invoiceModalAdd") : t("partner.sales.detail.invoiceModalEdit")}
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">
+              {sale &&
+                t("partner.sales.detail.invoiceModalCapHint", {
+                  amount: formatCurrency(getInvoicedAmount(sale)),
+                  basis: sale?.invoicedBasis ?? "DDP",
+                })}
+            </p>
             <form onSubmit={handleSaveInvoice} className="space-y-4">
               {invError && <p className="text-sm text-red-600">{invError}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Entity *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.entityRequired")}</label>
                 <select value={invEntityId} onChange={(e) => setInvEntityId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required>
-                  <option value="">Select entity</option>
+                  <option value="">{t("partner.sales.new.selectEntity")}</option>
                   {entities.filter((e) => e.isActive !== false).map((ent) => (
                     <option key={ent.id} value={ent.id}>{ent.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (USD) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountUsdRequired")}</label>
                 <input type="number" min="0" step="0.01" value={invAmountUsd} onChange={(e) => setInvAmountUsd(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.dueDate")}</label>
                 <input type="date" value={invDueDate} onChange={(e) => setInvDueDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sequence</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.detail.sequenceLabel")}</label>
                 <input type="number" min={1} value={invSequence} onChange={(e) => setInvSequence(parseInt(e.target.value, 10) || 1)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reference number</label>
-                <input type="text" value={invReferenceNumber} onChange={(e) => setInvReferenceNumber(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="External invoice #" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.detail.referenceNumber")}</label>
+                <input type="text" value={invReferenceNumber} onChange={(e) => setInvReferenceNumber(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder={t("partner.sales.new.externalInvoicePlaceholder")} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
                 <input type="text" value={invNotes} onChange={(e) => setInvNotes(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="submit" disabled={invSubmitting} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                  {invSubmitting ? "Saving..." : "Save"}
+                  {invSubmitting ? t("common.saving") : t("common.save")}
                 </button>
                 <button type="button" onClick={() => { setInvoiceModalMode(null); setInvError(null); }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>

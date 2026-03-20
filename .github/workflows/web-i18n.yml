@@ -1,0 +1,25 @@
+name: Web i18n parity
+
+on:
+  push:
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/web-i18n.yml"
+  pull_request:
+    paths:
+      - "apps/web/**"
+
+jobs:
+  i18n-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web i18n:check

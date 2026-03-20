@@ -12,9 +12,13 @@ import { Locale } from "@/lib/i18n/translations";
 
 function getSignupSchema(t: (key: string) => string) {
   return z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
+    name: z.string().min(2, t("auth.nameMin2")),
+    email: z.string().email(t("auth.emailInvalid")),
+    password: z
+      .string()
+      .min(8, t("auth.passwordMin8"))
+      .regex(/[A-Z]/, t("auth.passwordUppercase"))
+      .regex(/[0-9]/, t("auth.passwordNumber")),
     confirmPassword: z.string(),
   }).refine((d) => d.password === d.confirmPassword, {
     message: t("auth.passwordMismatch"),
@@ -43,7 +47,12 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: data.name, email: data.email, password: data.password }),
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          locale,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {

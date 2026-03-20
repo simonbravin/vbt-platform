@@ -137,7 +137,7 @@ export function StatementPdfDocument({ data }: { data: StatementPdfData }) {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.companyName}>Vision Building Technologies</Text>
-              <Text style={styles.companyTagline}>VBT Cost Calculator · Account Statements</Text>
+              <Text style={styles.companyTagline}>VBT Platform · Account Statements</Text>
             </View>
             <View>
               <Text style={styles.docTitle}>Account Statements</Text>
@@ -180,7 +180,7 @@ export function StatementPdfDocument({ data }: { data: StatementPdfData }) {
         ))}
 
         <View fixed style={styles.footer}>
-          <Text style={styles.footerText}>VBT Cost Calculator · Account Statements</Text>
+          <Text style={styles.footerText}>VBT Platform · Account Statements</Text>
           <Text style={styles.footerText}>{generatedAt}</Text>
         </View>
       </Page>

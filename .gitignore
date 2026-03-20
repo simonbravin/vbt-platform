@@ -33,3 +33,7 @@ pnpm-debug.log*
 .idea
 *.swp
 *.swo
+
+# Playwright (local runs)
+apps/web/playwright-report
+apps/web/test-results

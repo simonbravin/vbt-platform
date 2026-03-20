@@ -24,15 +24,15 @@ export default function SettingsWarehousesClient() {
     setLoading(true);
     setError(null);
     fetch("/api/saas/warehouses")
-      .then((r) => r.ok ? r.json() : Promise.reject(new Error("Failed to load")))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(t("partner.settings.warehouses.loadFailed")))))
       .then((d) => setWarehouses(Array.isArray(d?.warehouses) ? d.warehouses : []))
-      .catch(() => setError("No se pudieron cargar las bodegas"))
+      .catch(() => setError(t("partner.settings.warehouses.loadFailed")))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-  }, []);
+  }, [t]);
   useEffect(() => {
     fetch("/api/countries")
       .then((r) => r.json())
@@ -82,7 +82,7 @@ export default function SettingsWarehousesClient() {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data?.error ?? "Error al guardar");
+          throw new Error(data?.error ?? t("partner.settings.warehouses.saveFailed"));
         }
       } else {
         const res = await fetch("/api/saas/warehouses", {
@@ -92,13 +92,13 @@ export default function SettingsWarehousesClient() {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data?.error ?? "Error al crear");
+          throw new Error(data?.error ?? t("partner.settings.warehouses.createFailed"));
         }
       }
       setShowAdd(false);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al guardar");
+      setError(e instanceof Error ? e.message : t("partner.settings.warehouses.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -114,11 +114,11 @@ export default function SettingsWarehousesClient() {
     setError(null);
     try {
       const res = await fetch(`/api/saas/warehouses/${deleteTarget.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Error al eliminar");
+      if (!res.ok) throw new Error(t("partner.settings.warehouses.deleteRequestFailed"));
       setDeleteTarget(null);
       load();
     } catch {
-      setError("No se pudo eliminar la bodega");
+      setError(t("partner.settings.warehouses.deleteFailed"));
     } finally {
       setSaving(false);
     }

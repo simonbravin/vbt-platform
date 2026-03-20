@@ -1,6 +1,6 @@
 # Deployment checklist
 
-Use this checklist when deploying the VBT Cotizador (dual portal: Superadmin + Partner) to production.
+Use this checklist when deploying the VBT Platform (dual portal: Superadmin + Partner) to production.
 
 ## Portals overview (one app, two entry points)
 

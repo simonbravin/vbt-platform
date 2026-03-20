@@ -137,13 +137,13 @@ export function GlobalSettingsClient() {
             </div>
             <div>
               <h2 className="font-semibold text-foreground">{t("superadmin.settings.pricing")}</h2>
-              <p className="text-sm text-muted-foreground">Default margin and fees. Partners inherit or override.</p>
+              <p className="text-sm text-muted-foreground">{t("superadmin.settings.pricingDescription")}</p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Min margin % (base for all partners)</label>
-              <p className="mt-0.5 text-xs text-muted-foreground/80">Minimum margin % any partner can charge. Overridable per partner in Parameters.</p>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.minMarginLabel")}</label>
+              <p className="mt-0.5 text-xs text-muted-foreground/80">{t("superadmin.settings.minMarginHelp")}</p>
               <input
                 type="number"
                 min={0}
@@ -152,12 +152,12 @@ export function GlobalSettingsClient() {
                 value={marginMinPct}
                 onChange={(e) => setMarginMinPct(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder="e.g. 15"
+                placeholder={t("superadmin.settings.placeholderEg15")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Max margin % (base for all partners)</label>
-              <p className="mt-0.5 text-xs text-muted-foreground/80">Maximum margin % any partner can charge. Overridable per partner in Parameters.</p>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.maxMarginLabel")}</label>
+              <p className="mt-0.5 text-xs text-muted-foreground/80">{t("superadmin.settings.maxMarginHelp")}</p>
               <input
                 type="number"
                 min={0}
@@ -166,11 +166,11 @@ export function GlobalSettingsClient() {
                 value={marginMaxPct}
                 onChange={(e) => setMarginMaxPct(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder="e.g. 20"
+                placeholder={t("superadmin.settings.placeholderEg20")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Default entry fee (USD)</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.entryFeeLabel")}</label>
               <input
                 type="number"
                 min={0}
@@ -178,11 +178,11 @@ export function GlobalSettingsClient() {
                 value={entryFeeUsd}
                 onChange={(e) => setEntryFeeUsd(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder="e.g. 0"
+                placeholder={t("superadmin.settings.placeholderZero")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Default training fee (USD)</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.trainingFeeLabel")}</label>
               <input
                 type="number"
                 min={0}
@@ -190,11 +190,11 @@ export function GlobalSettingsClient() {
                 value={trainingFeeUsd}
                 onChange={(e) => setTrainingFeeUsd(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder="e.g. 0"
+                placeholder={t("superadmin.settings.placeholderZero")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">Vision Latam commission % (partner base price = factory cost + this %)</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.vlCommissionLabel")}</label>
               <input
                 type="number"
                 min={0}
@@ -203,15 +203,15 @@ export function GlobalSettingsClient() {
                 value={visionLatamCommissionPct}
                 onChange={(e) => setVisionLatamCommissionPct(e.target.value)}
                 className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder="20"
+                placeholder={t("superadmin.settings.placeholderEg20")}
               />
-              <p className="mt-0.5 text-xs text-muted-foreground">Partners never see factory cost; they see base price = factory + this commission.</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("superadmin.settings.vlCommissionHelp")}</p>
             </div>
             <div className="border-t border-border pt-3 mt-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Factory cost USD/m² by system (server-only; never sent to partners)</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t("superadmin.settings.factoryRatesIntro")}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-muted-foreground">S80 (80mm) $/m²</label>
+                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS80Label")}</label>
                   <input
                     type="number"
                     min={0}
@@ -219,11 +219,11 @@ export function GlobalSettingsClient() {
                     value={rateS80}
                     onChange={(e) => setRateS80(e.target.value)}
                     className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="37"
+                    placeholder={t("superadmin.settings.placeholderEg37")}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground">S150 (6in) $/m²</label>
+                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS150Label")}</label>
                   <input
                     type="number"
                     min={0}
@@ -231,11 +231,11 @@ export function GlobalSettingsClient() {
                     value={rateS150}
                     onChange={(e) => setRateS150(e.target.value)}
                     className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="67"
+                    placeholder={t("superadmin.settings.placeholderEg67")}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground">S200 (8in) $/m²</label>
+                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS200Label")}</label>
                   <input
                     type="number"
                     min={0}
@@ -243,7 +243,7 @@ export function GlobalSettingsClient() {
                     value={rateS200}
                     onChange={(e) => setRateS200(e.target.value)}
                     className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="85"
+                    placeholder={t("superadmin.settings.placeholderEg85")}
                   />
                 </div>
               </div>
@@ -258,7 +258,7 @@ export function GlobalSettingsClient() {
             </div>
             <div>
               <h2 className="font-semibold text-foreground">{t("superadmin.settings.moduleVisibility")}</h2>
-              <p className="text-sm text-muted-foreground">Which modules partners see by default.</p>
+              <p className="text-sm text-muted-foreground">{t("superadmin.settings.moduleVisibilityHelp")}</p>
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -282,11 +282,11 @@ export function GlobalSettingsClient() {
               <Lock className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Override toggles</h2>
-              <p className="text-sm text-muted-foreground">Allow or lock partner overrides (future).</p>
+              <h2 className="font-semibold text-foreground">{t("superadmin.settings.overrideTogglesTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("superadmin.settings.overrideTogglesHelp")}</p>
             </div>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">Coming when override lock model is available.</p>
+          <p className="mt-4 text-xs text-muted-foreground">{t("superadmin.settings.overrideTogglesComing")}</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -295,12 +295,12 @@ export function GlobalSettingsClient() {
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Partner parameters</h2>
-              <p className="text-sm text-muted-foreground">Set overrides per partner in the partner detail.</p>
+              <h2 className="font-semibold text-foreground">{t("superadmin.settings.partnerParamsTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("superadmin.settings.partnerParamsHelp")}</p>
             </div>
           </div>
           <Link href="/superadmin/partners" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            Go to Partners →
+            {t("superadmin.settings.goToPartners")}
           </Link>
         </div>
       </div>

@@ -35,7 +35,7 @@ export default async function SuperadminLayout({
 
   return (
     <div className="flex h-screen bg-muted overflow-hidden">
-      <SuperadminSidebar />
+      <SuperadminSidebar userDisplayName={safeUser.name?.trim() || safeUser.email?.trim() || null} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar user={safeUser} showContextSwitcher />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

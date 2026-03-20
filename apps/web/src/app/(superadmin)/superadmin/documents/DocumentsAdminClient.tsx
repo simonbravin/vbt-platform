@@ -18,6 +18,12 @@ type DocumentItem = {
 
 const VISIBILITY_OPTIONS = ["public", "partners_only", "internal"] as const;
 
+function visibilityOptionLabel(t: (key: string) => string, v: string) {
+  const key = `superadmin.documents.visibility.${v}`;
+  const out = t(key);
+  return out === key ? v : out;
+}
+
 export function DocumentsAdminClient() {
   const t = useT();
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
@@ -136,7 +142,7 @@ export function DocumentsAdminClient() {
         }
       } else {
         if (!payload.categoryId) {
-          setFormError("Category is required");
+          setFormError(t("superadmin.documents.categoryRequired"));
           setSaving(false);
           return;
         }
@@ -181,7 +187,7 @@ export function DocumentsAdminClient() {
           >
             <option value="">{t("superadmin.documents.allVisibility")}</option>
             {VISIBILITY_OPTIONS.map((v) => (
-              <option key={v} value={v}>{v}</option>
+              <option key={v} value={v}>{visibilityOptionLabel(t, v)}</option>
             ))}
           </select>
         </div>
@@ -205,7 +211,7 @@ export function DocumentsAdminClient() {
               <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{formError}</p>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldTitle")}</label>
               <input
                 type="text"
                 value={form.title}
@@ -215,7 +221,7 @@ export function DocumentsAdminClient() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldDescription")}</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -224,49 +230,49 @@ export function DocumentsAdminClient() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldCategory")}</label>
               <select
                 value={form.categoryId}
                 onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
                 required
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               >
-                <option value="">Select category</option>
+                <option value="">{t("superadmin.documents.selectCategory")}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldFileUrl")}</label>
               <input
                 type="url"
                 value={form.fileUrl}
                 onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
                 required
-                placeholder="https://..."
+                placeholder={t("superadmin.documents.placeholderFileUrl")}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldVisibility")}</label>
               <select
                 value={form.visibility}
                 onChange={(e) => setForm((f) => ({ ...f, visibility: e.target.value as (typeof VISIBILITY_OPTIONS)[number] }))}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               >
                 {VISIBILITY_OPTIONS.map((v) => (
-                  <option key={v} value={v}>{v}</option>
+                  <option key={v} value={v}>{visibilityOptionLabel(t, v)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country scope (optional, * = all)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldCountryScope")}</label>
               <input
                 type="text"
                 value={form.countryScope}
                 onChange={(e) => setForm((f) => ({ ...f, countryScope: e.target.value }))}
-                placeholder="e.g. US,MX or *"
+                placeholder={t("superadmin.documents.countryScopePlaceholder")}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
@@ -276,14 +282,14 @@ export function DocumentsAdminClient() {
                 disabled={saving}
                 className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
               >
-                {saving ? "Saving..." : editingId ? "Update" : "Create"}
+                {saving ? t("common.saving") : editingId ? t("superadmin.documents.buttonUpdate") : t("superadmin.documents.buttonCreate")}
               </button>
               <button
                 type="button"
                 onClick={closeForm}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </form>
@@ -307,11 +313,11 @@ export function DocumentsAdminClient() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visibility</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.fieldTitle")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCategory")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colVisibility")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCountry")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colActions")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -329,14 +335,14 @@ export function DocumentsAdminClient() {
                       </a>
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{doc.category?.name ?? doc.categoryId}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{doc.visibility}</td>
+                    <td className="px-5 py-3 text-sm text-gray-600">{visibilityOptionLabel(t, doc.visibility)}</td>
                     <td className="px-5 py-3 text-sm text-gray-500">{doc.countryScope ?? "—"}</td>
                     <td className="px-5 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => openEdit(doc)}
                         className="text-gray-500 hover:text-vbt-blue p-1"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -348,7 +354,9 @@ export function DocumentsAdminClient() {
           </div>
         )}
         {!loading && documents.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">{total} document(s)</p>
+          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+            {t("superadmin.documents.totalCount", { count: total })}
+          </p>
         )}
       </div>
     </div>

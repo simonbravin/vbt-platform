@@ -82,17 +82,17 @@ export function TeamSettingsClient() {
         <form onSubmit={handleInvite} className="p-5 flex flex-wrap items-end gap-3">
           {inviteError && <p className="w-full text-sm text-red-600">{inviteError}</p>}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("auth.email")}</label>
             <input
               type="email"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder={t("auth.placeholderEmail")}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-56"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("admin.users.role")}</label>
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
@@ -109,10 +109,10 @@ export function TeamSettingsClient() {
             className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50 flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            {inviting ? "Inviting..." : "Invite"}
+            {inviting ? t("partner.team.inviting") : t("partner.team.invite")}
           </button>
         </form>
-        <p className="px-5 pb-4 text-xs text-gray-500">User must already have an account. They will be added to your organization with the selected role.</p>
+        <p className="px-5 pb-4 text-xs text-gray-500">{t("partner.team.inviteHint")}</p>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

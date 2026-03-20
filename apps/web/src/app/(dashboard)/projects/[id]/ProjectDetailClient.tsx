@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowLeft, FileText, Plus, Pencil, Trash2, ShoppingCart } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Country = { id: string; name: string; code: string };
@@ -41,8 +41,25 @@ type Project = {
 type AuditEntry = { id: string; action: string; createdAt: string; userName: string | null; meta: { changed?: string[] } | null };
 type SaleRow = { id: string; saleNumber: string | null; status: string; landedDdpUsd: number };
 
+const PIPELINE_STATUSES = ["lead", "qualified", "quoting", "engineering", "won", "lost", "on_hold"] as const;
+
+const QUOTE_STATUS_I18N: Record<string, string> = {
+  draft: "quotes.draft",
+  sent: "quotes.sent",
+  accepted: "quotes.accepted",
+  rejected: "quotes.rejected",
+  expired: "quotes.expired",
+};
+
 export function ProjectDetailClient({ initialProject }: { initialProject: Project }) {
-  const t = useT();
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === "es" ? "es-419" : "en-US";
+
+  const projectStatusLabel = (code: string) => t(`partner.reports.status.${code}`);
+  const quoteStatusLabel = (status: string) => {
+    const k = QUOTE_STATUS_I18N[status.toLowerCase()];
+    return k ? t(k) : status;
+  };
   const router = useRouter();
   const [project, setProject] = useState<Project>(initialProject);
   const [editOpen, setEditOpen] = useState(false);
@@ -157,21 +174,6 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
     }
   };
 
-  const statusLabel: Record<string, string> = {
-    lead: "Lead",
-    qualified: "Qualified",
-    quoting: "Quoting",
-    engineering: "Engineering",
-    won: "Won",
-    lost: "Lost",
-    on_hold: "On hold",
-    DRAFT: "Draft",
-    QUOTED: "Quoted",
-    QUOTE_SENT: "Quote sent",
-    SOLD: "Sold",
-    ARCHIVED: "Archived",
-  };
-
   const saveEdit = async () => {
     setSaving(true);
     const res = await fetch(`/api/projects/${project.id}`, {
@@ -229,10 +231,10 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                   (project as any).status === "quoting" || (project as any).status === "QUOTE_SENT" ? "bg-blue-100 text-blue-700" :
                   (project as any).status === "qualified" || (project as any).status === "QUOTED" ? "bg-amber-100 text-amber-700" :
                   "bg-gray-100 text-gray-600"
-                }`}>{statusLabel[(project as any).status] ?? (project as any).status}</span>
+                }`}>{projectStatusLabel((project as any).status)}</span>
               )}
               {project.expectedCloseDate && (
-                <p className="text-gray-400 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString()}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</p>
               )}
             </div>
           </div>
@@ -311,7 +313,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           {project.expectedCloseDate && (
             <>
               <dt className="text-gray-500">{t("projects.expectedClose").replace(/:?\s*$/, "")}</dt>
-              <dd className="text-gray-900">{new Date(project.expectedCloseDate).toLocaleDateString()}</dd>
+              <dd className="text-gray-900">{new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</dd>
             </>
           )}
           {project.description && (
@@ -323,7 +325,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           {(project as any).status && (
             <>
               <dt className="text-gray-500">{t("common.status")}</dt>
-              <dd className="text-gray-900 font-medium">{statusLabel[(project as any).status] ?? (project as any).status}</dd>
+              <dd className="text-gray-900 font-medium">{projectStatusLabel((project as any).status)}</dd>
             </>
           )}
         </dl>
@@ -352,7 +354,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                 <div>
                   <p className="font-medium text-gray-800">{q.quoteNumber ?? q.id.slice(0, 8)}</p>
                   <p className="text-gray-400 text-xs">
-                    v{q.version ?? 1} · {new Date(q.createdAt).toLocaleDateString()}
+                    v{q.version ?? 1} · {new Date(q.createdAt).toLocaleDateString(dateLocale)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -360,7 +362,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                     q.status === "sent" || q.status === "SENT" ? "bg-green-100 text-green-700" :
                     q.status === "draft" || q.status === "DRAFT" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"
-                  }`}>{q.status}</span>
+                  }`}>{quoteStatusLabel(q.status)}</span>
                 </div>
               </Link>
             ))}
@@ -394,7 +396,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                     s.status === "PAID" ? "bg-green-100 text-green-700" :
                     s.status === "CANCELLED" ? "bg-gray-200 text-gray-600" :
                     s.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                  }`}>{s.status.replace(/_/g, " ")}</span>
+                  }`}>{t(`partner.sales.status.${s.status}`)}</span>
                 </div>
                 <p className="font-semibold text-gray-800">{formatCurrency(s.landedDdpUsd)}</p>
               </Link>
@@ -418,9 +420,9 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
             <ul className="space-y-3 text-sm">
               {auditLog.map((entry) => (
                 <li key={entry.id} className="flex flex-wrap items-baseline gap-2 text-gray-700">
-                  <span className="font-medium">{entry.userName ?? "System"}</span>
+                  <span className="font-medium">{entry.userName ?? t("projects.system")}</span>
                   <span className="text-gray-500">{formatAction(entry.action, entry.meta)}</span>
-                  <span className="text-gray-400 text-xs">{new Date(entry.createdAt).toLocaleString()}</span>
+                  <span className="text-gray-400 text-xs">{new Date(entry.createdAt).toLocaleString(dateLocale)}</span>
                 </li>
               ))}
             </ul>
@@ -441,24 +443,20 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
               <div>
                 <label className="block text-gray-700 mb-1">{t("common.status")}</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                  <option value="lead">Lead</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="quoting">Quoting</option>
-                  <option value="engineering">Engineering</option>
-                  <option value="won">Won</option>
-                  <option value="lost">Lost</option>
-                  <option value="on_hold">On hold</option>
+                  {PIPELINE_STATUSES.map((v) => (
+                    <option key={v} value={v}>{t(`partner.reports.status.${v}`)}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Client</label>
+                <label className="block text-gray-700 mb-1">{t("projects.client")}</label>
                 <div className="flex gap-2">
                   <select
                     value={form.clientId}
                     onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-white"
                   >
-                    <option value="">— None —</option>
+                    <option value="">{t("projects.noneOption")}</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -468,40 +466,40 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                     onClick={() => setNewClientOpen(true)}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
                   >
-                    <Plus className="w-4 h-4" /> New
+                    <Plus className="w-4 h-4" /> {t("projects.addClientButton")}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Country (code)</label>
+                <label className="block text-gray-700 mb-1">{t("projects.countryCodeLabel")}</label>
                 <select value={form.countryCode} onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                  <option value="">— Select —</option>
+                  <option value="">{t("projects.selectShort")}</option>
                   {countries.map((c) => <option key={c.id} value={c.code ?? c.id}>{c.name} ({c.code})</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">City</label>
-                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="City" />
+                <label className="block text-gray-700 mb-1">{t("projects.city")}</label>
+                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.city")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Address</label>
-                <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Street, number" />
+                <label className="block text-gray-700 mb-1">{t("projects.address")}</label>
+                <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.addressPlaceholder")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Est. total area (m²)</label>
-                <input type="number" min={0} step="0.01" value={form.estimatedTotalAreaM2} onChange={(e) => setForm((f) => ({ ...f, estimatedTotalAreaM2: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g. 500" />
+                <label className="block text-gray-700 mb-1">{t("projects.estTotalAreaM2Label")}</label>
+                <input type="number" min={0} step="0.01" value={form.estimatedTotalAreaM2} onChange={(e) => setForm((f) => ({ ...f, estimatedTotalAreaM2: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.areaPlaceholder")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Expected close date</label>
+                <label className="block text-gray-700 mb-1">{t("projects.expectedCloseDateLabel")}</label>
                 <input type="date" value={form.expectedCloseDate} onChange={(e) => setForm((f) => ({ ...f, expectedCloseDate: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">Description</label>
+                <label className="block text-gray-700 mb-1">{t("projects.description")}</label>
                 <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
               <button type="button" onClick={saveEdit} disabled={saving || !form.projectName?.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-50">{saving ? t("common.saving") : t("common.save")}</button>
             </div>
           </div>
@@ -512,12 +510,12 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       {newClientOpen && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={() => setNewClientOpen(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-lg text-gray-900">New client</h3>
+            <h3 className="font-semibold text-lg text-gray-900">{t("projects.newClientModalTitle")}</h3>
             {newClientError && (
               <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{newClientError}</div>
             )}
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Name *</label>
+              <label className="block text-sm text-gray-600 mb-1">{t("clients.nameLabel")}</label>
               <input
                 value={newClientForm.name}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
@@ -526,7 +524,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Legal name</label>
+              <label className="block text-sm text-gray-600 mb-1">{t("projects.legalName")}</label>
               <input
                 value={newClientForm.legalName}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, legalName: e.target.value }))}
@@ -534,18 +532,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Country</label>
+              <label className="block text-sm text-gray-600 mb-1">{t("common.country")}</label>
               <select
                 value={newClientForm.countryId}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, countryId: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue bg-white"
               >
-                <option value="">— None —</option>
+                <option value="">{t("projects.noneOption")}</option>
                 {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Email</label>
+              <label className="block text-sm text-gray-600 mb-1">{t("auth.email")}</label>
               <input
                 type="email"
                 value={newClientForm.email}
@@ -554,7 +552,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Phone</label>
+              <label className="block text-sm text-gray-600 mb-1">{t("common.phone")}</label>
               <input
                 value={newClientForm.phone}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))}
@@ -562,7 +560,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
               />
             </div>
             <div className="flex gap-2 pt-2 justify-end">
-              <button type="button" onClick={() => setNewClientOpen(false)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={() => setNewClientOpen(false)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">{t("common.cancel")}</button>
               <button type="button" onClick={saveNewClient} disabled={savingClient || !newClientForm.name.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50">{savingClient ? t("common.saving") : t("projects.createClient")}</button>
             </div>
           </div>

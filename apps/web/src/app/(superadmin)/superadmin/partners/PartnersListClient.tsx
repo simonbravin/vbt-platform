@@ -5,6 +5,28 @@ import Link from "next/link";
 import { Plus, Building2, MapPin, Mail } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
+function partnerTypeListLabel(t: (key: string) => string, partnerType: string | null | undefined): string {
+  if (!partnerType) return "—";
+  if (partnerType === "commercial_partner") return t("superadmin.partners.commercialPartner");
+  if (partnerType === "master_partner") return t("superadmin.partners.masterPartner");
+  return partnerType.replace(/_/g, " ");
+}
+
+function onboardingListLabel(t: (key: string) => string, state: string | null | undefined): string {
+  if (!state) return "—";
+  const key = `superadmin.partner.onboarding.${state}`;
+  const out = t(key);
+  return out === key ? state.replace(/_/g, " ") : out;
+}
+
+function organizationStatusListLabel(t: (key: string) => string, status: string | null | undefined): string {
+  if (!status) return "—";
+  if (status === "active") return t("admin.users.statusActive");
+  if (status === "suspended") return t("admin.users.statusSuspended");
+  if (status === "pending") return t("admin.users.statusPending");
+  return status;
+}
+
 type Partner = {
   id: string;
   name: string;
@@ -48,7 +70,7 @@ export function PartnersListClient() {
     }
     fetchPartners();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   if (error) {
     return (
@@ -80,13 +102,13 @@ export function PartnersListClient() {
           <div className="p-12 text-center">
             <Building2 className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-2 text-sm font-medium text-foreground">{t("superadmin.partners.noPartnersYet")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Create your first partner organization.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.partners.emptyStateHint")}</p>
             <Link
               href="/superadmin/partners/new"
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
-              New partner
+              {t("superadmin.partners.newPartner")}
             </Link>
           </div>
         ) : (
@@ -95,22 +117,22 @@ export function PartnersListClient() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Partner
+                    {t("superadmin.partners.listColPartner")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Type
+                    {t("superadmin.partners.listColType")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Contact
+                    {t("superadmin.partners.listColContact")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Onboarding
+                    {t("superadmin.partners.listColOnboarding")}
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Status
+                    {t("superadmin.partners.listColStatus")}
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Actions
+                    {t("superadmin.partners.listColActions")}
                   </th>
                 </tr>
               </thead>
@@ -133,7 +155,7 @@ export function PartnersListClient() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-sm text-foreground">
-                      {p.partnerProfile?.partnerType?.replace("_", " ") ?? "—"}
+                      {partnerTypeListLabel(t, p.partnerProfile?.partnerType)}
                     </td>
                     <td className="px-5 py-3 text-sm text-foreground">
                       {p.partnerProfile?.contactName ?? p.partnerProfile?.contactEmail ?? "—"}
@@ -146,7 +168,7 @@ export function PartnersListClient() {
                     </td>
                     <td className="px-5 py-3">
                       <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-                        {p.partnerProfile?.onboardingState?.replace(/_/g, " ") ?? "—"}
+                        {onboardingListLabel(t, p.partnerProfile?.onboardingState)}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -157,7 +179,7 @@ export function PartnersListClient() {
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {p.status ?? "—"}
+                        {organizationStatusListLabel(t, p.status)}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -165,7 +187,7 @@ export function PartnersListClient() {
                         href={`/superadmin/partners/${p.id}`}
                         className="text-sm font-medium text-primary hover:underline"
                       >
-                        Manage
+                        {t("superadmin.partners.manage")}
                       </Link>
                     </td>
                   </tr>

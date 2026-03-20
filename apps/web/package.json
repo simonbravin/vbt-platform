@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "i18n:check": "node scripts/check-i18n-keys.mjs",
+    "i18n:check-partner": "node scripts/check-partner-i18n.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

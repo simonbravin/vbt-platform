@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart3, Download, Package, Mail, ShoppingCart } from "lucide-react";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage } from "@/lib/i18n/context";
 
 type Country = { id: string; name: string; code: string };
 type Project = {
@@ -31,20 +31,7 @@ type Summary = {
   totalValueSold: number;
 };
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "Draft",
-  QUOTED: "Quoted",
-  QUOTE_SENT: "Quote sent",
-  SOLD: "Sold",
-  ARCHIVED: "Archived",
-  lead: "Lead",
-  qualified: "Qualified",
-  quoting: "Quoting",
-  engineering: "Engineering",
-  won: "Won",
-  lost: "Lost",
-  on_hold: "On hold",
-};
+const PIPELINE_STATUS_VALUES = ["lead", "qualified", "quoting", "engineering", "won", "lost", "on_hold"] as const;
 
 type PieceRow = { pieceId: string; description: string; systemCode: string | null; qty: number; kg: number; m2: number };
 type PiecesData = { byQty: PieceRow[]; byKg: PieceRow[]; byM2: PieceRow[] };
@@ -52,7 +39,11 @@ type PiecesData = { byQty: PieceRow[]; byKg: PieceRow[]; byM2: PieceRow[] };
 type Client = { id: string; name: string };
 
 export function ReportsClient({ countries, clients, canSendReport = true }: { countries: Country[]; clients: Client[]; canSendReport?: boolean }) {
-  const t = useT();
+  const { t, locale } = useLanguage();
+  const numberLocale = locale === "es" ? "es-419" : "en-US";
+
+  const projectStatusLabel = (code: string) => t(`partner.reports.status.${code}`);
+  const saleStatusLabel = (code: string) => t(`partner.sales.status.${code}`);
   const [projects, setProjects] = useState<Project[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [total, setTotal] = useState(0);
@@ -188,11 +179,13 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           soldFrom: soldFrom || undefined,
           soldTo: soldTo || undefined,
           search: search.trim() || undefined,
+          locale,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setEmailMessage({ type: "success", text: data.message ?? `Report sent to ${emailTo}` });
+        const sentTo = emailTo.trim();
+        setEmailMessage({ type: "success", text: data.message ?? t("partner.reports.emailSentTo", { email: sentTo }) });
         setEmailTo("");
         setEmailSubject("");
         setTimeout(() => { setEmailOpen(false); setEmailMessage(null); }, 2000);
@@ -216,16 +209,16 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
         };
         const headers = [
-          "Sale #",
-          "Client",
-          "Project",
-          "Status",
-          "Quantity",
-          "EXW",
-          "FOB",
-          "CIF",
-          "Landed DDP",
-          "Created",
+          t("partner.reports.csv.saleNumber"),
+          t("partner.reports.csv.client"),
+          t("partner.reports.csv.project"),
+          t("partner.reports.csv.status"),
+          t("partner.reports.csv.quantity"),
+          t("partner.reports.csv.exw"),
+          t("partner.reports.csv.fob"),
+          t("partner.reports.csv.cif"),
+          t("partner.reports.csv.landedDdp"),
+          t("partner.reports.csv.created"),
         ];
         const csvRows = [
           headers.join(","),
@@ -234,7 +227,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               s.saleNumber ?? "",
               s.client?.name ?? "",
               s.project?.name ?? "",
-              s.status,
+              saleStatusLabel(s.status),
               s.quantity,
               s.exwUsd ?? "",
               s.fobUsd ?? "",
@@ -260,53 +253,49 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Filters</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">{t("partner.reports.filtersTitle")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterStatus")}</label>
             <select
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
-              <option value="">All</option>
-              <option value="lead">Lead</option>
-              <option value="qualified">Qualified</option>
-              <option value="quoting">Quoting</option>
-              <option value="engineering">Engineering</option>
-              <option value="won">Won</option>
-              <option value="lost">Lost</option>
-              <option value="on_hold">On hold</option>
+              <option value="">{t("partner.reports.all")}</option>
+              {PIPELINE_STATUS_VALUES.map((v) => (
+                <option key={v} value={v}>{t(`partner.reports.status.${v}`)}</option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Country</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterCountry")}</label>
             <select
               value={countryId}
               onChange={(e) => { setCountryId(e.target.value); setPage(1); }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
-              <option value="">All</option>
+              <option value="">{t("partner.reports.all")}</option>
               {countries.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Client</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterClient")}</label>
             <select
               value={clientId}
               onChange={(e) => { setClientId(e.target.value); setPage(1); }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
             >
-              <option value="">All</option>
+              <option value="">{t("partner.reports.all")}</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Sold from</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.soldFrom")}</label>
             <input
               type="date"
               value={soldFrom}
@@ -315,7 +304,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Sold to</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.soldTo")}</label>
             <input
               type="date"
               value={soldTo}
@@ -327,7 +316,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
         <div className="flex flex-wrap items-center gap-3 mt-4">
           <input
             type="text"
-            placeholder="Search project, client, location..."
+            placeholder={t("partner.reports.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (setPage(1), fetchReport())}
@@ -338,7 +327,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             onClick={() => { setPage(1); fetchReport(); }}
             className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-vbt-blue/90 focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:ring-offset-2"
           >
-            Apply
+            {t("partner.reports.apply")}
           </button>
         </div>
       </div>
@@ -348,7 +337,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" /> Sales
+              <ShoppingCart className="w-4 h-4" /> {t("partner.reports.salesSection")}
             </h2>
             <div className="flex items-center gap-2">
               <button
@@ -356,30 +345,30 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 onClick={handleSalesExport}
                 className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
               >
-                <Download className="w-4 h-4" /> Export CSV
+                <Download className="w-4 h-4" /> {t("partner.reports.exportCsv")}
               </button>
-              <Link href="/sales" className="text-sm text-vbt-blue hover:underline font-medium">View Sales →</Link>
+              <Link href="/sales" className="text-sm text-vbt-blue hover:underline font-medium">{t("partner.reports.viewSalesLink")}</Link>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
-              <div className="text-gray-500 text-xs">Total sales</div>
+              <div className="text-gray-500 text-xs">{t("partner.reports.kpiTotalSales")}</div>
               <p className="text-lg font-bold text-gray-900">{salesSummary.totalSales}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Total value (DDP)</div>
+              <div className="text-gray-500 text-xs">{t("partner.reports.kpiTotalValueDdp")}</div>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(salesSummary.totalValue)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Invoiced</div>
+              <div className="text-gray-500 text-xs">{t("partner.reports.kpiInvoiced")}</div>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(salesSummary.totalInvoiced)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Paid</div>
+              <div className="text-gray-500 text-xs">{t("partner.reports.kpiPaid")}</div>
               <p className="text-lg font-bold text-green-700">{formatCurrency(salesSummary.totalPaid)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Pending</div>
+              <div className="text-gray-500 text-xs">{t("partner.reports.kpiPending")}</div>
               <p className="text-lg font-bold text-amber-600">{formatCurrency(salesSummary.totalPending)}</p>
             </div>
           </div>
@@ -388,7 +377,13 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               {salesSummary.entitySummary.map((e) => (
                 <div key={e.id} className="flex justify-between gap-2 flex-wrap">
                   <span className="font-medium text-gray-700">{e.name}</span>
-                  <span>Invoiced {formatCurrency(e.invoiced)} · Paid {formatCurrency(e.paid)} · Balance {formatCurrency(e.balance)}</span>
+                  <span>
+                    {t("partner.reports.entityBalances", {
+                      invoiced: formatCurrency(e.invoiced),
+                      paid: formatCurrency(e.paid),
+                      balance: formatCurrency(e.balance),
+                    })}
+                  </span>
                 </div>
               ))}
             </div>
@@ -401,32 +396,32 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <BarChart3 className="w-4 h-4" /> Total quoted
+              <BarChart3 className="w-4 h-4" /> {t("partner.reports.kpiTotalQuoted")}
             </div>
             <p className="text-2xl font-bold text-gray-900 mt-1">{summary.totalQuoted}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">In progress</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiInProgress")}</div>
             <p className="text-2xl font-bold text-blue-600 mt-1">{summary.inProgress}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">Sold</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiSold")}</div>
             <p className="text-2xl font-bold text-green-600 mt-1">{summary.sold}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">Archived</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiArchived")}</div>
             <p className="text-2xl font-bold text-gray-600 mt-1">{summary.archived}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">Win rate (sold vs closed)</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiWinRate")}</div>
             <p className="text-2xl font-bold text-gray-900 mt-1">{summary.conversionRate}%</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">Total value quoted (FOB)</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueQuotedFob")}</div>
             <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(summary.totalValueQuoted)}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-gray-500 text-sm">Total value sold</div>
+            <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueSold")}</div>
             <p className="text-lg font-bold text-green-700 mt-1">{formatCurrency(summary.totalValueSold)}</p>
           </div>
         </div>
@@ -438,21 +433,21 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">Top pieces by quantity</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopQty")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Piece</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">Qty</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colQty")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {pieces.byQty.map((row, i) => (
                     <tr key={row.pieceId + i}>
                       <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
-                      <td className="px-3 py-2 text-right font-medium">{row.qty.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-medium">{row.qty.toLocaleString(numberLocale)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -462,21 +457,21 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">Top pieces by weight (kg)</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopKg")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Piece</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">Kg</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colKg")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {pieces.byKg.map((row, i) => (
                     <tr key={row.pieceId + i}>
                       <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
-                      <td className="px-3 py-2 text-right font-medium">{row.kg.toLocaleString("en-US", { maximumFractionDigits: 0 })}</td>
+                      <td className="px-3 py-2 text-right font-medium">{row.kg.toLocaleString(numberLocale, { maximumFractionDigits: 0 })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -486,21 +481,21 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">Top pieces by m²</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopM2")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">Piece</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">m²</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colM2")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {pieces.byM2.map((row, i) => (
                     <tr key={row.pieceId + i}>
                       <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
-                      <td className="px-3 py-2 text-right font-medium">{row.m2.toLocaleString("en-US", { maximumFractionDigits: 1 })}</td>
+                      <td className="px-3 py-2 text-right font-medium">{row.m2.toLocaleString(numberLocale, { maximumFractionDigits: 1 })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -513,7 +508,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {/* Table + Export */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Projects</h2>
+          <h2 className="font-semibold text-gray-800">{t("partner.reports.projectsSection")}</h2>
           <div className="flex items-center gap-2">
             {canSendReport && (
               <button
@@ -521,7 +516,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 onClick={() => setEmailOpen(true)}
                 className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
               >
-                <Mail className="w-4 h-4" /> Email report
+                <Mail className="w-4 h-4" /> {t("partner.reports.emailReport")}
               </button>
             )}
             <button
@@ -529,14 +524,14 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               onClick={handleExportCsv}
               className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Download className="w-4 h-4" /> Export CSV
+              <Download className="w-4 h-4" /> {t("partner.reports.exportCsv")}
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
               className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Download className="w-4 h-4" /> Export Excel
+              <Download className="w-4 h-4" /> {t("partner.reports.exportExcel")}
             </button>
           </div>
         </div>
@@ -550,15 +545,15 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Project</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Client</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Country</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Baseline quote</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">FOB</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Sale date</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Final amount</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Quotes</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colProject")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colClient")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colCountry")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colStatus")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colBaselineQuote")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colFob")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colSaleDate")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colFinalAmount")}</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colQuotes")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -580,7 +575,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                           p.status === "engineering" ? "bg-indigo-100 text-indigo-700" :
                           p.status === "on_hold" ? "bg-yellow-100 text-yellow-700" :
                           "bg-gray-100 text-gray-600"
-                        }`}>{statusLabel[p.status] ?? p.status}</span>
+                        }`}>{projectStatusLabel(p.status)}</span>
                       </td>
                       <td className="px-4 py-3">
                         {p.baselineQuote ? (
@@ -592,7 +587,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">{p.baselineQuote ? formatCurrency(p.baselineQuote.fobUsd) : "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.soldAt ? new Date(p.soldAt).toLocaleDateString() : "—"}</td>
+                      <td className="px-4 py-3 text-gray-600">{p.soldAt ? new Date(p.soldAt).toLocaleDateString(numberLocale) : "—"}</td>
                       <td className="px-4 py-3 text-right font-medium">{p.finalAmountUsd != null ? formatCurrency(p.finalAmountUsd) : "—"}</td>
                       <td className="px-4 py-3 text-center">{p._count.quotes}</td>
                     </tr>
@@ -602,7 +597,13 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </div>
             {total > limit && (
               <div className="p-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
-                <span>Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</span>
+                <span>
+                  {t("partner.reports.showingRange", {
+                    from: (page - 1) * limit + 1,
+                    to: Math.min(page * limit, total),
+                    total,
+                  })}
+                </span>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -610,7 +611,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                     onClick={() => setPage((p) => p - 1)}
                     className="px-2 py-1 border border-gray-300 rounded disabled:opacity-50"
                   >
-                    Previous
+                    {t("partner.sales.previous")}
                   </button>
                   <button
                     type="button"
@@ -618,7 +619,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                     onClick={() => setPage((p) => p + 1)}
                     className="px-2 py-1 border border-gray-300 rounded disabled:opacity-50"
                   >
-                    Next
+                    {t("partner.sales.next")}
                   </button>
                 </div>
               </div>
@@ -631,26 +632,26 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {emailOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
-            <h3 className="font-semibold text-lg mb-4">Email report</h3>
-            <p className="text-gray-500 text-sm mb-4">Send the current projects report (same filters) as a CSV attachment.</p>
+            <h3 className="font-semibold text-lg mb-4">{t("partner.reports.emailModalTitle")}</h3>
+            <p className="text-gray-500 text-sm mb-4">{t("partner.reports.emailModalDescription")}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email address *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.reports.emailAddressLabel")}</label>
                 <input
                   type="email"
                   value={emailTo}
                   onChange={(e) => setEmailTo(e.target.value)}
-                  placeholder="recipient@example.com"
+                  placeholder={t("partner.reports.emailAddressPlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.reports.subjectOptional")}</label>
                 <input
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  placeholder="VBT Projects Report"
+                  placeholder={t("partner.reports.subjectPlaceholder")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
                 />
               </div>
@@ -664,7 +665,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 onClick={() => { setEmailOpen(false); setEmailMessage(null); }}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -672,7 +673,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 disabled={emailSending || !emailTo.trim()}
                 className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                {emailSending ? "Sending..." : "Send"}
+                {emailSending ? t("partner.sales.sending") : t("partner.sales.send")}
               </button>
             </div>
           </div>

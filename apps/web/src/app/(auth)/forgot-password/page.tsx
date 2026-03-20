@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,17 +9,19 @@ import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/context";
 import { Locale } from "@/lib/i18n/translations";
 
-const schema = z.object({
-  email: z.string().email(),
-});
-
-type FormData = z.infer<typeof schema>;
+function getForgotSchema(t: (key: string) => string) {
+  return z.object({
+    email: z.string().email(t("auth.emailInvalid")),
+  });
+}
+type FormData = z.infer<ReturnType<typeof getForgotSchema>>;
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const { locale, setLocale, t } = useLanguage();
+  const schema = useMemo(() => getForgotSchema(t), [t]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -33,7 +35,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.email }),
+        body: JSON.stringify({ email: data.email, locale }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -123,7 +125,7 @@ export default function ForgotPasswordPage() {
                     type="email"
                     autoComplete="email"
                     className="w-full px-3 py-2 bg-white text-gray-900 border border-white/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
-                    placeholder="you@example.com"
+                    placeholder={t("auth.placeholderEmail")}
                   />
                   {errors.email && (
                     <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>

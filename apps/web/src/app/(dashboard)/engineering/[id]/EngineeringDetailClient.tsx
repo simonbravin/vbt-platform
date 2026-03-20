@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FolderOpen, FileText, ExternalLink, Upload } from "lucide-react";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage } from "@/lib/i18n/context";
 
 type Request = {
   id: string;
@@ -30,7 +30,8 @@ interface Props {
 }
 
 export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
-  const t = useT();
+  const { locale, t } = useLanguage();
+  const dateLocale = locale === "es" ? "es" : "en";
   const [request, setRequest] = useState<Request | null>(initialRequest ?? null);
   const [loading, setLoading] = useState(!initialRequest);
   const [error, setError] = useState<string | null>(null);
@@ -156,10 +157,27 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
               ))}
             </p>
           )}
-          {request.targetDeliveryDate && <p className="text-sm text-gray-600"><span className="text-gray-500">Target delivery:</span> {new Date(request.targetDeliveryDate).toLocaleDateString()}</p>}
-          {request.requestedByUser?.fullName && <p className="text-sm text-gray-600"><span className="text-gray-500">Requested by:</span> {request.requestedByUser.fullName}</p>}
-          {request.assignedToUser?.fullName && <p className="text-sm text-gray-600"><span className="text-gray-500">Assigned to:</span> {request.assignedToUser.fullName}</p>}
-          {request.notes && <p className="text-sm text-gray-600"><span className="text-gray-500">Notes:</span> {request.notes}</p>}
+          {request.targetDeliveryDate && (
+            <p className="text-sm text-gray-600">
+              <span className="text-gray-500">{t("partner.engineering.targetDelivery")}:</span>{" "}
+              {new Date(request.targetDeliveryDate).toLocaleDateString(dateLocale)}
+            </p>
+          )}
+          {request.requestedByUser?.fullName && (
+            <p className="text-sm text-gray-600">
+              <span className="text-gray-500">{t("partner.engineering.requestedBy")}:</span> {request.requestedByUser.fullName}
+            </p>
+          )}
+          {request.assignedToUser?.fullName && (
+            <p className="text-sm text-gray-600">
+              <span className="text-gray-500">{t("partner.engineering.assignedTo")}:</span> {request.assignedToUser.fullName}
+            </p>
+          )}
+          {request.notes && (
+            <p className="text-sm text-gray-600">
+              <span className="text-gray-500">{t("partner.engineering.notes")}:</span> {request.notes}
+            </p>
+          )}
         </div>
       </div>
 
@@ -211,18 +229,18 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
       {request.deliverables && request.deliverables.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Deliverables</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.deliverablesTitle")}</h3>
           </div>
           <ul className="p-5 space-y-2">
             {request.deliverables.map((d) => (
               <li key={d.id}>
                 {d.fileUrl ? (
                   <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-vbt-blue hover:underline flex items-center gap-1">
-                    {d.title ?? "Deliverable"}
+                    {d.title ?? t("partner.engineering.deliverableFallback")}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
-                  <span className="text-sm text-gray-600">{d.title ?? "Deliverable"}</span>
+                  <span className="text-sm text-gray-600">{d.title ?? t("partner.engineering.deliverableFallback")}</span>
                 )}
               </li>
             ))}

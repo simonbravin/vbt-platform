@@ -88,7 +88,7 @@ export function GlobalReportsClient() {
     }
     fetchData();
     return () => { cancelled = true; };
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, t]);
 
   const exportUrl = (format: "csv" | "xlsx") => {
     const params = new URLSearchParams();
@@ -117,7 +117,7 @@ export function GlobalReportsClient() {
     return (
       <div className="rounded-xl border border-alert-warningBorder bg-alert-warning p-6 text-foreground">
         <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1 text-muted-foreground">Check that you are logged in as a platform superadmin. If the problem continues, try again later.</p>
+        <p className="text-sm mt-1 text-muted-foreground">{t("superadmin.globalReports.errorHint")}</p>
       </div>
     );
   }
@@ -127,7 +127,7 @@ export function GlobalReportsClient() {
       {/* Date filter */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">{t("superadmin.globalReports.dateFrom")}</label>
           <input
             type="date"
             value={dateFrom}
@@ -136,7 +136,7 @@ export function GlobalReportsClient() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">To</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">{t("superadmin.globalReports.dateTo")}</label>
           <input
             type="date"
             value={dateTo}
@@ -154,7 +154,7 @@ export function GlobalReportsClient() {
               <FolderOpen className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.globalReports.kpiTotalProjects")}</p>
               <p className="text-2xl font-semibold text-foreground">{pipeline?.projects_total ?? overview?.projects_total ?? 0}</p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function GlobalReportsClient() {
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Quotes</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.globalReports.kpiTotalQuotes")}</p>
               <p className="text-2xl font-semibold text-foreground">{pipeline?.quotes_total ?? overview?.quotes_total ?? 0}</p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function GlobalReportsClient() {
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Pipeline Value</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.globalReports.kpiPipelineValue")}</p>
               <p className="text-2xl font-semibold text-foreground">
                 {formatCurrency(pipeline?.quotes_value_pipeline ?? overview?.quotes_pipeline_value ?? 0)}
               </p>
@@ -189,7 +189,7 @@ export function GlobalReportsClient() {
               <BarChart3 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Won / Lost</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.globalReports.kpiWonLost")}</p>
               <p className="text-lg font-semibold text-foreground">
                 {formatCurrency(pipeline?.quotes_value_won ?? overview?.quotes_won_value ?? 0)} /{" "}
                 {formatCurrency(pipeline?.quotes_value_lost ?? 0)}
@@ -204,26 +204,26 @@ export function GlobalReportsClient() {
         <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-foreground">Partner leaderboard</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t("superadmin.globalReports.leaderboardTitle")}</h2>
           </div>
           <div className="flex items-center gap-2">
             <a
               href={exportUrl("csv")}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              <Download className="h-4 w-4" /> Export CSV
+              <Download className="h-4 w-4" /> {t("superadmin.globalReports.exportCsv")}
             </a>
             <a
               href={exportUrl("xlsx")}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
-              <Download className="h-4 w-4" /> Export Excel
+              <Download className="h-4 w-4" /> {t("superadmin.globalReports.exportExcel")}
             </a>
             <Link
               href="/superadmin/analytics"
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Full Analytics <ArrowRight className="h-4 w-4" />
+              {t("superadmin.globalReports.fullAnalytics")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -231,18 +231,18 @@ export function GlobalReportsClient() {
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Partner</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Quotes</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Won</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenue</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Conversion</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colPartner")}</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colProjects")}</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colQuotes")}</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colWon")}</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colRevenue")}</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.globalReports.colConversion")}</th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
               {leaderboard.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">No partner data yet</td>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">{t("superadmin.globalReports.noPartnerData")}</td>
                 </tr>
               ) : (
                 leaderboard.map((row) => (

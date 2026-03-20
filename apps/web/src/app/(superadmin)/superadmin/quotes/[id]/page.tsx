@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SuperadminQuoteDetailClient } from "./SuperadminQuoteDetailClient";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function SuperadminQuoteDetailPage({
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
 
+  const { t } = await getServerT();
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,12 +27,10 @@ export default async function SuperadminQuoteDetailPage({
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to quotes
+          {t("superadmin.page.backToQuotes")}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Quote detail</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Review, approve, reject or modify. Add a comment when changing status or editing.
-        </p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("superadmin.page.quoteDetailTitle")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.quoteDetailSubtitle")}</p>
       </div>
       <SuperadminQuoteDetailClient quoteId={params.id} />
     </div>

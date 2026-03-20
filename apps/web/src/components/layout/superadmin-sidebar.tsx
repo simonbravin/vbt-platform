@@ -68,7 +68,11 @@ const superadminNavigation: NavItem[] = [
   },
 ];
 
-export function SuperadminSidebar() {
+interface SuperadminSidebarProps {
+  userDisplayName?: string | null;
+}
+
+export function SuperadminSidebar({ userDisplayName }: SuperadminSidebarProps) {
   const pathname = usePathname();
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>(["nav.superadmin.content", "nav.admin"]);
@@ -161,8 +165,15 @@ export function SuperadminSidebar() {
           );
         })}
       </nav>
+      {userDisplayName?.trim() ? (
+        <div className="px-4 py-2.5 border-t border-header-foreground/10">
+          <p className="text-header-foreground/90 text-sm text-center font-medium truncate" title={userDisplayName.trim()}>
+            {userDisplayName.trim()}
+          </p>
+        </div>
+      ) : null}
       <div className="px-4 py-3 border-t border-header-foreground/10">
-        <p className="text-header-foreground/30 text-xs text-center">Superadmin Portal</p>
+        <p className="text-header-foreground/30 text-xs text-center">{t("sidebar.superadminPortal")}</p>
       </div>
     </div>
   );

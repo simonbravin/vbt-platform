@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
-import { useT } from "@/lib/i18n/context";
+import { useLanguage } from "@/lib/i18n/context";
+
+const QUOTE_STATUSES = ["draft", "sent", "accepted", "rejected", "expired"] as const;
+
+function quoteStatusLabel(t: (key: string) => string, status: string): string {
+  if ((QUOTE_STATUSES as readonly string[]).includes(status)) {
+    return t(`quotes.${status}`);
+  }
+  return status;
+}
 
 type QuoteDetail = {
   id: string;
@@ -33,7 +42,8 @@ type QuoteDetail = {
 };
 
 export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
-  const t = useT();
+  const { locale, t } = useLanguage();
+  const dateLocale = locale === "es" ? "es" : "en";
   const router = useRouter();
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,8 +60,8 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       try {
         const res = await fetch(`/api/saas/quotes/${quoteId}`);
         if (!res.ok) {
-          if (res.status === 404) setError("Quote not found");
-          else setError("Failed to load quote");
+          if (res.status === 404) setError(t("superadmin.quoteDetail.quoteNotFound"));
+          else setError(t("superadmin.quoteDetail.failedToLoad"));
           return;
         }
         const data = await res.json();
@@ -61,14 +71,14 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
           setModifyVisionLatamPct(String(data.visionLatamMarkupPct ?? ""));
         }
       } catch {
-        if (!cancelled) setError("Failed to load quote");
+        if (!cancelled) setError(t("superadmin.quoteDetail.failedToLoad"));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     fetchQuote();
     return () => { cancelled = true; };
-  }, [quoteId]);
+  }, [quoteId, t]);
 
   const patch = async (body: { status?: string; superadminComment?: string | null; totalPrice?: number; visionLatamMarkupPct?: number }) => {
     setActionLoading("patch");
@@ -80,7 +90,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err?.error ?? "Failed to update quote");
+        alert(err?.error ?? t("superadmin.quoteDetail.failedToUpdate"));
         return;
       }
       const updated = await res.json();
@@ -103,7 +113,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
 
   const handleModifySubmit = () => {
     if (!comment.trim()) {
-      alert("A comment is required when modifying a quote. The partner will need to re-approve after your changes.");
+      alert(t("superadmin.quoteDetail.modifyRequiresCommentAlert"));
       return;
     }
     const total = modifyTotalPrice.trim() ? parseFloat(modifyTotalPrice) : undefined;
@@ -119,8 +129,14 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
     });
   };
 
-  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
-  if (error || !quote) return <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 font-medium text-foreground">{error ?? "Not found"}</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
+  if (error || !quote) {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 font-medium text-foreground">
+        {error ?? t("superadmin.quoteDetail.notFound")}
+      </div>
+    );
+  }
 
   const vlCommission = (quote.factoryCostTotal ?? 0) * (quote.visionLatamMarkupPct ?? 0) / 100;
   const basePriceForPartner = (quote.factoryCostTotal ?? 0) * (1 + (quote.visionLatamMarkupPct ?? 0) / 100);
@@ -128,56 +144,58 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Quote data</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.quoteDataTitle")}</h2>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Quote number</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colQuoteNumber")}</dt>
             <dd className="mt-0.5 text-sm font-medium text-foreground">{quote.quoteNumber}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Organization</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colOrganization")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{(quote as { organization?: { name: string } }).organization?.name ?? quote.organizationId}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Project</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colProject")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{quote.project?.projectName ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Status</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colStatus")}</dt>
             <dd className="mt-0.5">
               <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
-                {quote.status}
+                {quoteStatusLabel(t, quote.status)}
               </span>
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Factory cost</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colFactoryCost")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{formatCurrency(quote.factoryCostTotal ?? 0)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Vision Latam %</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colVisionLatamPct")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{quote.visionLatamMarkupPct ?? 0}%</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">VL commission (amount)</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colVlCommissionAmount")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{formatCurrency(vlCommission)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Base price for partner</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colBasePriceForPartner")}</dt>
             <dd className="mt-0.5 text-sm text-foreground">{formatCurrency(basePriceForPartner)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Total price</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.colTotalPrice")}</dt>
             <dd className="mt-0.5 text-sm font-medium text-foreground">{formatCurrency(quote.totalPrice ?? 0)}</dd>
           </div>
         </dl>
         {quote.superadminComment && (
           <div className="mt-4 pt-4 border-t border-border">
-            <dt className="text-xs font-medium text-muted-foreground uppercase">Last superadmin comment</dt>
+            <dt className="text-xs font-medium text-muted-foreground uppercase">{t("superadmin.quoteDetail.lastSuperadminComment")}</dt>
             <dd className="mt-1 text-sm text-foreground">{quote.superadminComment}</dd>
             {quote.reviewedAt && (
               <dd className="mt-0.5 text-xs text-muted-foreground">
-                Reviewed at {new Date(quote.reviewedAt).toLocaleString()}
+                {t("superadmin.quoteDetail.reviewedAt", {
+                  at: new Date(quote.reviewedAt).toLocaleString(dateLocale),
+                })}
               </dd>
             )}
           </div>
@@ -185,12 +203,12 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-foreground mb-2">Comment</h2>
-        <p className="text-sm text-muted-foreground mb-2">Required when rejecting or modifying. Optional when approving.</p>
+        <h2 className="text-lg font-semibold text-foreground mb-2">{t("superadmin.quoteDetail.commentTitle")}</h2>
+        <p className="text-sm text-muted-foreground mb-2">{t("superadmin.quoteDetail.commentHelp")}</p>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Comment for the partner..."
+          placeholder={t("superadmin.quotes.commentForPartnerPlaceholder")}
           className="w-full min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
           rows={3}
         />
@@ -204,7 +222,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             disabled={!!actionLoading}
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
-            {actionLoading ? "…" : "Approve"}
+            {actionLoading ? "…" : t("superadmin.quoteDetail.approve")}
           </button>
         )}
         {quote.status !== "rejected" && (
@@ -212,10 +230,10 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             type="button"
             onClick={handleReject}
             disabled={!!actionLoading}
-            title={!comment.trim() ? "Comment required to reject" : undefined}
+            title={!comment.trim() ? t("superadmin.quoteDetail.commentRequiredToReject") : undefined}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {actionLoading ? "…" : "Reject"}
+            {actionLoading ? "…" : t("superadmin.quoteDetail.reject")}
           </button>
         )}
         <button
@@ -223,16 +241,16 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
           onClick={() => setModifyOpen(!modifyOpen)}
           className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
         >
-          {modifyOpen ? "Cancel modify" : "Modify"}
+          {modifyOpen ? t("superadmin.quoteDetail.cancelModify") : t("superadmin.quoteDetail.modify")}
         </button>
       </div>
 
       {modifyOpen && (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Modify quote</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.modifyTitle")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Total price</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{t("superadmin.quoteDetail.labelTotalPrice")}</label>
               <input
                 type="number"
                 value={modifyTotalPrice}
@@ -242,7 +260,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Vision Latam %</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{t("superadmin.quoteDetail.labelVisionLatamPct")}</label>
               <input
                 type="number"
                 value={modifyVisionLatamPct}
@@ -254,29 +272,29 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
               />
             </div>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">Comment above is required. After saving, the quote status will be set to Sent and the partner must re-approve.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.quoteDetail.modifyNote")}</p>
           <button
             type="button"
             onClick={handleModifySubmit}
             disabled={!!actionLoading}
             className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {actionLoading ? "Saving…" : "Save changes"}
+            {actionLoading ? t("superadmin.quoteDetail.saving") : t("superadmin.quoteDetail.saveChanges")}
           </button>
         </div>
       )}
 
       {quote.items && quote.items.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Items</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.itemsTitle")}</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-border text-sm">
               <thead>
                 <tr>
-                  <th className="text-left py-2 font-medium text-muted-foreground">Description</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Qty</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Unit price</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Total</th>
+                  <th className="text-left py-2 font-medium text-muted-foreground">{t("superadmin.quoteDetail.colDescription")}</th>
+                  <th className="text-right py-2 font-medium text-muted-foreground">{t("superadmin.quoteDetail.colQty")}</th>
+                  <th className="text-right py-2 font-medium text-muted-foreground">{t("superadmin.quoteDetail.colUnitPrice")}</th>
+                  <th className="text-right py-2 font-medium text-muted-foreground">{t("superadmin.quoteDetail.colLineTotal")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

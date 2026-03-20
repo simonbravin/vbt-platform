@@ -1,16 +1,21 @@
 /**
- * Shared VBT email layout for notifications (statements, quotes, reports, invites, etc.).
- * Single source for colors/layout: change here to update all emails.
- * Estética: header #1a3a5c, acento #e87722, fondo #f8f9fa.
+ * Shared VBT email layout for transactional messages.
+ * Table-based wrapper for broad client support; accent bar + clear type hierarchy.
  */
 export const VBT_EMAIL = {
   headerBg: "#1a3a5c",
   accent: "#e87722",
-  bodyBg: "#f8f9fa",
-  text: "#333",
-  textMuted: "#6c757d",
-  border: "#dee2e6",
+  bodyBg: "#ffffff",
+  pageBg: "#eef1f5",
+  text: "#374151",
+  textMuted: "#6b7280",
+  border: "#e5e7eb",
+  cardShadow: "0 4px 24px rgba(26, 58, 92, 0.1)",
 } as const;
+
+/** System stack for crisp rendering in Apple Mail, Gmail, Outlook.com */
+export const EMAIL_FONT_STACK =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 
 export function escapeHtml(s: string): string {
   return s
@@ -21,100 +26,106 @@ export function escapeHtml(s: string): string {
 }
 
 export type VbtEmailOptions = {
-  /** Main title in the header (e.g. "Account Statements") */
+  /** Main headline (large, in the colored header) */
   title: string;
-  /** Subtitle under the main title (e.g. "Vision Building Technologies") */
+  /** Small uppercase label above the headline (e.g. brand) */
   subtitle?: string;
-  /** HTML content for the body (already safe, or use escapeHtml for user content) */
   bodyHtml: string;
-  /** Optional custom footer line; default generic VBT line */
   footerText?: string;
-  /** If set, adds a line like "Please find the PDF attached." */
   attachmentDescription?: string;
+  /**
+   * Hidden preview line in inbox (Gmail, Apple Mail). Defaults to a short slice of `title`.
+   */
+  preheader?: string;
 };
+
+function truncatePreheader(s: string, max = 100): string {
+  const t = s.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
+/** Primary action button (orange) — use for one main CTA per email */
+export function emailPrimaryButton(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 28px;background-color:${VBT_EMAIL.accent};color:#ffffff !important;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;line-height:1.25;font-family:${EMAIL_FONT_STACK};">${escapeHtml(label)}</a>`;
+}
+
+/** Inline text link (accent color) */
+export function emailTextLink(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" style="color:${VBT_EMAIL.accent};font-weight:600;text-decoration:none;">${escapeHtml(label)}</a>`;
+}
 
 export function buildVbtEmailHtml(options: VbtEmailOptions): string {
   const {
     title,
     subtitle = "Vision Building Technologies",
     bodyHtml,
-    footerText = "This notification was sent by the VBT Cost Calculator.",
+    footerText = "This notification was sent by the VBT Platform.",
     attachmentDescription,
+    preheader: preheaderOpt,
   } = options;
+
+  const preheader = escapeHtml(truncatePreheader(preheaderOpt ?? title));
+  const ff = EMAIL_FONT_STACK;
+
+  const attachmentBlock = attachmentDescription
+    ? `
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:24px;">
+              <tr>
+                <td style="padding:16px 18px;background-color:#f8fafc;border-radius:8px;border-left:3px solid ${VBT_EMAIL.accent};font-family:${ff};font-size:14px;line-height:1.55;color:#4b5563;">
+                  ${escapeHtml(attachmentDescription)}
+                </td>
+              </tr>
+            </table>`
+    : "";
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>${escapeHtml(title)}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #e9ecef;">
-  <div style="max-width: 600px; margin: 24px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-    <div style="background-color: ${VBT_EMAIL.headerBg}; padding: 24px; color: white;">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 600;">${escapeHtml(subtitle)}</h1>
-      <p style="margin: 6px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.85);">${escapeHtml(title)}</p>
-    </div>
-    <div style="background-color: ${VBT_EMAIL.bodyBg}; padding: 24px; color: ${VBT_EMAIL.text}; font-size: 14px; line-height: 1.5;">
-      ${bodyHtml}
-      ${attachmentDescription ? `<p style="color: #555; font-size: 14px; margin-top: 20px;">${escapeHtml(attachmentDescription)}</p>` : ""}
-      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid ${VBT_EMAIL.border};">
-        <p style="color: ${VBT_EMAIL.textMuted}; font-size: 12px; margin: 0;">${escapeHtml(footerText)}</p>
-      </div>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:${VBT_EMAIL.pageBg};">
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${preheader}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${VBT_EMAIL.pageBg};">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:${VBT_EMAIL.cardShadow};">
+          <tr>
+            <td style="height:4px;line-height:4px;font-size:0;background-color:${VBT_EMAIL.accent};">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="background-color:${VBT_EMAIL.headerBg};padding:28px 32px 32px 32px;">
+              <p style="margin:0 0 10px;font-family:${ff};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.75);">${escapeHtml(subtitle)}</p>
+              <h1 style="margin:0;font-family:${ff};font-size:26px;font-weight:600;color:#ffffff;line-height:1.28;">${escapeHtml(title)}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 32px 32px 32px;font-family:${ff};font-size:15px;line-height:1.65;color:${VBT_EMAIL.text};background-color:${VBT_EMAIL.bodyBg};">
+              ${bodyHtml}
+              ${attachmentBlock}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;border-top:1px solid ${VBT_EMAIL.border};">
+                <tr>
+                  <td style="padding-top:22px;">
+                    <p style="margin:0;font-family:${ff};font-size:12px;line-height:1.55;color:${VBT_EMAIL.textMuted};">${escapeHtml(footerText)}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:20px 0 0;font-family:${ff};font-size:11px;line-height:1.4;color:#9ca3af;text-align:center;max-width:600px;">
+          © Vision Building Technologies · Vision Latam
+        </p>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
 `.trim();
-}
-
-/** Partner invite: "You have been added to {partnerName}" */
-export type PartnerInviteEmailOptions = {
-  partnerName: string;
-  inviteeEmail: string;
-  role: string;
-  appUrl: string;
-};
-
-export function buildPartnerInviteEmailHtml(options: PartnerInviteEmailOptions): string {
-  const { partnerName, role, appUrl } = options;
-  const bodyHtml = `
-    <p style="margin: 0 0 16px 0;">You have been added to the partner organization <strong>${escapeHtml(partnerName)}</strong> with the role <strong>${escapeHtml(role)}</strong>.</p>
-    <p style="margin: 0 0 16px 0;">You can sign in and switch to this organization to start working.</p>
-    <p style="margin: 0;">
-      <a href="${escapeHtml(appUrl)}" style="display: inline-block; padding: 10px 20px; background-color: ${VBT_EMAIL.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Sign in to VBT Cotizador</a>
-    </p>
-  `.trim();
-  return buildVbtEmailHtml({
-    title: "Partner organization invitation",
-    subtitle: "Vision Building Technologies",
-    bodyHtml,
-    footerText: "This invitation was sent by the VBT platform administrator.",
-  });
-}
-
-/** Partner invite for new users: "Create your account to join {partnerName}" */
-export type PartnerInviteNewUserEmailOptions = {
-  partnerName: string;
-  inviteeEmail: string;
-  role: string;
-  acceptUrl: string;
-};
-
-export function buildPartnerInviteNewUserEmailHtml(options: PartnerInviteNewUserEmailOptions): string {
-  const { partnerName, role, acceptUrl } = options;
-  const bodyHtml = `
-    <p style="margin: 0 0 16px 0;">You have been invited to join the partner organization <strong>${escapeHtml(partnerName)}</strong> as <strong>${escapeHtml(role)}</strong>.</p>
-    <p style="margin: 0 0 16px 0;">Click the button below to create your account and get started. The link is valid for 7 days.</p>
-    <p style="margin: 0;">
-      <a href="${escapeHtml(acceptUrl)}" style="display: inline-block; padding: 10px 20px; background-color: ${VBT_EMAIL.accent}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Create account</a>
-    </p>
-  `.trim();
-  return buildVbtEmailHtml({
-    title: "Invitation to join partner portal",
-    subtitle: "Vision Building Technologies",
-    bodyHtml,
-    footerText: "This invitation was sent by the VBT platform administrator.",
-  });
 }

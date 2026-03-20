@@ -129,6 +129,12 @@ enum TrainingEnrollmentStatus {
   completed
 }
 
+/// Preferred language for transactional email subjects (and future templates).
+enum EmailLocale {
+  en
+  es
+}
+
 // ─── Users ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -141,6 +147,8 @@ model User {
   isPlatformSuperadmin Boolean   @default(false) @map("is_platform_superadmin")
   emailVerified        DateTime? @map("email_verified")
   image                String?
+  /// Set at signup from UI locale; updated when user requests password reset with a locale hint.
+  emailLocale          EmailLocale @default(en) @map("email_locale")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
   lastLoginAt          DateTime? @map("last_login_at")

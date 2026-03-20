@@ -10,8 +10,9 @@ import { LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VBT Cost Calculator",
-  description: "Vision Building Technologies – Internal Quoting Tool",
+  title: "VBT Platform",
+  description:
+    "Vision Building Technologies – Partner platform for distributors: quotes, clients, and sales.",
 };
 
 export default async function RootLayout({
