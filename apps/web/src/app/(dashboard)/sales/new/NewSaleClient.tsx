@@ -5,12 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
+import { saasQuoteRowToLegacySaleShape, type LegacySaleQuoteRow } from "@/lib/saas-quote-legacy-sale-shape";
 import { useT } from "@/lib/i18n/context";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientId: string | null };
-type Quote = { id: string; quoteNumber: string | null; factoryCostUsd: number; commissionPct: number; commissionFixed: number; fobUsd: number; freightCostUsd: number; cifUsd: number; taxesFeesUsd: number; landedDdpUsd: number };
+type Quote = LegacySaleQuoteRow;
 type Entity = { id: string; name: string; slug: string };
 
 type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; referenceNumber: string; notes: string };
@@ -44,7 +45,7 @@ export function NewSaleClient() {
 
   useEffect(() => {
     fetch("/api/clients?limit=500").then((r) => r.json()).then((d) => setClients(d.clients ?? []));
-    fetch("/api/projects?limit=500").then((r) => r.json()).then((d) => setProjects(d.projects ?? []));
+    fetch("/api/saas/projects?limit=500").then((r) => r.json()).then((d) => setProjects(d.projects ?? []));
     fetch("/api/sales/entities").then((r) => r.json()).then((d) => setEntities(Array.isArray(d) ? d : []));
   }, []);
 
@@ -67,10 +68,11 @@ export function NewSaleClient() {
       setQuoteId("");
       return;
     }
-    fetch(`/api/quotes?projectId=${projectId}&limit=50`)
+    fetch(`/api/saas/quotes?projectId=${projectId}&limit=50`)
       .then((r) => r.json())
       .then((d) => {
-        const list = Array.isArray(d) ? d : d.quotes ?? [];
+        const raw = Array.isArray(d) ? d : d.quotes ?? [];
+        const list = raw.map((row: Record<string, unknown>) => saasQuoteRowToLegacySaleShape(row));
         setQuotes(list);
         const fromUrl = searchParams.get("quoteId");
         if (fromUrl && list.some((x: { id: string }) => x.id === fromUrl)) setQuoteId(fromUrl);
@@ -220,7 +222,9 @@ export function NewSaleClient() {
             >
               <option value="">{t("partner.sales.new.selectProject")}</option>
               {projectsForClient.map((p) => (
-                <option key={p.id} value={p.id}>{(p as any).name ?? p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {(p as { projectName?: string; name?: string }).projectName ?? p.name ?? p.id.slice(0, 8)}
+                </option>
               ))}
             </select>
           </div>

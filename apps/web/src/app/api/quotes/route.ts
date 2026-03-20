@@ -1,36 +1,14 @@
+/**
+ * @deprecated Legacy quotes list/create (session + Prisma). CANONICAL: `/api/saas/quotes`.
+ * Keep GET list for integraciones que aún esperan array plano; el dashboard usa `/api/saas/quotes` + mapeo en cliente.
+ * POST remains 501 — create via SaaS.
+ */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
-import { z } from "zod";
-import { buildQuoteSnapshot, TaxRule, removeVersionPrefix } from "@vbt/core";
-import { generateQuoteNumber } from "@/lib/utils";
-
-const createSchema = z.object({
-  projectId: z.string().min(1),
-  costMethod: z.enum(["CSV", "M2_BY_SYSTEM", "M2_TOTAL"]),
-  baseUom: z.enum(["M", "FT"]).default("M"),
-  revitImportId: z.string().optional(),
-  warehouseId: z.string().optional(),
-  reserveStock: z.boolean().default(false),
-  m2S80: z.number().min(0).default(0),
-  m2S150: z.number().min(0).default(0),
-  m2S200: z.number().min(0).default(0),
-  m2Total: z.number().min(0).default(0),
-  commissionPct: z.number().min(0).default(0),
-  commissionFixed: z.number().min(0).default(0),
-  commissionFixedPerKit: z.number().min(0).default(0),
-  freightCostUsd: z.number().min(0).default(0),
-  freightProfileId: z.string().optional(),
-  numContainers: z.number().min(1).default(1),
-  kitsPerContainer: z.number().min(0).default(0),
-  totalKits: z.number().min(0).default(0),
-  countryId: z.string().optional(),
-  taxRuleSetId: z.string().optional(),
-  notes: z.string().optional(),
-  factoryCostUsd: z.number().min(0).optional(),
-});
+import { normalizeQuoteStatus, QuoteMissingTaxSnapshotError, toLegacySalesQuoteShape } from "@vbt/core";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -38,7 +16,8 @@ export async function GET(req: Request) {
   const user = session.user as any;
 
   const url = new URL(req.url);
-  const status = url.searchParams.get("status") ?? "";
+  const statusRaw = url.searchParams.get("status") ?? "";
+  const statusNorm = statusRaw.trim() ? normalizeQuoteStatus(statusRaw) : null;
   const projectId = url.searchParams.get("projectId") ?? "";
   const search = (url.searchParams.get("search") ?? "").trim();
 
@@ -47,7 +26,7 @@ export async function GET(req: Request) {
 
   const where: any = {
     organizationId,
-    ...(status ? { status: status as "draft" | "sent" | "accepted" } : {}),
+    ...(statusNorm ? { status: statusNorm } : {}),
     ...(projectId ? { projectId } : {}),
   };
 
@@ -60,17 +39,37 @@ export async function GET(req: Request) {
     ];
   }
 
-  const quotes = await prisma.quote.findMany({
-    where,
-    include: {
-      project: { select: { projectName: true, id: true, client: { select: { name: true } }, city: true } },
-      _count: { select: { items: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 200,
-  });
+  try {
+    const quotes = await prisma.quote.findMany({
+      where,
+      include: {
+        project: {
+          select: {
+            projectName: true,
+            id: true,
+            countryCode: true,
+            client: { select: { name: true } },
+            city: true,
+          },
+        },
+        _count: { select: { items: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
 
-  return NextResponse.json(quotes);
+    return NextResponse.json(
+      quotes.map((row) => toLegacySalesQuoteShape({ ...(row as object) } as Record<string, unknown>))
+    );
+  } catch (e) {
+    if (e instanceof QuoteMissingTaxSnapshotError) {
+      return NextResponse.json(
+        { error: e.message, code: e.code, quoteId: e.quoteId },
+        { status: 422 }
+      );
+    }
+    throw e;
+  }
 }
 
 export async function POST(_req: Request) {

@@ -49,6 +49,7 @@ const QUOTE_STATUS_I18N: Record<string, string> = {
   accepted: "quotes.accepted",
   rejected: "quotes.rejected",
   expired: "quotes.expired",
+  archived: "quotes.archived",
 };
 
 export function ProjectDetailClient({ initialProject }: { initialProject: Project }) {
@@ -89,6 +90,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
     expectedCloseDate: project.expectedCloseDate ? String(project.expectedCloseDate).slice(0, 10) : "",
   });
 
+  // Auditoría por proyecto: aún no hay `/api/saas/projects/:id/audit`.
   useEffect(() => {
     fetch(`/api/projects/${project.id}/audit`)
       .then((r) => r.json())
@@ -133,7 +135,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
   const handleDelete = async () => {
     setDeleting(true);
-    const res = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/saas/projects/${project.id}`, { method: "DELETE" });
     setDeleting(false);
     setDeleteDialog(false);
     if (res.ok) router.push("/projects");
@@ -176,7 +178,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
   const saveEdit = async () => {
     setSaving(true);
-    const res = await fetch(`/api/projects/${project.id}`, {
+    const res = await fetch(`/api/saas/projects/${project.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

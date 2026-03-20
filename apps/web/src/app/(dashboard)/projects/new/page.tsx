@@ -111,7 +111,7 @@ export default function NewProjectPage() {
         estimatedTotalAreaM2: form.estimatedTotalAreaM2 ? parseFloat(form.estimatedTotalAreaM2) : null,
         description: form.description.trim() || undefined,
       };
-      const res = await fetch("/api/projects", {
+      const res = await fetch("/api/saas/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

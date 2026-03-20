@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@vbt/db";
+import type { PartnerQuoteDefaultsJson } from "../pricing/partner-pricing-resolution";
+import { parsePartnerQuoteDefaultsJson } from "../pricing/partner-pricing-resolution";
 import { type TenantContext, orgScopeWhere } from "./tenant-context";
 
 const PARTNER_ORG_TYPES = ["commercial_partner", "master_partner"] as const;
@@ -117,6 +119,8 @@ export type UpdatePartnerInput = {
   moduleVisibility?: Record<string, boolean> | null;
   /** Panel systems this partner can use: S80, S150, S200. Null = all enabled. */
   enabledSystems?: string[] | null;
+  /** Deep-merge into `partner_profiles.quote_defaults` (SaaS pricing defaults + country overrides). */
+  quotePricingDefaults?: Partial<PartnerQuoteDefaultsJson> | null;
 };
 
 export async function updatePartner(
@@ -165,6 +169,36 @@ export async function updatePartner(
   if (data.visionLatamCommissionFixedUsd !== undefined) profileUpdate.visionLatamCommissionFixedUsd = data.visionLatamCommissionFixedUsd;
   if (data.moduleVisibility !== undefined) profileUpdate.moduleVisibility = data.moduleVisibility as object;
   if (data.enabledSystems !== undefined) profileUpdate.enabledSystems = data.enabledSystems as object;
+  if (data.quotePricingDefaults !== undefined && data.quotePricingDefaults !== null) {
+    const qpd = data.quotePricingDefaults;
+    const prev = parsePartnerQuoteDefaultsJson(existing.partnerProfile?.quoteDefaults ?? undefined);
+    const next: PartnerQuoteDefaultsJson = { ...prev, ...qpd };
+    if (qpd.countryOverrides !== undefined) {
+      next.countryOverrides = qpd.countryOverrides;
+    }
+    profileUpdate.quoteDefaults = next as object;
+  }
+
+  const profileData =
+    Object.keys(profileUpdate).length > 0
+      ? !existing.partnerProfile
+        ? {
+            partnerProfile: {
+              create: {
+                partnerType:
+                  orgType === "master_partner"
+                    ? ("master_partner" as const)
+                    : ("commercial_partner" as const),
+                ...(profileUpdate as Record<string, unknown>),
+              },
+            },
+          }
+        : {
+            partnerProfile: {
+              update: profileUpdate as Parameters<typeof prisma.partnerProfile.update>[0]["data"],
+            },
+          }
+      : {};
 
   const updated = await prisma.organization.update({
     where: { id: partnerId },
@@ -174,11 +208,7 @@ export async function updatePartner(
       countryCode: orgCountry,
       status: orgStatus,
       organizationType: orgType,
-      ...(existing.partnerProfile && Object.keys(profileUpdate).length > 0 && {
-        partnerProfile: {
-          update: profileUpdate as Parameters<typeof prisma.partnerProfile.update>[0]["data"],
-        },
-      }),
+      ...profileData,
     },
     include: { partnerProfile: true },
   });

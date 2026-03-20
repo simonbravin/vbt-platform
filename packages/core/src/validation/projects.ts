@@ -24,7 +24,14 @@ export const createProjectSchema = z.object({
   expectedCloseDate: z.union([z.string().datetime(), z.string()]).optional(),
 });
 
-export const updateProjectSchema = createProjectSchema.partial();
+/** PATCH body: permite `expectedCloseDate: null` para limpiar la fecha (misma semántica que rutas legacy). */
+export const updateProjectSchema = createProjectSchema
+  .partial()
+  .extend({
+    expectedCloseDate: z
+      .union([z.string().datetime(), z.string(), z.null()])
+      .optional(),
+  });
 
 export const listProjectsQuerySchema = z.object({
   status: projectStatusEnum.optional(),

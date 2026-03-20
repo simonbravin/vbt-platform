@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy project-by-id API. CANONICAL: `/api/saas/projects/[id]` (GET/PATCH/DELETE).
+ * Conservar solo si se necesita la misma URL antigua; el front debe usar SaaS.
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, requireActiveOrg, requireOrgRole, TenantError, tenantErrorStatus } from "@/lib/tenant";
