@@ -1,0 +1,6 @@
+---
+description: Commits sin pie de atribución Cursor
+alwaysApply: true
+---
+
+En mensajes de `git commit` no incluir líneas tipo `Made-with: Cursor`, `Co-authored-by` del agente ni atribuciones similares. Mensaje de commit solo: resumen del cambio (y cuerpo técnico si hace falta).
