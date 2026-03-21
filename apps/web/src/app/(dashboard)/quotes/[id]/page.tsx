@@ -6,17 +6,25 @@ import Link from "next/link";
 import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight, Pencil, Activity, ShoppingCart } from "lucide-react";
 import { useLanguage, useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { normalizeQuoteStatus } from "@vbt/core";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-const STATUS_KEYS: Record<string, string> = {
-  DRAFT: "quotes.draft",
-  SENT: "quotes.sent",
-  ARCHIVED: "quotes.archived",
-  CANCELLED: "quotes.cancelled",
-};
+/** i18n key for Prisma `QuoteStatus` (and legacy UI labels mapped server-side). */
+function statusTranslationKey(status: string | undefined): string {
+  const n = normalizeQuoteStatus(status ?? "draft") ?? "draft";
+  const map: Record<string, string> = {
+    draft: "quotes.draft",
+    sent: "quotes.sent",
+    accepted: "quotes.accepted",
+    rejected: "quotes.rejected",
+    expired: "quotes.expired",
+    archived: "quotes.archived",
+  };
+  return map[n] ?? "quotes.draft";
+}
 
 export default function QuoteDetailPage() {
   const t = useT();
@@ -42,8 +50,9 @@ export default function QuoteDetailPage() {
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editNotes, setEditNotes] = useState("");
-  const [editStatus, setEditStatus] = useState("DRAFT");
+  const [editStatus, setEditStatus] = useState("draft");
 
+  // Auditoría, email y PDF: aún no hay `/api/saas/quotes/:id/audit|email|pdf`.
   const fetchAudit = () => {
     fetch(`/api/quotes/${params.id}/audit`)
       .then(async (r) => {
@@ -61,14 +70,14 @@ export default function QuoteDetailPage() {
   };
 
   useEffect(() => {
-    fetch(`/api/quotes/${params.id}`)
+    fetch(`/api/saas/quotes/${params.id}`)
       .then(async (r) => {
         try {
           const text = await r.text();
           const d = text ? JSON.parse(text) : null;
           setQuote(d);
           setEditNotes(d?.notes ?? "");
-          setEditStatus(d?.status ?? "DRAFT");
+          setEditStatus(normalizeQuoteStatus(d?.status) ?? "draft");
         } catch {
           setQuote(null);
         } finally {
@@ -96,6 +105,7 @@ export default function QuoteDetailPage() {
       .catch(() => setLoadingAudit(false));
   }, [quote?.id]);
 
+  // Email: legacy `/api/quotes/:id/email` hasta que exista SaaS.
   const sendEmail = async () => {
     if (!emailTo) return;
     setSending(true);
@@ -116,7 +126,7 @@ export default function QuoteDetailPage() {
     if (res.ok) {
       setSendResult("__success__");
       setEmailDialog(false);
-      setQuote((prev: any) => ({ ...prev, status: "SENT" }));
+      setQuote((prev: any) => ({ ...prev, status: "sent" }));
       fetchAudit();
     } else {
       setSendResult(data.error ?? t("auth.errorGeneric"));
@@ -125,7 +135,7 @@ export default function QuoteDetailPage() {
 
   const archive = async () => {
     setArchiving(true);
-    const res = await fetch(`/api/quotes/${params.id}`, {
+    const res = await fetch(`/api/saas/quotes/${params.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "ARCHIVED" }),
@@ -133,14 +143,21 @@ export default function QuoteDetailPage() {
     setArchiving(false);
     setArchiveDialog(false);
     if (res.ok) {
-      setQuote((prev: any) => ({ ...prev, status: "ARCHIVED" }));
+      try {
+        const text = await res.text();
+        const updated = text ? JSON.parse(text) : null;
+        if (updated) setQuote(updated);
+        else setQuote((prev: any) => ({ ...prev, status: "archived" }));
+      } catch {
+        setQuote((prev: any) => ({ ...prev, status: "archived" }));
+      }
       fetchAudit();
     }
   };
 
   const deletePermanently = async () => {
     setDeleting(true);
-    const res = await fetch(`/api/quotes/${params.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/saas/quotes/${params.id}`, { method: "DELETE" });
     setDeleting(false);
     setDeleteDialog(false);
     if (res.ok) router.push("/quotes");
@@ -148,13 +165,13 @@ export default function QuoteDetailPage() {
 
   const openEdit = () => {
     setEditNotes(quote?.notes ?? "");
-    setEditStatus(quote?.status ?? "DRAFT");
+    setEditStatus(normalizeQuoteStatus(quote?.status) ?? "draft");
     setEditOpen(true);
   };
 
   const saveEdit = async () => {
     setSaving(true);
-    const res = await fetch(`/api/quotes/${params.id}`, {
+    const res = await fetch(`/api/saas/quotes/${params.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes: editNotes || undefined, status: editStatus }),
@@ -185,7 +202,23 @@ export default function QuoteDetailPage() {
   if (loading) return <div className="p-8 text-center text-gray-400">{t("common.loading")}</div>;
   if (!quote || quote.error) return <div className="p-8 text-center text-red-500">{t("quotes.quoteNotFound")}</div>;
 
-  const snapshot = (quote.snapshot as any) || {};
+  const p = quote.pricing as
+    | {
+        factoryExwUsd?: number | null;
+        basePriceForPartnerUsd?: number;
+        afterPartnerMarkupUsd?: number;
+        freightUsd?: number;
+        cifUsd?: number;
+        ruleTaxesUsd?: number;
+        technicalServiceUsd?: number;
+        suggestedLandedUsd?: number;
+        landedTotalUsd?: number;
+        taxLines?: Array<{ order: number; label: string; computedAmount: number; perContainer?: boolean }>;
+      }
+    | undefined;
+  const hasPricing = p != null && typeof p === "object";
+  const mainTotalUsd = Number(quote.totalPrice) || 0;
+  const taxLinesFromPricing = hasPricing && Array.isArray(p!.taxLines) ? p!.taxLines : [];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -201,14 +234,19 @@ export default function QuoteDetailPage() {
                 {quote.quoteNumber ?? quote.id.slice(0, 8).toUpperCase()}
               </h1>
               <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-                quote.status === "SENT" ? "bg-green-100 text-green-700" :
-                quote.status === "DRAFT" ? "bg-amber-100 text-amber-700" :
-                "bg-gray-100 text-gray-600"
-              }`}>{quote.status}</span>
+                (() => {
+                  const s = String(quote.status ?? "").toLowerCase();
+                  if (s === "sent" || s === "accepted") return "bg-green-100 text-green-700";
+                  if (s === "draft") return "bg-amber-100 text-amber-700";
+                  return "bg-gray-100 text-gray-600";
+                })()
+              }`}>{t(statusTranslationKey(quote.status))}</span>
             </div>
             <p className="text-gray-500 text-sm mt-0.5">
-              {quote.project?.name}
-              {quote.project?.client && ` · ${quote.project.client}`}
+              {(quote.project as { projectName?: string; name?: string } | undefined)?.projectName ??
+                quote.project?.name}
+              {quote.project?.client &&
+                ` · ${(quote.project.client as { name?: string }).name ?? ""}`}
               {quote.country && ` → ${quote.country.name}`}
             </p>
           </div>
@@ -298,15 +336,15 @@ export default function QuoteDetailPage() {
         );
       })()}
 
-      {/* Material Lines (collapsible) */}
-      {quote.lines?.length > 0 && (
+      {/* SaaS quote line items */}
+      {quote.items?.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <button
             type="button"
             onClick={() => setMaterialLinesOpen((o) => !o)}
             className="w-full p-4 border-b border-gray-100 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
           >
-            <h2 className="font-semibold text-gray-800">{t("quotes.materialLinesCount", { count: quote.lines.length })}</h2>
+            <h2 className="font-semibold text-gray-800">{t("quotes.materialLinesCount", { count: quote.items.length })}</h2>
             {materialLinesOpen ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
           </button>
           {materialLinesOpen && (
@@ -317,22 +355,18 @@ export default function QuoteDetailPage() {
                     <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.description")}</th>
                     <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.system")}</th>
                     <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.qty")}</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.lengthM")}</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">m²</th>
                     <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.unitPrice")}</th>
                     <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t("quotes.total")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {quote.lines.map((line: any, i: number) => (
-                    <tr key={i} className={i % 2 === 0 ? "" : "bg-gray-50/50"}>
-                      <td className="px-3 py-2 text-gray-800">{line.description}</td>
-                      <td className="px-3 py-2 text-gray-500">{line.systemCode ?? "—"}</td>
-                      <td className="px-3 py-2 text-right">{line.qty}</td>
-                      <td className="px-3 py-2 text-right">{((line.heightMm ?? 0) / 1000).toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right">{(line.m2Line ?? 0).toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(line.unitPrice ?? 0)}</td>
-                      <td className="px-3 py-2 text-right font-medium">{fmt(line.lineTotal)}</td>
+                  {quote.items.map((line: any, i: number) => (
+                    <tr key={line.id ?? i} className={i % 2 === 0 ? "" : "bg-gray-50/50"}>
+                      <td className="px-3 py-2 text-gray-800">{line.description ?? line.sku ?? "—"}</td>
+                      <td className="px-3 py-2 text-gray-500">{line.itemType ?? "—"}</td>
+                      <td className="px-3 py-2 text-right">{line.quantity ?? 0}</td>
+                      <td className="px-3 py-2 text-right">{fmt(Number(line.unitPrice) || 0)}</td>
+                      <td className="px-3 py-2 text-right font-medium">{fmt(Number(line.totalPrice) || 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -342,62 +376,81 @@ export default function QuoteDetailPage() {
         </div>
       )}
 
-      {/* Financial Summary */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800">{t("quotes.costBreakdown")}</h2>
-          <div className="space-y-2 text-sm">
-            {(() => {
-              const showExw = quote.factoryCostUsd != null || quote.factoryCostTotal != null;
-              const firstRow = showExw
-                ? { label: t("quotes.exwFactoryCost"), value: quote.factoryCostUsd ?? quote.factoryCostTotal, bold: false as boolean }
-                : { label: t("quotes.basePriceVisionLatam"), value: quote.basePriceForPartner, bold: false as boolean };
-              const rows: { label: string; value: unknown; bold?: boolean }[] = [
-                firstRow,
-                { label: t("quotes.fob"), value: quote.fobUsd, bold: true },
-                { label: t("quotes.freightContainers", { count: quote.numContainers ?? 0 }), value: quote.freightCostUsd },
-                { label: t("quotes.cif"), value: quote.cifUsd, bold: true },
-                { label: t("quotes.totalTaxesFees"), value: quote.taxesFeesUsd ?? 0 },
-                { label: t("quotes.landed"), value: quote.landedDdpUsd, bold: true },
-              ];
-              return rows;
-            })().map((row) => (
-              <div key={row.label} className={`flex justify-between ${row.bold ? "font-semibold border-t pt-2" : ""}`}>
-                <span className={row.bold ? "" : "text-gray-500"}>{row.label}</span>
-                <span>{fmt(Number(row.value) || 0)}</span>
+      {/* Financial summary + taxes (canonical `quote.pricing` from SaaS API) */}
+      {hasPricing && p ? (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
+            <h2 className="font-semibold text-gray-800">{t("quotes.costBreakdown")}</h2>
+            <div className="space-y-2 text-sm">
+              {(() => {
+                const showExw = p.factoryExwUsd != null && p.factoryExwUsd !== undefined;
+                const firstRow = showExw
+                  ? { label: t("quotes.exwFactoryCost"), value: p.factoryExwUsd, bold: false as boolean }
+                  : {
+                      label: t("quotes.basePriceVisionLatam"),
+                      value: p.basePriceForPartnerUsd ?? quote.basePriceForPartner,
+                      bold: false as boolean,
+                    };
+                const nc = Number(quote.numContainers) || 1;
+                const rows: { label: string; value: unknown; bold?: boolean }[] = [
+                  firstRow,
+                  { label: t("quotes.fob"), value: p.afterPartnerMarkupUsd, bold: true },
+                  { label: t("quotes.freightContainers", { count: nc }), value: p.freightUsd },
+                  { label: t("quotes.cif"), value: p.cifUsd, bold: true },
+                  { label: t("quotes.totalTaxesFees"), value: p.ruleTaxesUsd },
+                  { label: t("quotes.technicalServiceLine"), value: p.technicalServiceUsd },
+                  { label: t("quotes.landed"), value: p.suggestedLandedUsd ?? p.landedTotalUsd, bold: true },
+                ];
+                return rows;
+              })().map((row) => (
+                <div key={row.label} className={`flex justify-between ${row.bold ? "font-semibold border-t pt-2" : ""}`}>
+                  <span className={row.bold ? "" : "text-gray-500"}>{row.label}</span>
+                  <span>{fmt(Number(row.value) || 0)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
+            <h2 className="font-semibold text-gray-800">
+              {t("quotes.taxesFees")}
+              {quote.project?.countryCode && ` (${String(quote.project.countryCode)})`}
+            </h2>
+            {taxLinesFromPricing.length > 0 ? (
+              <div className="space-y-2 text-sm">
+                {taxLinesFromPricing.map((tl) => {
+                  const label =
+                    tl.perContainer || /per container/i.test(tl.label || "")
+                      ? (tl.label || "").replace(/\s*\(per container\)/gi, " (per order)")
+                      : tl.label || "";
+                  return (
+                    <div key={`${tl.order}-${tl.label}`} className="flex justify-between">
+                      <span className="text-gray-500">{label}</span>
+                      <span className="font-medium">{fmt(Number(tl.computedAmount) || 0)}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between font-semibold border-t pt-2">
+                  <span>{t("quotes.totalTaxesLabel")}</span>
+                  <span>
+                    {fmt(
+                      taxLinesFromPricing.reduce((s, tl) => s + (Number(tl.computedAmount) || 0), 0)
+                    )}
+                  </span>
+                </div>
               </div>
-            ))}
+            ) : (
+              <p className="text-gray-400 text-sm">{t("quotes.noTaxesApplied")}</p>
+            )}
           </div>
         </div>
-
-        {/* Tax Lines */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800">{t("quotes.taxesFees")} {quote.country && `(${quote.country.name})`}</h2>
-          {quote.taxLines?.length > 0 ? (
-            <div className="space-y-2 text-sm">
-              {quote.taxLines.map((tl: any) => {
-                const label = (tl.perContainer || /per container/i.test(tl.label || ""))
-                  ? (tl.label || "").replace(/\s*\(per container\)/gi, " (per order)")
-                  : (tl.label || "");
-                return (
-                  <div key={tl.id} className="flex justify-between">
-                    <span className="text-gray-500">{label}</span>
-                    <span className="font-medium">{fmt(Number(tl.computedAmount) || 0)}</span>
-                  </div>
-                );
-              })}
-              <div className="flex justify-between font-semibold border-t pt-2">
-                <span>{t("quotes.totalTaxesLabel")}</span>
-                <span>{fmt(Number(quote.taxesFeesUsd) || 0)}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-400 text-sm">{t("quotes.noTaxRules")}</p>
-          )}
+      ) : (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+          {t("quotes.pricingUnavailable")}
         </div>
-      </div>
+      )}
 
-      {/* DDP Total */}
+      {/* Total (persisted totalPrice = source of truth) */}
       <div className="bg-vbt-blue rounded-xl p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -406,15 +459,13 @@ export default function QuoteDetailPage() {
               <div className="text-white/50 text-sm mt-1 space-y-0.5">
                 <p>
                   {quote.totalKits} kits · {quote.numContainers} container{Number(quote.numContainers) !== 1 ? "s" : ""} ·{" "}
-                  {fmt((Number(quote.landedDdpUsd) || 0) / Math.max(Number(quote.numContainers) || 1, 1))}/container
+                  {fmt(mainTotalUsd / Math.max(Number(quote.numContainers) || 1, 1))}/container
                 </p>
-                <p>
-                  {fmt((Number(quote.landedDdpUsd) || 0) / Math.max(Number(quote.totalKits) || 1, 1))}/kit
-                </p>
+                <p>{fmt(mainTotalUsd / Math.max(Number(quote.totalKits) || 1, 1))}/kit</p>
               </div>
             )}
           </div>
-          <p className="text-4xl font-bold text-white">{fmt(Number(quote.landedDdpUsd) || 0)}</p>
+          <p className="text-4xl font-bold text-white">{fmt(mainTotalUsd)}</p>
         </div>
       </div>
 
@@ -496,10 +547,12 @@ export default function QuoteDetailPage() {
                   onChange={(e) => setEditStatus(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="DRAFT">{t("quotes.draft")}</option>
-                  <option value="SENT">{t("quotes.sent")}</option>
-                  <option value="ARCHIVED">{t("quotes.archived")}</option>
-                  <option value="CANCELLED">{t("quotes.cancelled")}</option>
+                  <option value="draft">{t("quotes.draft")}</option>
+                  <option value="sent">{t("quotes.sent")}</option>
+                  <option value="accepted">{t("quotes.accepted")}</option>
+                  <option value="rejected">{t("quotes.rejected")}</option>
+                  <option value="expired">{t("quotes.expired")}</option>
+                  <option value="archived">{t("quotes.archived")}</option>
                 </select>
               </div>
               <div>
@@ -568,6 +621,7 @@ export default function QuoteDetailPage() {
                 {t("quotes.includeMinRunAlerts")}
               </label>
             </div>
+            {/* PDF: legacy `/api/quotes/:id/pdf` hasta que exista SaaS. */}
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setPdfDialog(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
               <a

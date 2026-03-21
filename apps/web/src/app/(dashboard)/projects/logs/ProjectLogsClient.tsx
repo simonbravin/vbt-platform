@@ -26,6 +26,7 @@ export function ProjectLogsClient() {
   const [page, setPage] = useState(1);
   const limit = 30;
 
+  // Logs globales de proyectos: aún no hay `/api/saas/projects/logs`.
   useEffect(() => {
     setLoading(true);
     fetch(`/api/projects/logs?page=${page}&limit=${limit}`)
