@@ -79,6 +79,7 @@ enum QuoteStatus {
   accepted
   rejected
   expired
+  archived
 }
 
 enum QuoteItemType {
@@ -129,6 +130,15 @@ enum TrainingEnrollmentStatus {
   completed
 }
 
+enum SaleOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_PAID
+  PAID
+  DUE
+  CANCELLED
+}
+
 /// Preferred language for transactional email subjects (and future templates).
 enum EmailLocale {
   en
@@ -168,6 +178,8 @@ model User {
   approvedProjectClaims   ProjectClaim[]
   passwordResetTokens     PasswordResetToken[]
   inventoryTransactionsCreated InventoryTransaction[] @relation("InventoryCreatedBy")
+  salesCreated               Sale[]                 @relation("SaleCreatedBy")
+  paymentsCreated            Payment[]              @relation("PaymentCreatedBy")
 
   @@map("users")
 }
@@ -220,6 +232,9 @@ model Organization {
   taxRuleSets         TaxRuleSet[]
   inventoryTransactions InventoryTransaction[]
   documents             Document[]
+  billingEntities       BillingEntity[]
+  sales                 Sale[]
+  payments              Payment[]
 
   @@index([organizationType])
   @@index([status])
@@ -421,6 +436,7 @@ model Client {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contacts     Contact[]
   projects     Project[]
+  sales        Sale[]
 
   @@index([organizationId])
   @@index([clientType])
@@ -481,6 +497,7 @@ model Project {
   engineeringRequests   EngineeringRequest[]
   inventoryTransactions InventoryTransaction[]
   documents             Document[]
+  sales                 Sale[]
 
   @@index([organizationId])
   @@index([clientId])
@@ -531,11 +548,15 @@ model Quote {
   localTransportCost    Float     @default(0) @map("local_transport_cost")
   technicalServiceCost  Float     @default(0) @map("technical_service_cost")
   totalPrice            Float     @default(0) @map("total_price")
+  /// Snapshot of `TaxRule[]` JSON used to compute landed total at last pricing write (historical correctness).
+  taxRulesSnapshotJson  Json?     @map("tax_rules_snapshot_json")
   validUntil            DateTime? @map("valid_until")
   preparedByUserId      String?   @map("prepared_by_user_id")
   approvedByUserId      String?   @map("approved_by_user_id")
   superadminComment     String?   @map("superadmin_comment")
   reviewedAt            DateTime? @map("reviewed_at")
+  // Internal / partner-visible notes (optional PDF later).
+  notes                 String?   @db.Text @map("notes")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -545,6 +566,7 @@ model Quote {
   approvedByUser User?        @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id])
   items          QuoteItem[]
   inventoryTransactions InventoryTransaction[]
+  sales          Sale[]
 
   @@unique([organizationId, quoteNumber, version])
   @@index([organizationId])
@@ -579,6 +601,114 @@ model QuoteItem {
   @@index([quoteId])
   @@index([catalogPieceId])
   @@map("quote_items")
+}
+
+// ─── Partner sales (billing entities, orders, invoices, payments) ───────────
+
+model BillingEntity {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  slug           String
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices     SaleInvoice[]
+  payments     Payment[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("billing_entities")
+}
+
+model Sale {
+  id                  String          @id @default(cuid())
+  organizationId      String          @map("organization_id")
+  clientId            String          @map("client_id")
+  projectId           String          @map("project_id")
+  quoteId             String?         @map("quote_id")
+  saleNumber          String?         @map("sale_number")
+  quantity            Int             @default(1)
+  status              SaleOrderStatus @default(DRAFT)
+  exwUsd              Float           @default(0) @map("exw_usd")
+  commissionPct       Float           @default(0) @map("commission_pct")
+  commissionAmountUsd Float           @default(0) @map("commission_amount_usd")
+  fobUsd              Float           @default(0) @map("fob_usd")
+  freightUsd          Float           @default(0) @map("freight_usd")
+  cifUsd              Float           @default(0) @map("cif_usd")
+  taxesFeesUsd        Float           @default(0) @map("taxes_fees_usd")
+  landedDdpUsd        Float           @default(0) @map("landed_ddp_usd")
+  invoicedBasis       String?         @map("invoiced_basis")
+  taxBreakdownJson    Json?           @map("tax_breakdown_json")
+  notes               String?
+  createdByUserId     String?         @map("created_by_user_id")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client        Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  quote         Quote?       @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  createdByUser User?        @relation("SaleCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  invoices      SaleInvoice[]
+  payments      Payment[]
+
+  @@unique([organizationId, saleNumber])
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sales")
+}
+
+model SaleInvoice {
+  id                String    @id @default(cuid())
+  saleId            String    @map("sale_id")
+  billingEntityId   String    @map("billing_entity_id")
+  amountUsd         Float     @default(0) @map("amount_usd")
+  dueDate           DateTime? @map("due_date")
+  sequence          Int       @default(1)
+  referenceNumber   String?   @map("reference_number")
+  notes             String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  billingEntity BillingEntity @relation(fields: [billingEntityId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([billingEntityId])
+  @@index([dueDate])
+  @@map("sale_invoices")
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  organizationId  String    @map("organization_id")
+  saleId          String    @map("sale_id")
+  billingEntityId String    @map("billing_entity_id")
+  amountUsd       Float     @default(0) @map("amount_usd")
+  amountLocal     Float?    @map("amount_local")
+  currencyLocal   String?   @map("currency_local")
+  exchangeRate    Float?    @map("exchange_rate")
+  paidAt          DateTime  @default(now()) @map("paid_at")
+  notes           String?
+  createdByUserId String?   @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  billingEntity BillingEntity @relation(fields: [billingEntityId], references: [id], onDelete: Restrict)
+  createdByUser User?         @relation("PaymentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([saleId])
+  @@index([billingEntityId])
+  @@index([paidAt])
+  @@map("payments")
 }
 
 // ─── Engineering Requests ────────────────────────────────────────────────────

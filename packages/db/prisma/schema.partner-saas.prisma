@@ -79,6 +79,7 @@ enum QuoteStatus {
   accepted
   rejected
   expired
+  archived
 }
 
 enum QuoteItemType {
@@ -386,6 +387,7 @@ model Quote {
   validUntil            DateTime? @map("valid_until")
   preparedByUserId      String?   @map("prepared_by_user_id")
   approvedByUserId      String?   @map("approved_by_user_id")
+  notes                 String?   @db.Text @map("notes")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
