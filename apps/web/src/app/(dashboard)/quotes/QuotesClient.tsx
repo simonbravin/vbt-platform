@@ -164,7 +164,19 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
         </div>
       </div>
 
-      {view === "table" ? (
+      {quotes.length === 0 ? (
+        <div className="bg-card rounded-xl p-12 text-center shadow-sm border border-border">
+          <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
+          <p className="text-muted-foreground">
+            {search.trim() ? t("quotes.noSearchResults") : t("quotes.noQuotes")}
+          </p>
+          {!search.trim() && (
+            <Link href="/quotes/create" className="text-vbt-orange text-sm hover:underline mt-2 block">
+              {t("quotes.createFirstLink")}
+            </Link>
+          )}
+        </div>
+      ) : view === "table" ? (
         <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted border-b border-border">

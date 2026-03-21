@@ -3,7 +3,7 @@ import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenan
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Plus, FileText } from "lucide-react";
+import { Plus } from "lucide-react";
 import { QuotesClient } from "./QuotesClient";
 import type { SessionUser } from "@/lib/auth";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
@@ -107,17 +107,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
         ))}
       </div>
 
-      {quotes.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
-          <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">{t("quotes.noQuotes")}</p>
-          <Link href="/quotes/create" className="text-vbt-orange text-sm hover:underline mt-2 block">
-            {t("quotes.createFirstLink")}
-          </Link>
-        </div>
-      ) : (
-        <QuotesClient quotes={quotes} initialStatus={searchParams.status} />
-      )}
+      <QuotesClient quotes={quotes} initialStatus={searchParams.status} />
     </div>
   );
 }

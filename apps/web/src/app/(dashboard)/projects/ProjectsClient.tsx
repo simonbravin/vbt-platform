@@ -145,7 +145,19 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
         </div>
       </div>
 
-      {view === "cards" ? (
+      {projects.length === 0 ? (
+        <div className="bg-card rounded-xl p-12 text-center shadow-sm border border-border">
+          <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
+          <p className="text-muted-foreground">
+            {search.trim() ? t("projects.noSearchResults") : t("projects.noProjects")}
+          </p>
+          {!search.trim() && (
+            <Link href="/projects/new" className="text-primary text-sm hover:underline mt-2 block">
+              {t("projects.createFirstLink")}
+            </Link>
+          )}
+        </div>
+      ) : view === "cards" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {projects.map((p) => (
             <Link

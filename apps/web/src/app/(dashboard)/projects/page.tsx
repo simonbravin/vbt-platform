@@ -3,7 +3,7 @@ import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenan
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Plus, FolderOpen, History } from "lucide-react";
+import { Plus, History } from "lucide-react";
 import { ProjectsClient } from "./ProjectsClient";
 import { listProjects } from "@vbt/core";
 import type { SessionUser } from "@/lib/auth";
@@ -76,17 +76,7 @@ export default async function ProjectsPage() {
         </div>
       </div>
 
-      {projects.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
-          <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">{t("projects.noProjects")}</p>
-          <Link href="/projects/new" className="text-vbt-orange text-sm hover:underline mt-2 block">
-            {t("projects.createFirstLink")}
-          </Link>
-        </div>
-      ) : (
-        <ProjectsClient projects={projects} total={total} />
-      )}
+      <ProjectsClient projects={projects} total={total} />
     </div>
   );
 }
