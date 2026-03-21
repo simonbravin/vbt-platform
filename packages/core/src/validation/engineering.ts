@@ -47,3 +47,11 @@ export const engineeringDeliverableSchema = z.object({
   description: z.string().nullable().optional(),
   fileUrl: z.string().min(1),
 });
+
+export const engineeringReviewVisibilityEnum = z.enum(["partner", "internal"]);
+
+export const createEngineeringReviewEventSchema = z.object({
+  body: z.string().min(1).max(32_000),
+  visibility: engineeringReviewVisibilityEnum,
+  toStatus: engineeringStatusEnum.optional(),
+});

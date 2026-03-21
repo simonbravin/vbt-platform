@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy projects HTTP API. CANONICAL: `GET|POST /api/saas/projects` (same core services).
+ * Kept for backward compatibility and flows that still POST here (e.g. project create from legacy pages).
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, requireActiveOrg, TenantError, tenantErrorStatus } from "@/lib/tenant";

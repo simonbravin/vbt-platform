@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/context";
 
-const QUOTE_STATUSES = ["draft", "sent", "accepted", "rejected", "expired"] as const;
+const QUOTE_STATUSES = ["draft", "sent", "accepted", "rejected", "expired", "archived"] as const;
 
 function quoteStatusLabel(t: (key: string) => string, status: string): string {
   if ((QUOTE_STATUSES as readonly string[]).includes(status)) {
@@ -51,7 +51,6 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
   const [comment, setComment] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [modifyOpen, setModifyOpen] = useState(false);
-  const [modifyTotalPrice, setModifyTotalPrice] = useState("");
   const [modifyVisionLatamPct, setModifyVisionLatamPct] = useState("");
 
   useEffect(() => {
@@ -67,7 +66,6 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
         const data = await res.json();
         if (!cancelled) {
           setQuote(data);
-          setModifyTotalPrice(String(data.totalPrice ?? ""));
           setModifyVisionLatamPct(String(data.visionLatamMarkupPct ?? ""));
         }
       } catch {
@@ -80,7 +78,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
     return () => { cancelled = true; };
   }, [quoteId, t]);
 
-  const patch = async (body: { status?: string; superadminComment?: string | null; totalPrice?: number; visionLatamMarkupPct?: number }) => {
+  const patch = async (body: { status?: string; superadminComment?: string | null; visionLatamMarkupPct?: number }) => {
     setActionLoading("patch");
     try {
       const res = await fetch(`/api/saas/quotes/${quoteId}`, {
@@ -116,15 +114,13 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       alert(t("superadmin.quoteDetail.modifyRequiresCommentAlert"));
       return;
     }
-    const total = modifyTotalPrice.trim() ? parseFloat(modifyTotalPrice) : undefined;
     const pct = modifyVisionLatamPct.trim() ? parseFloat(modifyVisionLatamPct) : undefined;
-    if (total === undefined && pct === undefined) {
+    if (pct === undefined) {
       setModifyOpen(false);
       return;
     }
     patch({
-      ...(total !== undefined && { totalPrice: total }),
-      ...(pct !== undefined && { visionLatamMarkupPct: pct }),
+      visionLatamMarkupPct: pct,
       superadminComment: comment.trim(),
     });
   };
@@ -215,7 +211,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {quote.status !== "accepted" && (
+        {!["accepted", "rejected", "archived", "expired"].includes(quote.status) && (
           <button
             type="button"
             onClick={handleApprove}
@@ -225,7 +221,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             {actionLoading ? "…" : t("superadmin.quoteDetail.approve")}
           </button>
         )}
-        {quote.status !== "rejected" && (
+        {!["rejected", "archived"].includes(quote.status) && (
           <button
             type="button"
             onClick={handleReject}
@@ -236,29 +232,21 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             {actionLoading ? "…" : t("superadmin.quoteDetail.reject")}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => setModifyOpen(!modifyOpen)}
-          className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
-        >
-          {modifyOpen ? t("superadmin.quoteDetail.cancelModify") : t("superadmin.quoteDetail.modify")}
-        </button>
+        {quote.status !== "archived" && (
+          <button
+            type="button"
+            onClick={() => setModifyOpen(!modifyOpen)}
+            className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
+          >
+            {modifyOpen ? t("superadmin.quoteDetail.cancelModify") : t("superadmin.quoteDetail.modify")}
+          </button>
+        )}
       </div>
 
       {modifyOpen && (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.modifyTitle")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">{t("superadmin.quoteDetail.labelTotalPrice")}</label>
-              <input
-                type="number"
-                value={modifyTotalPrice}
-                onChange={(e) => setModifyTotalPrice(e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                step="0.01"
-              />
-            </div>
+          <div className="grid gap-4 sm:grid-cols-1 max-w-md">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">{t("superadmin.quoteDetail.labelVisionLatamPct")}</label>
               <input
@@ -271,6 +259,9 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
                 max="100"
               />
             </div>
+            <p className="text-sm text-muted-foreground">
+              {t("superadmin.quoteDetail.landedTotalComputedNote")}
+            </p>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.quoteDetail.modifyNote")}</p>
           <button

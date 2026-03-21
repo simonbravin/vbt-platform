@@ -1,6 +1,9 @@
+/**
+ * @deprecated Legacy clients API. There is no `/api/saas/clients` yet — do not remove until canonical clients API exists.
+ */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, type SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
@@ -20,11 +23,13 @@ const createSchema = z.object({
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { activeOrgId?: string; orgId?: string };
-  const organizationId = getEffectiveOrganizationId(user);
+  const user = session.user as SessionUser;
+  const url = new URL(req.url);
+  const paramOrg = url.searchParams.get("organizationId")?.trim();
+  const organizationId =
+    user.isPlatformSuperadmin && paramOrg ? paramOrg : getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ clients: [], total: 0, page: 1, limit: 50 });
 
-  const url = new URL(req.url);
   const page = parseInt(url.searchParams.get("page") ?? "1");
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
   const search = url.searchParams.get("search") ?? "";

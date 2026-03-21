@@ -1,8 +1,25 @@
+/**
+ * Canonical SaaS quotes collection (`listQuotes` / `createQuote` from `@vbt/core`).
+ * All persisted money fields flow through `canonicalizeSaaSQuotePayload` (single SaaS pricing path).
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, requireActiveOrg } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
-import { listQuotes, createQuote, getVisionLatamCommissionPctForOrg } from "@vbt/core";
+import {
+  listQuotes,
+  createQuote,
+  normalizeQuoteStatus,
+  formatQuoteForSaaSApiWithSnapshot,
+  canonicalizeSaaSQuotePayload,
+  resolveTaxRulesForSaaSQuote,
+  QuoteTaxResolutionError,
+  resolvePartnerPricingConfig,
+  resolveSaaSQuotePricingForCreate,
+  projectHasDeliveredEngineering,
+  assertEngineeringRequestForQuote,
+} from "@vbt/core";
+import type { Prisma } from "@vbt/db";
 import { createQuoteSchema } from "@vbt/core/validation";
 import { generateQuoteNumber } from "@/lib/utils";
 import { createActivityLog } from "@/lib/audit";
@@ -19,38 +36,30 @@ async function getHandler(req: Request) {
     const offsetRaw = url.searchParams.get("offset");
     const limit = limitRaw != null && limitRaw !== "" ? Math.min(100, Math.max(1, parseInt(limitRaw, 10) || 50)) : 50;
     const offset = offsetRaw != null && offsetRaw !== "" ? Math.max(0, parseInt(offsetRaw, 10) || 0) : 0;
-  const status = url.searchParams.get("status") || undefined;
-  const search = url.searchParams.get("search") || undefined;
-  const projectId = url.searchParams.get("projectId") ?? undefined;
-  const organizationId = url.searchParams.get("organizationId") || undefined;
+    const statusRaw = url.searchParams.get("status") || undefined;
+    const status =
+      statusRaw && statusRaw.trim() ? normalizeQuoteStatus(statusRaw) ?? undefined : undefined;
+    const search = url.searchParams.get("search") || undefined;
+    const projectId = url.searchParams.get("projectId") ?? undefined;
+    const organizationId = url.searchParams.get("organizationId") || undefined;
 
-  const tenantCtx = {
-    userId: ctx.userId,
-    organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
-  };
-  const result = await listQuotes(prisma, tenantCtx, {
-    projectId,
-    organizationId: organizationId || undefined,
-    status: status as "draft" | "sent" | "accepted" | "rejected" | "expired" | undefined,
-    search: search || undefined,
-    limit,
-    offset,
-  });
-    // Partners must not see factory cost; expose basePriceForPartner using quote's stored VL %
-    if (!ctx.isPlatformSuperadmin && result.quotes.length > 0) {
-      const quotes = result.quotes.map((q) => {
-        const factory = Number((q as { factoryCostTotal?: number }).factoryCostTotal ?? 0);
-        const pct = Number((q as { visionLatamMarkupPct?: number }).visionLatamMarkupPct ?? 0);
-        const payload = JSON.parse(JSON.stringify(q)) as Record<string, unknown>;
-        payload.factoryCostTotal = null;
-        payload.factoryCostUsd = null;
-        payload.basePriceForPartner = factory * (1 + pct / 100);
-        return payload;
-      });
-      return NextResponse.json({ quotes, total: result.total });
-    }
-    return NextResponse.json(result);
+    const tenantCtx = {
+      userId: ctx.userId,
+      organizationId: ctx.activeOrgId ?? null,
+      isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    };
+    const result = await listQuotes(prisma, tenantCtx, {
+      projectId,
+      organizationId: organizationId || undefined,
+      status,
+      search: search || undefined,
+      limit,
+      offset,
+    });
+    const quotes = result.quotes.map((q) =>
+      formatQuoteForSaaSApiWithSnapshot(q, { maskFactoryExw: !ctx.isPlatformSuperadmin })
+    );
+    return NextResponse.json({ quotes, total: result.total });
   } catch (e) {
     console.error("[api/saas/quotes GET]", e);
     return NextResponse.json(
@@ -72,29 +81,103 @@ async function postHandler(req: Request) {
     organizationId: user.activeOrgId ?? null,
     isPlatformSuperadmin: user.isPlatformSuperadmin,
   };
-  // Resolve org for the quote (tenant org or project's org when superadmin creates without active org)
-  const projectOrg = await prisma.project.findUnique({ where: { id: data.projectId }, select: { organizationId: true } });
+  const projectOrg = await prisma.project.findUnique({
+    where: { id: data.projectId },
+    select: { organizationId: true, countryCode: true },
+  });
   const orgId = tenantCtx.organizationId ?? projectOrg?.organizationId ?? null;
-  const visionLatamMarkupPct =
-    tenantCtx.isPlatformSuperadmin && data.visionLatamMarkupPct != null
-      ? data.visionLatamMarkupPct
-      : orgId
-        ? await getVisionLatamCommissionPctForOrg(prisma, orgId)
-        : 20;
   if (!orgId) {
     return NextResponse.json(
       { error: "Organization could not be resolved for this quote (project may be invalid)." },
       { status: 400 }
     );
   }
-  // When superadmin has no active org, pass project's org so the quote is created with correct organizationId
   const quoteCtx = { ...tenantCtx, organizationId: orgId };
+
+  const partnerProfile = await prisma.partnerProfile.findUnique({
+    where: { organizationId: orgId },
+    select: { requireDeliveredEngineeringForQuotes: true },
+  });
+  if (partnerProfile?.requireDeliveredEngineeringForQuotes) {
+    const ok = await projectHasDeliveredEngineering(prisma, orgId, data.projectId);
+    if (!ok) {
+      return NextResponse.json(
+        {
+          error:
+            "This partner requires at least one delivered engineering request for the project before creating quotes.",
+          code: "ENGINEERING_NOT_DELIVERED",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
+  try {
+    await assertEngineeringRequestForQuote(prisma, orgId, data.projectId, data.engineeringRequestId);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Invalid engineering request";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  let taxRules;
+  try {
+    taxRules = await resolveTaxRulesForSaaSQuote(prisma, {
+      organizationId: orgId,
+      projectCountryCode: projectOrg?.countryCode,
+    });
+  } catch (e) {
+    if (e instanceof QuoteTaxResolutionError) {
+      return NextResponse.json({ error: e.message, code: e.code }, { status: 400 });
+    }
+    throw e;
+  }
+
+  const resolved = await resolvePartnerPricingConfig(prisma, {
+    organizationId: orgId,
+    projectCountryCode: projectOrg?.countryCode,
+  });
+  const pricingInputs = resolveSaaSQuotePricingForCreate({
+    isSuperadmin: !!tenantCtx.isPlatformSuperadmin,
+    explicit: {
+      visionLatamMarkupPct: data.visionLatamMarkupPct,
+      partnerMarkupPct: data.partnerMarkupPct,
+      logisticsCost: data.logisticsCost,
+      importCost: data.importCost,
+      localTransportCost: data.localTransportCost,
+      technicalServiceCost: data.technicalServiceCost,
+    },
+    resolved,
+  });
+
+  const hasLines = (data.items?.length ?? 0) > 0;
+  const canon = canonicalizeSaaSQuotePayload({
+    items: data.items,
+    headerFactoryExwUsd: hasLines ? undefined : data.factoryCostTotal,
+    visionLatamMarkupPct: pricingInputs.visionLatamMarkupPct,
+    partnerMarkupPct: pricingInputs.partnerMarkupPct,
+    logisticsCostUsd: pricingInputs.logisticsCostUsd,
+    localTransportCostUsd: pricingInputs.localTransportCostUsd,
+    importCostUsd: pricingInputs.importCostUsd,
+    technicalServiceUsd: pricingInputs.technicalServiceUsd,
+    taxRules,
+  });
+
   const quote = await createQuote(prisma, quoteCtx, {
     ...data,
     quoteNumber,
-    visionLatamMarkupPct,
-    items: data.items,
+    visionLatamMarkupPct: canon.visionLatamMarkupPct,
+    partnerMarkupPct: canon.partnerMarkupPct,
+    logisticsCost: canon.logisticsCostUsd,
+    importCost: canon.importCostUsd,
+    localTransportCost: canon.localTransportCostUsd,
+    technicalServiceCost: canon.technicalServiceUsd,
+    factoryCostTotal: canon.factoryCostTotal,
+    totalPrice: canon.totalPrice,
+    items: canon.items,
+    engineeringRequestId: data.engineeringRequestId ?? null,
+    taxRulesSnapshotJson: taxRules as unknown as Prisma.InputJsonValue,
   });
+
   await createActivityLog({
     organizationId: user.activeOrgId ?? null,
     userId: user.userId ?? user.id,
@@ -103,7 +186,9 @@ async function postHandler(req: Request) {
     entityId: quote.id,
     metadata: { quoteNumber, projectId: data.projectId },
   });
-  return NextResponse.json(quote, { status: 201 });
+  return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !user.isPlatformSuperadmin }), {
+    status: 201,
+  });
 }
 
 export const GET = withSaaSHandler({}, getHandler);

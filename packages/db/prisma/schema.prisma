@@ -111,6 +111,12 @@ enum EngineeringRequestStatus {
   rejected
 }
 
+/// Partner-visible vs platform-only notes on the engineering timeline.
+enum EngineeringReviewVisibility {
+  partner
+  internal
+}
+
 enum DocumentVisibility {
   public
   partners_only
@@ -169,6 +175,7 @@ model User {
   quotesApproved          Quote[]                 @relation("QuoteApprovedBy")
   engineeringRequestsReq  EngineeringRequest[]    @relation("EngineeringRequestedBy")
   engineeringRequestsAss  EngineeringRequest[]    @relation("EngineeringAssignedTo")
+  engineeringReviewEvents EngineeringReviewEvent[]
   engineeringFiles        EngineeringFile[]
   engineeringDeliverables EngineeringDeliverable[]
   documentsCreated        Document[]              @relation("DocumentCreatedBy")
@@ -369,6 +376,8 @@ model PartnerProfile {
   moduleVisibility       Json?    @map("module_visibility") // override per partner; keys e.g. engineering, documents, training, reports
   enabledSystems         Json?    @map("enabled_systems")   // ["S80","S150","S200"] — which panel systems this partner can use; null = all
   quoteDefaults         Json?    @map("quote_defaults")    // partner's defaults: { minRunFt?, commissionPct?, commissionFixed?, baseUom?, weightUom? }
+  /// When true, POST /api/saas/quotes requires at least one delivered EngineeringRequest for the project.
+  requireDeliveredEngineeringForQuotes Boolean @default(false) @map("require_delivered_engineering_for_quotes")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -537,6 +546,8 @@ model Quote {
   id                    String    @id @default(cuid())
   organizationId        String    @map("organization_id")
   projectId             String    @map("project_id")
+  /// Optional link to the engineering package this quote is based on.
+  engineeringRequestId  String?   @map("engineering_request_id")
   quoteNumber           String    @map("quote_number")
   version               Int       @default(1)
   status                QuoteStatus @default(draft)
@@ -563,6 +574,7 @@ model Quote {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  engineeringRequest EngineeringRequest? @relation(fields: [engineeringRequestId], references: [id], onDelete: SetNull)
   preparedByUser User?        @relation("QuotePreparedBy", fields: [preparedByUserId], references: [id])
   approvedByUser User?        @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id])
   items          QuoteItem[]
@@ -572,6 +584,7 @@ model Quote {
   @@unique([organizationId, quoteNumber, version])
   @@index([organizationId])
   @@index([projectId])
+  @@index([engineeringRequestId])
   @@index([status])
   @@index([createdAt])
   @@map("quotes")
@@ -737,12 +750,32 @@ model EngineeringRequest {
   assignedToUser  User?                    @relation("EngineeringAssignedTo", fields: [assignedToUserId], references: [id])
   files          EngineeringFile[]
   deliverables   EngineeringDeliverable[]
+  reviewEvents   EngineeringReviewEvent[]
   documents      Document[]
+  quotes         Quote[]
 
   @@index([organizationId])
   @@index([projectId])
   @@index([status])
   @@map("engineering_requests")
+}
+
+model EngineeringReviewEvent {
+  id                   String                     @id @default(cuid())
+  engineeringRequestId String                     @map("engineering_request_id")
+  authorUserId         String                     @map("author_user_id")
+  visibility           EngineeringReviewVisibility @default(partner)
+  body                 String                     @db.Text
+  fromStatus           EngineeringRequestStatus?  @map("from_status")
+  toStatus             EngineeringRequestStatus?  @map("to_status")
+  createdAt            DateTime                   @default(now()) @map("created_at")
+
+  engineeringRequest EngineeringRequest @relation(fields: [engineeringRequestId], references: [id], onDelete: Cascade)
+  authorUser           User               @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([engineeringRequestId])
+  @@index([engineeringRequestId, createdAt])
+  @@map("engineering_review_events")
 }
 
 // ─── Engineering Files ───────────────────────────────────────────────────────

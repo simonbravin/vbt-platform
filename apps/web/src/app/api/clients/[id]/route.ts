@@ -1,3 +1,6 @@
+/**
+ * @deprecated Legacy client-by-id API. CANONICAL: TBD (`/api/saas/clients/[id]`).
+ */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";

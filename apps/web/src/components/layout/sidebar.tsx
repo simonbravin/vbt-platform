@@ -40,8 +40,13 @@ const navigation: NavItem[] = [
   { labelKey: "nav.documents", href: "/documents", icon: FileStack },
   { labelKey: "nav.training", href: "/training", icon: GraduationCap },
   { labelKey: "nav.inventory", href: "/inventory", icon: Package },
-  { labelKey: "nav.sales", href: "/sales", icon: ShoppingCart, roles: ["SUPERADMIN"] },
-  { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["SUPERADMIN", "org_admin"] },
+  {
+    labelKey: "nav.sales",
+    href: "/sales",
+    icon: ShoppingCart,
+    roles: ["org_admin", "sales_user", "technical_user", "viewer"],
+  },
+  { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["SUPERADMIN", "org_admin", "sales_user"] },
   {
     labelKey: "nav.settings",
     icon: Settings,

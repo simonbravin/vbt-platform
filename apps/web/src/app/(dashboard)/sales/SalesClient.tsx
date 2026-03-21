@@ -79,6 +79,9 @@ export function SalesClient() {
     if (res.ok && Array.isArray(data.sales)) {
       setSales(data.sales);
       setTotal(typeof data.total === "number" ? data.total : 0);
+    } else {
+      setSales([]);
+      setTotal(0);
     }
     setLoading(false);
   }, [page, limit, status, clientId, projectId, from, to, search]);
@@ -99,7 +102,7 @@ export function SalesClient() {
         }
       })
       .catch(() => {});
-    fetch("/api/projects?limit=500")
+    fetch("/api/saas/projects?limit=500")
       .then(async (r) => {
         try {
           const text = await r.text();
@@ -196,7 +199,9 @@ export function SalesClient() {
         >
           <option value="">{t("partner.sales.allProjects")}</option>
           {projects.map((p) => (
-            <option key={p.id} value={p.id}>{(p as any).name}</option>
+            <option key={p.id} value={p.id}>
+              {(p as { projectName?: string; name?: string }).projectName ?? (p as { name?: string }).name ?? p.id.slice(0, 8)}
+            </option>
           ))}
         </select>
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" aria-label={t("partner.sales.dateFrom")} title={t("partner.sales.dateFrom")} />

@@ -7,6 +7,8 @@ import { QuotePdfDocument, type QuotePdfData } from "@/components/pdf/quote-pdf"
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
+import { normalizeApiError } from "@/lib/api-error";
+import { toLegacySalesQuoteShape } from "@vbt/core";
 import React from "react";
 
 function getLocaleFromRequest(req: Request): Locale {
@@ -75,6 +77,18 @@ export async function GET(
       basePriceForPartner = factoryTotal * (1 + pct / 100);
       factoryCostUsdPdf = 0;
     }
+
+    let financial: Record<string, unknown>;
+    try {
+      financial = toLegacySalesQuoteShape(JSON.parse(JSON.stringify(quote)) as Record<string, unknown>);
+    } catch (err) {
+      const { status, payload } = normalizeApiError(err);
+      return NextResponse.json(payload, { status });
+    }
+    const pricingBlock = financial.pricing as {
+      taxLines: Array<{ label: string; computedAmount: number }>;
+    };
+
     const pdfData: QuotePdfData = {
       quoteNumber: (quote as { quoteNumber?: string }).quoteNumber ?? quote.id.slice(0, 8).toUpperCase(),
       status: quote.status,
@@ -97,21 +111,23 @@ export async function GET(
       totalVolumeM3: q.totalVolumeM3 != null ? Number(q.totalVolumeM3) : undefined,
       factoryCostUsd: factoryCostUsdPdf,
       ...(basePriceForPartner != null && { basePriceForPartner }),
-      commissionPct: Number(q.commissionPct) || 0,
-      commissionFixed: Number(q.commissionFixed) || 0,
+      commissionPct: Number(q.commissionPct ?? financial.commissionPct) || 0,
+      commissionFixed: Number(q.commissionFixed ?? financial.commissionFixed) || 0,
       commissionAmount: Number(snapshot.commissionAmount) || 0,
-      fobUsd: Number(q.fobUsd) || 0,
-      freightCostUsd: Number(q.freightCostUsd) || 0,
+      fobUsd: Number(q.fobUsd ?? financial.fobUsd) || 0,
+      freightCostUsd: Number(q.freightCostUsd ?? financial.freightCostUsd) || 0,
       numContainers: Number(q.numContainers) || 1,
       kitsPerContainer: Number(q.kitsPerContainer) || 0,
       totalKits: Number(q.totalKits) || 0,
-      cifUsd: Number(q.cifUsd) || 0,
-      taxLines: (q.taxLines ?? []).map((tl: any) => ({
+      cifUsd: Number(q.cifUsd ?? financial.cifUsd) || 0,
+      taxLines: (
+        Array.isArray(q.taxLines) && q.taxLines.length > 0 ? q.taxLines : (pricingBlock.taxLines ?? [])
+      ).map((tl: { label?: string; computedAmount?: number }) => ({
         label: tl.label ?? "",
         computedAmount: Number(tl.computedAmount) || 0,
       })),
-      taxesFeesUsd: Number(q.taxesFeesUsd) || 0,
-      landedDdpUsd: Number(q.landedDdpUsd ?? quote.totalPrice) || 0,
+      taxesFeesUsd: Number(q.taxesFeesUsd ?? financial.taxesFeesUsd) || 0,
+      landedDdpUsd: Number(q.landedDdpUsd ?? financial.landedDdpUsd ?? quote.totalPrice) || 0,
       concreteM3: Number(q.concreteM3) || 0,
       steelKgEst: Number(q.steelKgEst) || 0,
       notes: (quote as { notes?: string }).notes ?? undefined,

@@ -30,6 +30,7 @@ type QuoteAnalytics = {
   quotes_sent: number;
   quotes_accepted: number;
   quotes_rejected: number;
+  quotes_archived: number;
   average_quote_value: number;
   conversion_rate: number;
   average_sales_cycle_days: number;
@@ -78,6 +79,7 @@ export function AnalyticsHubClient() {
       accepted: t("superadmin.analytics.quoteStatus.accepted"),
       rejected: t("superadmin.analytics.quoteStatus.rejected"),
       expired: t("superadmin.analytics.quoteStatus.expired"),
+      archived: t("superadmin.analytics.quoteStatus.archived"),
     }),
     [t]
   );
@@ -313,7 +315,7 @@ export function AnalyticsHubClient() {
             <div className="rounded-lg border border-border p-4">
               <p className="text-xs font-medium text-muted-foreground">{t("superadmin.analytics.quoteFlowCounts")}</p>
               <p className="text-lg font-semibold text-foreground mt-1">
-                {quoteAnalytics.quotes_created} / {quoteAnalytics.quotes_sent} / {quoteAnalytics.quotes_accepted} / {quoteAnalytics.quotes_rejected}
+                {quoteAnalytics.quotes_created} / {quoteAnalytics.quotes_sent} / {quoteAnalytics.quotes_accepted} / {quoteAnalytics.quotes_rejected} / {quoteAnalytics.quotes_archived ?? 0}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">

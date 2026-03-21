@@ -1,3 +1,6 @@
+/**
+ * @deprecated Legacy project activity logs. No SaaS mirror yet; keep until `/api/saas/...` equivalent exists.
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, TenantError, tenantErrorStatus } from "@/lib/tenant";

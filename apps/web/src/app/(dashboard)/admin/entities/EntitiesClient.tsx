@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Pencil } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
 type Entity = { id: string; name: string; slug: string; isActive: boolean };
 
-export function EntitiesClient() {
+/** `platform`: superadmin must choose a partner (query + POST body). `tenant`: session org (e.g. future partner admin). */
+export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platform" }) {
   const t = useT();
   const [entities, setEntities] = useState<Entity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
+  const [organizationId, setOrganizationId] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [addName, setAddName] = useState("");
@@ -20,19 +23,39 @@ export function EntitiesClient() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
-    fetch("/api/sales/entities")
+  const load = useCallback(() => {
+    if (scope === "platform" && !organizationId) {
+      setEntities([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const params = new URLSearchParams({ includeInactive: "1" });
+    if (scope === "platform" && organizationId) params.set("organizationId", organizationId);
+    fetch(`/api/sales/entities?${params}`)
       .then((r) => r.json())
       .then((d) => {
         setEntities(Array.isArray(d) ? d : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, [scope, organizationId]);
+
+  useEffect(() => {
+    if (scope === "platform") {
+      fetch("/api/saas/partners?limit=200")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) =>
+          d?.partners &&
+          setPartners(d.partners.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })))
+        )
+        .catch(() => {});
+    }
+  }, [scope]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     if (editId) {
@@ -57,7 +80,11 @@ export function EntitiesClient() {
       const res = await fetch("/api/sales/entities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: addName.trim(), slug: addSlug.trim() }),
+        body: JSON.stringify({
+          name: addName.trim(),
+          slug: addSlug.trim(),
+          ...(scope === "platform" && organizationId ? { organizationId } : {}),
+        }),
       });
       const text = await res.text();
       const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
@@ -104,6 +131,25 @@ export function EntitiesClient() {
 
   return (
     <div className="space-y-6">
+      {scope === "platform" && (
+        <div className="max-w-md">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.partnerLabel")}</label>
+          <select
+            value={organizationId}
+            onChange={(e) => setOrganizationId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+          >
+            <option value="">{t("admin.entities.selectPartner")}</option>
+            {partners.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">{t("admin.entities.partnerHint")}</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t("admin.entities.title")}</h1>
@@ -111,8 +157,9 @@ export function EntitiesClient() {
         </div>
         <button
           type="button"
+          disabled={scope === "platform" && !organizationId}
           onClick={() => { setAddOpen(true); setError(null); }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:pointer-events-none"
         >
           <Plus className="w-4 h-4" /> {t("admin.entities.addEntity")}
         </button>

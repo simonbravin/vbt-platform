@@ -16,7 +16,20 @@ type Entity = { id: string; name: string; slug: string };
 
 type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; referenceNumber: string; notes: string };
 
-export function NewSaleClient() {
+export type NewSaleClientProps = {
+  /** Superadmin: target partner org. Omit for distributor session. */
+  scopedOrganizationId?: string;
+  backHref?: string;
+  cancelHref?: string;
+  successPath?: (saleId: string) => string;
+};
+
+export function NewSaleClient({
+  scopedOrganizationId,
+  backHref = "/sales",
+  cancelHref = "/sales",
+  successPath = (id) => `/sales/${id}`,
+}: NewSaleClientProps = {}) {
   const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,10 +57,22 @@ export function NewSaleClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/clients?limit=500").then((r) => r.json()).then((d) => setClients(d.clients ?? []));
-    fetch("/api/saas/projects?limit=500").then((r) => r.json()).then((d) => setProjects(d.projects ?? []));
-    fetch("/api/sales/entities").then((r) => r.json()).then((d) => setEntities(Array.isArray(d) ? d : []));
-  }, []);
+    const orgParam = scopedOrganizationId
+      ? `&organizationId=${encodeURIComponent(scopedOrganizationId)}`
+      : "";
+    fetch(`/api/clients?limit=500${orgParam}`)
+      .then((r) => r.json())
+      .then((d) => setClients(d.clients ?? []));
+    fetch(`/api/saas/projects?limit=500${orgParam}`)
+      .then((r) => r.json())
+      .then((d) => setProjects(d.projects ?? []));
+    const entUrl = scopedOrganizationId
+      ? `/api/sales/entities?organizationId=${encodeURIComponent(scopedOrganizationId)}`
+      : "/api/sales/entities";
+    fetch(entUrl)
+      .then((r) => r.json())
+      .then((d) => setEntities(Array.isArray(d) ? d : []));
+  }, [scopedOrganizationId]);
 
   const qId = searchParams.get("quoteId");
   const pId = searchParams.get("projectId");
@@ -68,7 +93,11 @@ export function NewSaleClient() {
       setQuoteId("");
       return;
     }
-    fetch(`/api/saas/quotes?projectId=${projectId}&limit=50`)
+    fetch(
+      `/api/saas/quotes?projectId=${projectId}&limit=50${
+        scopedOrganizationId ? `&organizationId=${encodeURIComponent(scopedOrganizationId)}` : ""
+      }`
+    )
       .then((r) => r.json())
       .then((d) => {
         const raw = Array.isArray(d) ? d : d.quotes ?? [];
@@ -79,7 +108,7 @@ export function NewSaleClient() {
         else if (!searchParams.get("quoteId")) setQuoteId("");
       })
       .catch(() => setQuotes([]));
-  }, [projectId, searchParams]);
+  }, [projectId, searchParams, scopedOrganizationId]);
 
   useEffect(() => {
     if (!quoteId || quotes.length === 0) return;
@@ -158,6 +187,7 @@ export function NewSaleClient() {
           landedDdpUsd: Number(landedDdpUsd.toFixed(2)),
           invoicedBasis,
           notes: notes || undefined,
+          ...(scopedOrganizationId ? { organizationId: scopedOrganizationId } : {}),
           invoices: invoices
             .filter((inv) => inv.entityId && inv.amountUsd >= 0)
             .map((inv) => ({
@@ -184,7 +214,7 @@ export function NewSaleClient() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <div className="flex gap-4">
-        <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+        <Link href={backHref} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
           <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
         </Link>
       </div>
@@ -447,7 +477,7 @@ export function NewSaleClient() {
         >
           {saving ? t("common.saving") : t("partner.sales.new.createSale")}
         </button>
-        <Link href="/sales" className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <Link href={cancelHref} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
           {t("common.cancel")}
         </Link>
       </div>

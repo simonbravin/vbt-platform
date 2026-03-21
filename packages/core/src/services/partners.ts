@@ -121,6 +121,8 @@ export type UpdatePartnerInput = {
   enabledSystems?: string[] | null;
   /** Deep-merge into `partner_profiles.quote_defaults` (SaaS pricing defaults + country overrides). */
   quotePricingDefaults?: Partial<PartnerQuoteDefaultsJson> | null;
+  /** When true, creating a SaaS quote requires at least one delivered engineering request on the project. */
+  requireDeliveredEngineeringForQuotes?: boolean;
 };
 
 export async function updatePartner(
@@ -177,6 +179,9 @@ export async function updatePartner(
       next.countryOverrides = qpd.countryOverrides;
     }
     profileUpdate.quoteDefaults = next as object;
+  }
+  if (data.requireDeliveredEngineeringForQuotes !== undefined) {
+    profileUpdate.requireDeliveredEngineeringForQuotes = data.requireDeliveredEngineeringForQuotes;
   }
 
   const profileData =

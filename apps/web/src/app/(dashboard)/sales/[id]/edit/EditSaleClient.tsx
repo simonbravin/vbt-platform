@@ -55,41 +55,79 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/sales/entities").then((r) => r.json()).then((d) => setEntities(Array.isArray(d) ? d : []));
-  }, []);
-
-  useEffect(() => {
-    fetch(`/api/sales/${saleId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setSale(d);
-        if (d) {
-          const round2 = (n: number) => Math.round(n * 100) / 100;
-          setStatus(["PAID", "PARTIALLY_PAID", "DUE"].includes(d.status) ? "" : (d.status ?? "DRAFT"));
-          setExwUsd(round2(d.exwUsd ?? 0));
-          setCommissionPct(round2(d.commissionPct ?? 0));
-          setCommissionAmountUsd(round2(d.commissionAmountUsd ?? 0));
-          setFobUsd(round2(d.fobUsd ?? 0));
-          setFreightUsd(round2(d.freightUsd ?? 0));
-          setCifUsd(round2(d.cifUsd ?? 0));
-          setTaxesFeesUsd(round2(d.taxesFeesUsd ?? 0));
-          setLandedDdpUsd(round2(d.landedDdpUsd ?? 0));
-          setInvoicedBasis((d.invoicedBasis || "DDP").toUpperCase() as "EXW" | "FOB" | "CIF" | "DDP");
-          setNotes(d.notes ?? "");
-          setInvoices(
-            (d.invoices ?? []).map((inv: { entityId: string; amountUsd: number; dueDate: string | null; sequence?: number; referenceNumber?: string | null; notes?: string | null }) => ({
-              entityId: inv.entityId,
-              amountUsd: round2(inv.amountUsd ?? 0),
-              dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : "",
-              sequence: inv.sequence ?? 1,
-              referenceNumber: inv.referenceNumber ?? "",
-              notes: inv.notes ?? "",
-            }))
-          );
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const r = await fetch(`/api/sales/${saleId}`);
+        const text = await r.text();
+        let d: Record<string, unknown> | null = null;
+        try {
+          d = text ? JSON.parse(text) : null;
+        } catch {
+          d = null;
         }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+        if (cancelled) return;
+        if (!r.ok || !d || typeof d.id !== "string") {
+          setSale(null);
+          setEntities([]);
+          setLoading(false);
+          return;
+        }
+        setSale(d);
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const st = String(d.status ?? "");
+        setStatus(["PAID", "PARTIALLY_PAID", "DUE"].includes(st) ? "" : st || "DRAFT");
+        setExwUsd(round2(Number(d.exwUsd ?? 0)));
+        setCommissionPct(round2(Number(d.commissionPct ?? 0)));
+        setCommissionAmountUsd(round2(Number(d.commissionAmountUsd ?? 0)));
+        setFobUsd(round2(Number(d.fobUsd ?? 0)));
+        setFreightUsd(round2(Number(d.freightUsd ?? 0)));
+        setCifUsd(round2(Number(d.cifUsd ?? 0)));
+        setTaxesFeesUsd(round2(Number(d.taxesFeesUsd ?? 0)));
+        setLandedDdpUsd(round2(Number(d.landedDdpUsd ?? 0)));
+        setInvoicedBasis(String(d.invoicedBasis || "DDP").toUpperCase() as "EXW" | "FOB" | "CIF" | "DDP");
+        setNotes(typeof d.notes === "string" ? d.notes : "");
+        const invList = Array.isArray(d.invoices) ? d.invoices : [];
+        setInvoices(
+          invList.map((inv: { entityId: string; amountUsd: number; dueDate: string | null; sequence?: number; referenceNumber?: string | null; notes?: string | null }) => ({
+            entityId: inv.entityId,
+            amountUsd: round2(inv.amountUsd ?? 0),
+            dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().slice(0, 10) : "",
+            sequence: inv.sequence ?? 1,
+            referenceNumber: inv.referenceNumber ?? "",
+            notes: inv.notes ?? "",
+          }))
+        );
+
+        const orgQ =
+          d.organizationId != null && String(d.organizationId).trim().length > 0
+            ? `?organizationId=${encodeURIComponent(String(d.organizationId))}`
+            : "";
+        const er = await fetch(`/api/sales/entities${orgQ}`);
+        const etext = await er.text();
+        let list: Entity[] = [];
+        if (er.ok) {
+          try {
+            const raw = etext ? JSON.parse(etext) : null;
+            list = Array.isArray(raw) ? raw : [];
+          } catch {
+            list = [];
+          }
+        }
+        if (!cancelled) setEntities(list);
+      } catch {
+        if (!cancelled) {
+          setSale(null);
+          setEntities([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [saleId]);
 
   const handleSubmit = async (e: React.FormEvent) => {

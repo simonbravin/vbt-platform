@@ -42,6 +42,7 @@ type Initial = {
   visionLatamCommissionFixedUsd: string;
   moduleVisibility: Record<string, boolean> | null;
   enabledSystems: string[] | null;
+  requireDeliveredEngineeringForQuotes: boolean;
 };
 
 export function EditPartnerForm({
@@ -83,6 +84,7 @@ export function EditPartnerForm({
         visionLatamCommissionFixedUsd: form.visionLatamCommissionFixedUsd.trim() ? parseFloat(form.visionLatamCommissionFixedUsd) : null,
         moduleVisibility: visibility,
         enabledSystems: enabledSystems.length === 3 ? null : enabledSystems.length > 0 ? enabledSystems : null,
+        requireDeliveredEngineeringForQuotes: form.requireDeliveredEngineeringForQuotes,
       };
       const res = await fetch(`/api/saas/partners/${partnerId}`, {
         method: "PATCH",
@@ -221,6 +223,20 @@ export function EditPartnerForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3">
+            <input
+              type="checkbox"
+              checked={form.requireDeliveredEngineeringForQuotes}
+              onChange={(e) => setForm((f) => ({ ...f, requireDeliveredEngineeringForQuotes: e.target.checked }))}
+              className="mt-1 h-4 w-4 rounded border-gray-300"
+            />
+            <span>
+              <span className="block text-sm font-medium text-gray-900">{t("superadmin.partner.requireDeliveredEngineeringQuotes")}</span>
+              <span className="mt-0.5 block text-xs text-gray-500">{t("superadmin.partner.requireDeliveredEngineeringQuotesHelp")}</span>
+            </span>
+          </label>
         </div>
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-700">

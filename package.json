@@ -11,10 +11,14 @@
     "db:seed": "pnpm --filter @vbt/db seed",
     "db:studio": "pnpm --filter @vbt/db studio",
     "test": "pnpm --filter @vbt/core test",
-    "lint": "pnpm --recursive lint"
+    "lint": "pnpm --recursive lint",
+    "backfill:quote-tax-snapshots": "tsx --env-file=packages/db/.env scripts/backfill-quote-tax-snapshots.ts"
   },
   "devDependencies": {
+    "@vbt/core": "workspace:*",
+    "@vbt/db": "workspace:*",
     "next": "^14.2.5",
+    "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   },
   "engines": {

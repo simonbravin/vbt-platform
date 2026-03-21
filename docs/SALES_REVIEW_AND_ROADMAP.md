@@ -31,15 +31,21 @@
 
 ---
 
+## Implementado recientemente (schema partner + API)
+
+- **Modelo Prisma:** `BillingEntity`, `Sale`, `SaleInvoice`, `Payment` (multi-tenant por `organization_id`), migración `20260320140000_partner_sales_billing`.
+- **API `/api/sales`:** listado, creación, detalle `GET/PATCH/DELETE`, pagos `POST` + `DELETE /api/sales/payments/[id]`, facturas `POST/PATCH/DELETE`.
+- **Entidades de facturación:** `GET /api/sales/entities` hace upsert de las cuatro entidades por defecto por org (Vision Profile Extrusions, Vision Latam, VBT Argentina, VBT Panama).
+- **Estados de cuenta:** `GET /api/sales/statements`, export CSV/PDF `GET /api/sales/statements/export?format=csv|pdf`, email con PDF `POST /api/sales/statements/email`.
+- **Recordatorios:** `GET /api/sales/notifications/due?days=7` (conteo para UI); cron diario `GET /api/cron/sales-due-reminders` (Vercel: header `x-vercel-cron` o `Authorization: Bearer CRON_SECRET`) envía digest a org_admins vía Resend.
+- **Dashboard:** KPI ventas YTD = suma `landedDdpUsd` de ventas no canceladas del año (no cotizaciones).
+
 ## Pendiente del plan (opcional / siguiente iteración)
 
 | Item | Estado | Notas |
 |------|--------|--------|
-| PATCH/DELETE pago | No implementado | Permitiría corregir o anular un pago; requiere criterio de negocio (solo DRAFT, solo último pago, etc.). |
-| Export PDF estados de cuenta | No implementado | Solo CSV; el plan mencionaba PDF con @react-pdf. |
-| Email por vencimientos | No implementado | Plan: “opcionalmente enviar recordatorio por email”; requiere job/cron o trigger. |
-| Edición de venta (UI) | Parcial | API PATCH existe; en detalle de venta no hay botón “Edit” ni formulario para cambiar valores/cuotas. |
-| Asignación FIFO de pagos a cuotas | No implementado | Plan §11: para status por cuota (PENDING/PARTIAL/PAID por fila) haría falta asignar pagos por dueDate (FIFO). Hoy el status se calcula a nivel entidad. |
+| Asignación FIFO de pagos a cuotas | No implementado | Plan §11: status por cuota (PENDING/PARTIAL/PAID por fila). Hoy el status se calcula a nivel venta/entidad. |
+| Edición de venta (UI) | Parcial | Existe `/sales/[id]/edit` y PATCH; reglas: no reemplazar líneas de factura si ya hay pagos. |
 
 ---
 

@@ -8,6 +8,9 @@ import { getCountryName } from "@/lib/countries";
 import { useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+const SEARCH_DEBOUNCE_MS = 350;
+const VIEW_STORAGE_KEY = "vbt-partner-quotes-view";
+
 type Quote = {
   id: string;
   quoteNumber: string;
@@ -28,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
   accepted: "bg-blue-100 text-blue-700",
   rejected: "bg-red-100 text-red-500",
   expired: "bg-muted text-muted-foreground",
+  archived: "bg-gray-100 text-gray-600",
 };
 
 const STATUS_KEYS: Record<string, string> = {
@@ -36,11 +40,15 @@ const STATUS_KEYS: Record<string, string> = {
   accepted: "quotes.accepted",
   rejected: "quotes.rejected",
   expired: "quotes.expired",
+  archived: "quotes.archived",
 };
 
 export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes: Quote[]; initialStatus?: string }) {
   const t = useT();
-  const [view, setView] = useState<"table" | "cards">("table");
+  const [view, setView] = useState<"table" | "cards">(() => {
+    if (typeof window === "undefined") return "table";
+    return localStorage.getItem(VIEW_STORAGE_KEY) === "cards" ? "cards" : "table";
+  });
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
@@ -48,17 +56,18 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
   const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null);
 
   useEffect(() => {
-    if (!search.trim()) setQuotes(initialQuotes);
-  }, [search.trim(), initialQuotes]);
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
 
   const runSearch = useCallback(async () => {
-    if (!search.trim()) {
+    const q = search.trim();
+    if (!q) {
       setQuotes(initialQuotes);
       return;
     }
     setSearching(true);
     try {
-      const params = new URLSearchParams({ search: search.trim() });
+      const params = new URLSearchParams({ search: q });
       if (initialStatus) params.set("status", initialStatus);
       const res = await fetch(`/api/saas/quotes?${params}`);
       let data: { quotes?: Quote[] } = {};
@@ -74,13 +83,39 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
     }
   }, [search, initialStatus, initialQuotes]);
 
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setQuotes(initialQuotes);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSearching(true);
+      const params = new URLSearchParams({ search: q });
+      if (initialStatus) params.set("status", initialStatus);
+      fetch(`/api/saas/quotes?${params}`)
+        .then(async (res) => {
+          let data: { quotes?: Quote[] } = {};
+          try {
+            const text = await res.text();
+            if (text) data = JSON.parse(text);
+          } catch {
+            // ignore
+          }
+          if (res.ok && Array.isArray(data.quotes)) setQuotes(data.quotes);
+        })
+        .finally(() => setSearching(false));
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [search, initialStatus, initialQuotes]);
+
   const handleDeleteClick = (q: Quote) => setDeleteTarget(q);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeletingId(deleteTarget.id);
     try {
-      const res = await fetch(`/api/quotes/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/saas/quotes/${deleteTarget.id}`, { method: "DELETE" });
       if (res.ok) {
         setQuotes((prev) => prev.filter((x) => x.id !== deleteTarget.id));
         setDeleteTarget(null);

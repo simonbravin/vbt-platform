@@ -27,6 +27,7 @@ function getInvoiceDueStatus(dueDate: string | null): "overdue" | "due_soon" | n
 
 type Sale = {
   id: string;
+  organizationId?: string;
   saleNumber: string | null;
   clientId: string;
   projectId: string;
@@ -51,8 +52,24 @@ type Sale = {
   invoiceStatusByEntity?: Record<string, { paid: number; invoiced: number; status: string }>;
 };
 
-export function SaleDetailClient({ saleId }: { saleId: string }) {
+export type SaleDetailClientProps = {
+  saleId: string;
+  backHref?: string;
+  afterDeleteHref?: string;
+  /** `undefined`: `/sales/[saleId]/edit`. `null`: hide edit. */
+  editHref?: string | null;
+  quoteLinkPrefix?: string;
+};
+
+export function SaleDetailClient({
+  saleId,
+  backHref = "/sales",
+  afterDeleteHref = "/sales",
+  editHref: editHrefProp,
+  quoteLinkPrefix = "/quotes",
+}: SaleDetailClientProps) {
   const t = useT();
+  const resolvedEditHref = editHrefProp === undefined ? `/sales/${saleId}/edit` : editHrefProp;
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -100,31 +117,62 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       .catch(() => {});
 
   useEffect(() => {
-    fetch(`/api/sales/${saleId}`)
-      .then(async (r) => {
-        try {
-          const text = await r.text();
-          const d = text ? JSON.parse(text) : null;
-          if (d) setSale(d);
-        } catch {
-          // ignore
-        } finally {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const r = await fetch(`/api/sales/${saleId}`);
+        const text = await r.text();
+        const d = text ? JSON.parse(text) : null;
+        if (cancelled) return;
+        if (!d?.id) {
+          setSale(null);
+          setEntities([]);
           setLoading(false);
+          return;
         }
-      })
-      .catch(() => setLoading(false));
-    fetch("/api/sales/entities")
-      .then(async (r) => {
-        try {
-          const text = await r.text();
-          const d = text ? JSON.parse(text) : null;
-          const list = Array.isArray(d) ? d : (d?.entities && Array.isArray(d.entities) ? d.entities : []);
-          setEntities(list);
-        } catch {
+        setSale(d);
+        const orgQ =
+          d.organizationId != null && String(d.organizationId).length > 0
+            ? `?organizationId=${encodeURIComponent(String(d.organizationId))}`
+            : "";
+        const er = await fetch(`/api/sales/entities${orgQ}`);
+        const etext = await er.text();
+        let list: unknown[] = [];
+        if (er.ok) {
+          let raw: unknown = null;
+          try {
+            raw = etext ? JSON.parse(etext) : null;
+          } catch {
+            raw = null;
+          }
+          list = Array.isArray(raw)
+            ? raw
+            : raw && typeof raw === "object" && "entities" in raw && Array.isArray((raw as { entities: unknown }).entities)
+              ? (raw as { entities: unknown[] }).entities
+              : [];
+        }
+        if (!cancelled) {
+          setEntities(
+            Array.isArray(list)
+              ? (list as { id: string; name: string; isActive?: boolean }[]).filter(
+                  (e) => e && typeof e.id === "string" && typeof e.name === "string"
+                )
+              : []
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setSale(null);
           setEntities([]);
         }
-      })
-      .catch(() => setEntities([]));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [saleId]);
 
   const handleAddPayment = async (e: React.FormEvent) => {
@@ -278,7 +326,7 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
       const res = await fetch(`/api/sales/${saleId}`, { method: "DELETE" });
       if (res.ok) {
         setDeleteSaleOpen(false);
-        router.push("/sales");
+        router.push(afterDeleteHref);
         return;
       }
       const data = parseJsonSafe<{ error?: string }>(await res.text());
@@ -302,11 +350,11 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+          <Link href={backHref} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
             <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
           </Link>
-          {sale.status !== "CANCELLED" && sale.status !== "PAID" && (
-            <Link href={`/sales/${saleId}/edit`} className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {resolvedEditHref && sale.status !== "CANCELLED" && sale.status !== "PAID" && (
+            <Link href={resolvedEditHref} className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
               <Pencil className="w-4 h-4" /> {t("common.edit")}
             </Link>
           )}
@@ -339,7 +387,10 @@ export function SaleDetailClient({ saleId }: { saleId: string }) {
           {sale.quote && (
             <>
               {" · "}
-              {t("partner.sales.detail.quote")}: <Link href={`/quotes/${sale.quote.id}`} className="text-vbt-blue hover:underline">{sale.quote.quoteNumber ?? sale.quote.id}</Link>
+              {t("partner.sales.detail.quote")}:{" "}
+              <Link href={`${quoteLinkPrefix}/${sale.quote.id}`} className="text-vbt-blue hover:underline">
+                {sale.quote.quoteNumber ?? sale.quote.id}
+              </Link>
             </>
           )}
           {" · "}

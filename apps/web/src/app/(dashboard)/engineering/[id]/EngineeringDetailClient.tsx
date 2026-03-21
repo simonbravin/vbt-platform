@@ -5,6 +5,16 @@ import Link from "next/link";
 import { FolderOpen, FileText, ExternalLink, Upload } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
 
+type ReviewEvent = {
+  id: string;
+  body: string;
+  visibility: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  createdAt: string;
+  authorUser?: { id: string; fullName: string | null } | null;
+};
+
 type Request = {
   id: string;
   requestNumber: string;
@@ -21,6 +31,7 @@ type Request = {
   assignedToUser?: { id: string; fullName: string | null };
   files?: { id: string; fileName: string; fileUrl?: string | null }[];
   deliverables?: { id: string; title?: string | null; fileUrl?: string | null }[];
+  reviewEvents?: ReviewEvent[];
   createdAt: string;
 };
 
@@ -38,6 +49,10 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [noteBody, setNoteBody] = useState("");
+  const [resubmit, setResubmit] = useState(false);
+  const [postingNote, setPostingNote] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const fetchRequest = useCallback(() => {
     fetch(`/api/saas/engineering/${requestId}`)
@@ -97,6 +112,39 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
       setUploadError(t("partner.engineering.uploadFailed"));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const canResubmit =
+    request?.status === "draft" || request?.status === "needs_info" || request?.status === "pending_info";
+
+  const postPartnerNote = async () => {
+    if (!noteBody.trim() || !request) return;
+    setNoteError(null);
+    setPostingNote(true);
+    try {
+      const body: { body: string; visibility: "partner"; toStatus?: string } = {
+        body: noteBody.trim(),
+        visibility: "partner",
+      };
+      if (resubmit && canResubmit) body.toStatus = "submitted";
+      const res = await fetch(`/api/saas/engineering/${requestId}/review-events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNoteError(typeof data?.error === "string" ? data.error : t("partner.engineering.noteFailed"));
+        return;
+      }
+      setRequest(data);
+      setNoteBody("");
+      setResubmit(false);
+    } catch {
+      setNoteError(t("partner.engineering.noteFailed"));
+    } finally {
+      setPostingNote(false);
     }
   };
 
@@ -247,6 +295,67 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
           </ul>
         </div>
       )}
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-5 py-4">
+          <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.timelineTitle")}</h3>
+        </div>
+        <ul className="divide-y divide-gray-100">
+          {(request.reviewEvents ?? []).length === 0 ? (
+            <li className="px-5 py-8 text-center text-sm text-gray-500">{t("superadmin.engineeringDetail.noEvents")}</li>
+          ) : (
+            (request.reviewEvents ?? []).map((ev) => (
+              <li key={ev.id} className="px-5 py-4">
+                <p className="text-xs text-gray-500">{new Date(ev.createdAt).toLocaleString(dateLocale)}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{ev.body}</p>
+                {(ev.fromStatus || ev.toStatus) && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {ev.fromStatus && `${t("superadmin.engineeringDetail.from")}: ${t(`partner.engineering.status.${ev.fromStatus}`)}`}
+                    {ev.fromStatus && ev.toStatus ? " → " : ""}
+                    {ev.toStatus && `${t("superadmin.engineeringDetail.to")}: ${t(`partner.engineering.status.${ev.toStatus}`)}`}
+                  </p>
+                )}
+                {ev.authorUser?.fullName && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t("superadmin.engineeringDetail.by")} {ev.authorUser.fullName}
+                  </p>
+                )}
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm p-5">
+        <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.addPartnerNote")}</h3>
+        {noteError && <p className="mt-2 text-sm text-red-600">{noteError}</p>}
+        <textarea
+          value={noteBody}
+          onChange={(e) => setNoteBody(e.target.value)}
+          rows={4}
+          className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+          placeholder={t("partner.engineering.notePlaceholder")}
+        />
+        {canResubmit && (
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={resubmit}
+              onChange={(e) => setResubmit(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            {t("partner.engineering.resubmitLabel")}
+          </label>
+        )}
+        <button
+          type="button"
+          onClick={() => void postPartnerNote()}
+          disabled={postingNote || !noteBody.trim()}
+          className="mt-4 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+        >
+          {postingNote ? t("common.loading") : t("partner.engineering.publishNote")}
+        </button>
+      </div>
     </div>
   );
 }

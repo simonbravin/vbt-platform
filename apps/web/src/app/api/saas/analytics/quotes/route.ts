@@ -38,6 +38,7 @@ async function getHandler(req: Request) {
       quotes_sent: 0,
       quotes_accepted: 0,
       quotes_rejected: 0,
+      quotes_archived: 0,
       average_quote_value: 0,
       conversion_rate: 0,
       average_sales_cycle_days: 0,

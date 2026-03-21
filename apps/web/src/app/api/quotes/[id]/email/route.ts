@@ -6,6 +6,9 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
+import { canManageQuotes } from "@/lib/permissions";
+import { quoteByIdWhere } from "@/lib/quote-scope";
+import type { SessionUser } from "@/lib/auth";
 import { buildQuoteSentEmailHtml } from "@/lib/email-bodies";
 import { getResendFrom, emailSubjectQuote, parseEmailLocale } from "@/lib/email-config";
 
@@ -22,8 +25,8 @@ export async function POST(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
-  if (["VIEWER"].includes(user.role)) {
+  const user = session.user as SessionUser;
+  if (!canManageQuotes(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -33,8 +36,11 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  const scoped = quoteByIdWhere(user, params.id);
+  if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
+    where: scoped.where,
     include: { project: { include: { client: { select: { name: true } } } }, preparedByUser: { select: { fullName: true } } },
   });
 

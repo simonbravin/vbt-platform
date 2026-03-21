@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm --filter @vbt/db generate && pnpm --filter web build"
+  "buildCommand": "cd ../.. && pnpm --filter @vbt/db generate && pnpm --filter web build",
+  "crons": [
+    {
+      "path": "/api/cron/sales-due-reminders",
+      "schedule": "0 13 * * *"
+    }
+  ]
 }

@@ -111,6 +111,8 @@ export type CreateQuoteInput = {
   approvedByUserId?: string | null;
   /** Partner / internal notes (persisted on Quote). */
   notes?: string | null;
+  /** Optional FK to engineering_requests (same org + project). */
+  engineeringRequestId?: string | null;
   items?: CreateQuoteItemInput[];
   /** Tax rules JSON snapshot at pricing write (canonical historical basis). */
   taxRulesSnapshotJson?: Prisma.InputJsonValue;
@@ -135,6 +137,7 @@ function toQuoteData(input: CreateQuoteInput, organizationId: string, preparedBy
     validUntil: input.validUntil ?? undefined,
     preparedByUserId: input.preparedByUserId ?? preparedByUserId,
     ...(input.notes !== undefined ? { notes: input.notes } : {}),
+    ...(input.engineeringRequestId !== undefined ? { engineeringRequestId: input.engineeringRequestId } : {}),
     ...(input.taxRulesSnapshotJson !== undefined
       ? { taxRulesSnapshotJson: input.taxRulesSnapshotJson }
       : {}),
@@ -351,6 +354,7 @@ export async function duplicateQuote(
     technicalServiceUsd: Number(existing.technicalServiceCost ?? 0),
     taxRules,
   });
+  const existingErId = (existing as { engineeringRequestId?: string | null }).engineeringRequestId;
   const created = await createQuote(prisma, ctx, {
     projectId: existing.projectId,
     quoteNumber: existing.quoteNumber,
@@ -367,6 +371,7 @@ export async function duplicateQuote(
     totalPrice: canon.totalPrice,
     validUntil: existing.validUntil,
     notes: existing.notes ?? null,
+    engineeringRequestId: existingErId ?? null,
     items: canon.items,
     taxRulesSnapshotJson: taxRules as unknown as Prisma.InputJsonValue,
   });

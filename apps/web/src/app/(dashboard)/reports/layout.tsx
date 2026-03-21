@@ -13,7 +13,7 @@ export default async function ReportsLayout({
   }
   const user = session.user as { role?: string; isPlatformSuperadmin?: boolean };
   const role = user.isPlatformSuperadmin ? "SUPERADMIN" : (user.role ?? "viewer");
-  const canAccessReports = role === "SUPERADMIN" || role === "org_admin";
+  const canAccessReports = role === "SUPERADMIN" || role === "org_admin" || role === "sales_user";
   if (!canAccessReports) {
     redirect("/dashboard");
   }

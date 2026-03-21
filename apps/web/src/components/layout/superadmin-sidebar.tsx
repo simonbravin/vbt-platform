@@ -24,6 +24,8 @@ import {
   Package,
   ClipboardList,
   FolderOpen,
+  Wrench,
+  ShoppingCart,
 } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
@@ -39,7 +41,9 @@ const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
   { labelKey: "nav.superadmin.quotes", href: "/superadmin/quotes", icon: ClipboardList },
+  { labelKey: "nav.superadmin.sales", href: "/superadmin/sales", icon: ShoppingCart },
   { labelKey: "nav.superadmin.projects", href: "/superadmin/projects", icon: FolderOpen },
+  { labelKey: "nav.superadmin.engineering", href: "/superadmin/engineering", icon: Wrench },
   { labelKey: "nav.superadmin.analytics", href: "/superadmin/analytics", icon: BarChart3 },
   { labelKey: "nav.superadmin.reports", href: "/superadmin/reports", icon: FileBarChart },
   { labelKey: "nav.superadmin.activity", href: "/superadmin/activity", icon: Activity },

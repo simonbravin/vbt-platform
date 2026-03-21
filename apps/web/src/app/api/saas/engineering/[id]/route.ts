@@ -29,7 +29,9 @@ export async function GET(
       organizationId: ctx.activeOrgId ?? null,
       isPlatformSuperadmin: ctx.isPlatformSuperadmin,
     };
-    const request = await getEngineeringRequestById(prisma, tenantCtx, params.id);
+    const request = await getEngineeringRequestById(prisma, tenantCtx, params.id, {
+      includeInternalReviews: !!ctx.isPlatformSuperadmin,
+    });
     if (!request) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(request);
   } catch (e) {
@@ -60,9 +62,11 @@ export async function PATCH(
       isPlatformSuperadmin: user.isPlatformSuperadmin,
     };
     const data = parsed.data;
+    const isSuperadmin = !!user.isPlatformSuperadmin;
+    const assignedToUserId = isSuperadmin ? data.assignedToUserId : undefined;
     const request = await updateEngineeringRequest(prisma, tenantCtx, params.id, {
       status: data.status,
-      assignedToUserId: data.assignedToUserId,
+      assignedToUserId,
       requestType: data.requestType,
       wallAreaM2: data.wallAreaM2,
       systemType: data.systemType,

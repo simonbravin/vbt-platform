@@ -8,6 +8,7 @@ import { QuotesClient } from "./QuotesClient";
 import type { SessionUser } from "@/lib/auth";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
+import { normalizeQuoteStatus } from "@vbt/core";
 
 const STATUS_KEYS: Record<string, string> = {
   draft: "quotes.draft",
@@ -15,6 +16,7 @@ const STATUS_KEYS: Record<string, string> = {
   accepted: "quotes.accepted",
   rejected: "quotes.rejected",
   expired: "quotes.expired",
+  archived: "quotes.archived",
 };
 
 export default async function QuotesPage({ searchParams }: { searchParams: { status?: string } }) {
@@ -58,7 +60,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
     dataLoadError = err instanceof Error ? err.message : String(err);
   }
 
-  const statuses = ["draft", "sent", "accepted", "rejected", "expired"];
+  const statuses = ["draft", "sent", "accepted", "rejected", "expired", "archived"];
 
   return (
     <div className="space-y-6">
@@ -78,9 +80,12 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           <h1 className="text-2xl font-bold text-gray-900">{t("quotes.title")}</h1>
           <p className="text-gray-500 text-sm mt-0.5">{t("quotes.quotesCount", { count: quotes.length })}</p>
         </div>
-        <Link href="/quotes/create" className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600">
-          <Plus className="w-4 h-4" /> {t("quotes.newQuote")}
-        </Link>
+        <div className="flex flex-col items-end gap-1">
+          <Link href="/quotes/create" className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600">
+            <Plus className="w-4 h-4" /> {t("quotes.newQuote")}
+          </Link>
+          <p className="text-xs text-gray-400 max-w-xs text-right hidden sm:block">{t("quotes.legacyImportNote")}</p>
+        </div>
       </div>
 
       {/* Filter tabs */}

@@ -62,8 +62,13 @@ New requests can be created with `status: "draft"` (default) or `"submitted"`.
 
 ---
 
-## 7. Remaining gaps
+## 7. UI (partner dashboard)
 
-- No file upload implementation (storage URL assumed to be provided by client after upload).
-- No UI for engineering request list/detail/create; backend only.
+- **List:** `/engineering` — `EngineeringListClient` lists tenant-scoped requests via `/api/saas/engineering`.
+- **Detail:** `/engineering/[id]` — detail and status updates.
+- **Create:** `/engineering/new` — new request form posting to `/api/saas/engineering`.
+
+## 8. Remaining gaps
+
+- File upload may still use storage URL from client after upload (see API docs).
 - Legacy routes under `/api/engineering` (if any) not replaced; prefer `/api/saas/engineering`.

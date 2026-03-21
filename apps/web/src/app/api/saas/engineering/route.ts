@@ -17,9 +17,13 @@ async function getHandler(req: Request) {
   const url = new URL(req.url);
   const tenantCtx = { userId: ctx.userId, organizationId: ctx.activeOrgId ?? null, isPlatformSuperadmin: ctx.isPlatformSuperadmin };
   const statusParam = url.searchParams.get("status");
+  const searchRaw = url.searchParams.get("search")?.trim();
   const result = await listEngineeringRequests(prisma, tenantCtx, {
     projectId: url.searchParams.get("projectId") ?? undefined,
+    organizationId: url.searchParams.get("organizationId") ?? undefined,
+    assignedToUserId: url.searchParams.get("assignedToUserId") ?? undefined,
     status: statusParam && ENGINEERING_STATUSES.includes(statusParam as (typeof ENGINEERING_STATUSES)[number]) ? (statusParam as (typeof ENGINEERING_STATUSES)[number]) : undefined,
+    search: searchRaw && searchRaw.length > 0 ? searchRaw : undefined,
     limit: Number(url.searchParams.get("limit")) || 50,
     offset: Number(url.searchParams.get("offset")) || 0,
   });

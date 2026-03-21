@@ -41,6 +41,7 @@ export const createQuoteSchema = z
     /** Server-computed from `priceSaaSQuoteLayers`; must not be sent by clients. */
     totalPrice: z.number().optional(),
     notes: z.string().max(32_000).nullable().optional(),
+    engineeringRequestId: z.string().min(1).nullable().optional(),
     items: z.array(quoteItemSchema).optional(),
   })
   .strict()

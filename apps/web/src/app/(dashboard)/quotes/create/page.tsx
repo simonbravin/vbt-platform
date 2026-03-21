@@ -24,7 +24,7 @@ function CreateQuotePage() {
   }, [projectIdFromQuery]);
 
   useEffect(() => {
-    fetch("/api/projects?limit=200")
+    fetch("/api/saas/projects?limit=200")
       .then((r) => r.json())
       .then((data) => setProjects(data.projects ?? []))
       .catch(() => setProjects([]));
@@ -107,6 +107,9 @@ function CreateQuotePage() {
 
       <p className="text-xs text-gray-500">
         {t("quotes.createDraftHint")}
+      </p>
+      <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
+        {t("quotes.legacyImportNote")}
       </p>
     </div>
   );

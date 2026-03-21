@@ -6,6 +6,7 @@ import { FolderOpen, MapPin, User, LayoutGrid, List, Search } from "lucide-react
 import { useT } from "@/lib/i18n/context";
 
 const SEARCH_DEBOUNCE_MS = 350;
+const VIEW_STORAGE_KEY = "vbt-partner-projects-view";
 
 type Project = {
   id: string;
@@ -36,7 +37,10 @@ const statusLabel: Record<string, string> = {
 
 export function ProjectsClient({ projects: initialProjects, total: initialTotal }: { projects: Project[]; total: number }) {
   const t = useT();
-  const [view, setView] = useState<"cards" | "table">("table");
+  const [view, setView] = useState<"cards" | "table">(() => {
+    if (typeof window === "undefined") return "table";
+    return localStorage.getItem(VIEW_STORAGE_KEY) === "cards" ? "cards" : "table";
+  });
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
@@ -50,7 +54,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
       return;
     }
     setSearching(true);
-    fetch(`/api/projects?search=${encodeURIComponent(q)}`)
+    fetch(`/api/saas/projects?search=${encodeURIComponent(q)}&limit=100`)
       .then(async (r) => {
         try {
           const text = await r.text();
@@ -67,6 +71,10 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
   }, [search.trim(), initialProjects, initialTotal]);
 
   useEffect(() => {
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
+
+  useEffect(() => {
     const t = setTimeout(() => {
       if (!search.trim()) {
         setProjects(initialProjects);
@@ -74,7 +82,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
         return;
       }
       setSearching(true);
-      fetch(`/api/projects?search=${encodeURIComponent(search.trim())}`)
+      fetch(`/api/saas/projects?search=${encodeURIComponent(search.trim())}&limit=100`)
         .then(async (r) => {
           try {
             const text = await r.text();

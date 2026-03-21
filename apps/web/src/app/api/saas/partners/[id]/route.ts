@@ -5,6 +5,33 @@ import { getPartnerById, updatePartner } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
 
+const countryQuoteOverrideSchema = z
+  .object({
+    visionLatamMarkupPct: z.number().optional(),
+    defaultPartnerMarkupPct: z.number().optional(),
+    defaultLogisticsCostUsd: z.number().optional(),
+    defaultImportCostUsd: z.number().optional(),
+    defaultLocalTransportCostUsd: z.number().optional(),
+    defaultTechnicalServiceCostUsd: z.number().optional(),
+  })
+  .strict();
+
+const quotePricingDefaultsSchema = z
+  .object({
+    baseUom: z.enum(["M", "FT"]).optional(),
+    weightUom: z.enum(["KG", "LBS"]).optional(),
+    minRunFt: z.number().optional(),
+    commissionPct: z.number().optional(),
+    commissionFixed: z.number().optional(),
+    defaultPartnerMarkupPct: z.number().optional(),
+    defaultLogisticsCostUsd: z.number().optional(),
+    defaultImportCostUsd: z.number().optional(),
+    defaultLocalTransportCostUsd: z.number().optional(),
+    defaultTechnicalServiceCostUsd: z.number().optional(),
+    countryOverrides: z.record(z.string(), countryQuoteOverrideSchema.partial()).optional(),
+  })
+  .strict();
+
 const patchSchema = z.object({
   companyName: z.string().min(1).optional(),
   contactName: z.string().nullable().optional(),
@@ -30,6 +57,8 @@ const patchSchema = z.object({
   visionLatamCommissionFixedUsd: z.number().min(0).nullable().optional(),
   moduleVisibility: z.record(z.string(), z.boolean()).nullable().optional(),
   enabledSystems: z.array(z.enum(["S80", "S150", "S200"])).nullable().optional(),
+  quotePricingDefaults: quotePricingDefaultsSchema.optional(),
+  requireDeliveredEngineeringForQuotes: z.boolean().optional(),
 });
 
 export async function GET(
@@ -101,6 +130,8 @@ export async function PATCH(
       visionLatamCommissionFixedUsd: data.visionLatamCommissionFixedUsd,
       moduleVisibility: data.moduleVisibility ?? undefined,
       enabledSystems: data.enabledSystems ?? undefined,
+      quotePricingDefaults: data.quotePricingDefaults ?? undefined,
+      requireDeliveredEngineeringForQuotes: data.requireDeliveredEngineeringForQuotes,
     });
     await createActivityLog({
       organizationId: partner.id,

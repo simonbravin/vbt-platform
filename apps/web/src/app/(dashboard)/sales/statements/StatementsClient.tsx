@@ -17,7 +17,19 @@ type Statement = {
 };
 type Entity = { id: string; name: string; slug: string };
 
-export function StatementsClient() {
+export type StatementsClientProps = {
+  /** Platform superadmin: scope statements to this partner org. */
+  organizationId?: string;
+  backHref?: string;
+  /** Base path for sale detail links (e.g. `/superadmin/sales`). */
+  saleDetailBasePath?: string;
+};
+
+export function StatementsClient({
+  organizationId: scopedOrganizationId,
+  backHref = "/sales",
+  saleDetailBasePath = "/sales",
+}: StatementsClientProps = {}) {
   const t = useT();
   const [data, setData] = useState<{ statements: Statement[]; entities: Entity[]; filters: any } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,10 +43,13 @@ export function StatementsClient() {
   const [emailMessage, setEmailMessage] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
+    setFetchError(null);
     const params = new URLSearchParams();
+    if (scopedOrganizationId) params.set("organizationId", scopedOrganizationId);
     if (clientId) params.set("clientId", clientId);
     if (entityId) params.set("entityId", entityId);
     if (from) params.set("from", from);
@@ -44,36 +59,55 @@ export function StatementsClient() {
         try {
           const text = await r.text();
           const d = text ? JSON.parse(text) : null;
-          setData(d);
+          if (!r.ok) {
+            const msg = d && typeof d === "object" && "error" in d ? String((d as { error: string }).error) : null;
+            setFetchError(msg ?? t("partner.sales.statementsLoadError"));
+            setData({ statements: [], entities: [], filters: {} });
+            return;
+          }
+          if (d && typeof d === "object" && Array.isArray((d as { statements?: unknown }).statements)) {
+            setData(d as { statements: Statement[]; entities: Entity[]; filters: Record<string, unknown> });
+          } else {
+            setData({ statements: [], entities: [], filters: {} });
+          }
         } catch {
-          setData(null);
+          setFetchError(t("partner.sales.statementsLoadError"));
+          setData({ statements: [], entities: [], filters: {} });
         } finally {
           setLoading(false);
         }
       })
-      .catch(() => setLoading(false));
-  }, [clientId, entityId, from, to]);
+      .catch(() => {
+        setFetchError(t("partner.sales.statementsLoadError"));
+        setData({ statements: [], entities: [], filters: {} });
+        setLoading(false);
+      });
+  }, [clientId, entityId, from, to, scopedOrganizationId, t]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   useEffect(() => {
-    fetch("/api/clients?limit=500")
+    const params = new URLSearchParams({ limit: "500" });
+    if (scopedOrganizationId) params.set("organizationId", scopedOrganizationId);
+    fetch(`/api/clients?${params}`)
       .then(async (r) => {
         try {
           const text = await r.text();
           const d = text ? JSON.parse(text) : {};
           if (Array.isArray(d.clients)) setClients(d.clients);
+          else setClients([]);
         } catch {
-          // ignore
+          setClients([]);
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => setClients([]));
+  }, [scopedOrganizationId]);
 
   const exportParams = () => {
     const p = new URLSearchParams();
+    if (scopedOrganizationId) p.set("organizationId", scopedOrganizationId);
     if (clientId) p.set("clientId", clientId);
     if (entityId) p.set("entityId", entityId);
     if (from) p.set("from", from);
@@ -108,6 +142,7 @@ export function StatementsClient() {
           entityId: entityId || undefined,
           dateFrom: from || undefined,
           dateTo: to || undefined,
+          ...(scopedOrganizationId ? { organizationId: scopedOrganizationId } : {}),
         }),
       });
       const text = await res.text();
@@ -137,9 +172,13 @@ export function StatementsClient() {
 
   return (
     <div className="space-y-4">
-      <Link href="/sales" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+      <Link href={backHref} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
         <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
       </Link>
+
+      {fetchError ? (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground">{fetchError}</div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2 items-center">
         <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[160px]">
@@ -229,12 +268,18 @@ export function StatementsClient() {
                   </thead>
                   <tbody>
                     {st.sales.map((sale: any) => {
-                      const invTotal = getInvoicedAmount(sale);
-                      const payTotal = sale.payments?.reduce((a: number, p: any) => a + (p.amountUsd ?? 0), 0) ?? 0;
+                      const invTotal =
+                        typeof sale.statementInvoiced === "number"
+                          ? sale.statementInvoiced
+                          : getInvoicedAmount(sale);
+                      const payTotal =
+                        typeof sale.statementPaid === "number"
+                          ? sale.statementPaid
+                          : sale.payments?.reduce((a: number, p: any) => a + (p.amountUsd ?? 0), 0) ?? 0;
                       return (
                         <tr key={sale.id} className="border-b border-gray-50">
                           <td className="py-2 pr-4">
-                            <Link href={`/sales/${sale.id}`} className="text-vbt-blue hover:underline">
+                            <Link href={`${saleDetailBasePath.replace(/\/$/, "")}/${sale.id}`} className="text-vbt-blue hover:underline">
                               {sale.saleNumber ?? sale.id?.slice(0, 8)}
                             </Link>
                           </td>

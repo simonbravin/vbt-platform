@@ -1,9 +1,15 @@
+/**
+ * @deprecated Legacy quote-by-id (session + Prisma). CANONICAL for CRUD: `/api/saas/quotes/[id]`.
+ * Keep for PDF/email/audit and scripts until those surfaces call SaaS or shared handlers.
+ */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, type SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
+import { canDeleteQuote, canManageQuotes, isPlatformSuperadmin } from "@/lib/permissions";
+import { quoteByIdWhere } from "@/lib/quote-scope";
+import { formatQuoteForSaaSApiWithSnapshot, normalizeQuoteStatus, QuoteMissingTaxSnapshotError } from "@vbt/core";
 
 export async function GET(
   _req: Request,
@@ -11,11 +17,13 @@ export async function GET(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = session.user as SessionUser;
 
-  const organizationId = getEffectiveOrganizationId(user);
+  const scoped = quoteByIdWhere(user, params.id);
+  if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: organizationId ?? undefined },
+    where: scoped.where,
     include: {
       project: true,
       items: { orderBy: { sortOrder: "asc" } },
@@ -24,17 +32,9 @@ export async function GET(
 
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
-  const isPlatformSuperadmin = !!(user as { isPlatformSuperadmin?: boolean }).isPlatformSuperadmin;
-  if (!isPlatformSuperadmin) {
-    const factory = Number((quote as { factoryCostTotal?: number }).factoryCostTotal ?? 0);
-    const pct = Number((quote as { visionLatamMarkupPct?: number }).visionLatamMarkupPct ?? 0);
-    const payload = JSON.parse(JSON.stringify(quote)) as Record<string, unknown>;
-    payload.factoryCostTotal = null;
-    payload.factoryCostUsd = null;
-    payload.basePriceForPartner = factory * (1 + pct / 100);
-    return NextResponse.json(payload);
-  }
-  return NextResponse.json(quote);
+  return NextResponse.json(
+    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !isPlatformSuperadmin(user) })
+  );
 }
 
 export async function PATCH(
@@ -43,32 +43,45 @@ export async function PATCH(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
-  if (["VIEWER"].includes(user.role)) {
+  const user = session.user as SessionUser;
+  if (!canManageQuotes(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const scoped = quoteByIdWhere(user, params.id);
+  if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
+    where: scoped.where,
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
-  const status = body.status;
+  const rawStatus = body.status;
   const notes = body.notes;
   const data: Record<string, unknown> = {};
-  if (status && ["draft", "sent", "accepted"].includes(status)) data.status = status;
+
+  if (rawStatus !== undefined && rawStatus !== null && String(rawStatus).trim() !== "") {
+    const normalized = normalizeQuoteStatus(rawStatus);
+    if (normalized == null) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+    data.status = normalized;
+  }
   if (typeof notes === "string") data.notes = notes;
 
   if (Object.keys(data).length > 0) {
     await prisma.quote.update({
       where: { id: params.id },
-      data: data as any,
+      data,
     });
+
+    const archived = data.status === "archived";
+
     await createActivityLog({
-      organizationId: getEffectiveOrganizationId(user) ?? undefined,
+      organizationId: quote.organizationId ?? undefined,
       userId: user.id,
-      action: data.status === "ARCHIVED" ? "QUOTE_ARCHIVED" : "QUOTE_UPDATED",
+      action: archived ? "QUOTE_ARCHIVED" : "QUOTE_UPDATED",
       entityType: "Quote",
       entityId: params.id,
       metadata: { changed: Object.keys(data) },
@@ -77,9 +90,35 @@ export async function PATCH(
       where: { id: params.id },
       include: { project: true, items: true },
     });
-    return NextResponse.json(updated);
+    try {
+      return NextResponse.json(
+        formatQuoteForSaaSApiWithSnapshot(updated ?? quote, {
+          maskFactoryExw: !isPlatformSuperadmin(user),
+        })
+      );
+    } catch (e) {
+      if (e instanceof QuoteMissingTaxSnapshotError) {
+        return NextResponse.json(
+          { error: e.message, code: e.code, quoteId: e.quoteId },
+          { status: 422 }
+        );
+      }
+      throw e;
+    }
   }
-  return NextResponse.json(quote);
+  try {
+    return NextResponse.json(
+      formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !isPlatformSuperadmin(user) })
+    );
+  } catch (e) {
+    if (e instanceof QuoteMissingTaxSnapshotError) {
+      return NextResponse.json(
+        { error: e.message, code: e.code, quoteId: e.quoteId },
+        { status: 422 }
+      );
+    }
+    throw e;
+  }
 }
 
 export async function DELETE(
@@ -88,18 +127,21 @@ export async function DELETE(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
-  if (!["SUPERADMIN", "ADMIN"].includes(user.role)) {
+  const user = session.user as SessionUser;
+  if (!canDeleteQuote(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const scoped = quoteByIdWhere(user, params.id);
+  if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: getEffectiveOrganizationId(user) ?? "" },
+    where: scoped.where,
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
   await createActivityLog({
-    organizationId: getEffectiveOrganizationId(user) ?? undefined,
+    organizationId: quote.organizationId ?? undefined,
     userId: user.id,
     action: "QUOTE_DELETED",
     entityType: "Quote",

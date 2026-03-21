@@ -1,3 +1,6 @@
+/**
+ * CANONICAL SaaS projects collection (`listProjects` / `createProject`). Legacy: `/api/projects`.
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, requireActiveOrg, TenantError } from "@/lib/tenant";
