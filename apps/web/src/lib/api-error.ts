@@ -1,4 +1,5 @@
 import { ZodError } from "zod";
+import { InvalidDocumentOrgIdsError, QuoteMissingTaxSnapshotError } from "@vbt/core";
 import { TenantError } from "./tenant";
 import { tenantErrorStatus } from "./tenant";
 import { RateLimitExceededError } from "./rate-limit";
@@ -24,6 +25,32 @@ export function normalizeApiError(error: unknown): { status: number; payload: Ap
           code: "RATE_LIMIT_EXCEEDED",
           message: error.message,
           details: [],
+        },
+      },
+    };
+  }
+
+  if (error instanceof InvalidDocumentOrgIdsError) {
+    return {
+      status: 400,
+      payload: {
+        error: {
+          code: "INVALID_DOCUMENT_ORG_IDS",
+          message: error.message,
+          details: [],
+        },
+      },
+    };
+  }
+
+  if (error instanceof QuoteMissingTaxSnapshotError) {
+    return {
+      status: 422,
+      payload: {
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.quoteId ? [{ path: "quoteId", message: error.quoteId }] : [],
         },
       },
     };

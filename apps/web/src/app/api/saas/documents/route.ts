@@ -1,12 +1,31 @@
+/**
+ * CANONICAL SaaS document library (`getVisibleDocuments` / `createDocument` from `@vbt/core`).
+ */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireActiveOrg, getTenantContext } from "@/lib/tenant";
-import { listDocuments, createDocument } from "@vbt/core";
+import { requirePlatformSuperadmin, getTenantContext } from "@/lib/tenant";
+import { getVisibleDocuments, createDocument } from "@vbt/core";
 import { createDocumentSchema } from "@vbt/core/validation";
 import { createActivityLog } from "@/lib/audit";
 import { withSaaSHandler } from "@/lib/saas-handler";
 
 const VISIBILITY = ["public", "partners_only", "internal"] as const;
+
+type ListedDoc = {
+  allowedOrganizations?: { organizationId: string }[];
+  [key: string]: unknown;
+};
+
+function formatDocumentListItem(doc: ListedDoc, forSuperadmin: boolean) {
+  const { allowedOrganizations, ...rest } = doc;
+  if (forSuperadmin) {
+    return {
+      ...rest,
+      allowedOrganizationIds: allowedOrganizations?.map((a) => a.organizationId) ?? [],
+    };
+  }
+  return rest;
+}
 
 async function getHandler(req: Request) {
   try {
@@ -16,7 +35,7 @@ async function getHandler(req: Request) {
     }
     const url = new URL(req.url);
     const visibilityParam = url.searchParams.get("visibility");
-    const listOptions: Parameters<typeof listDocuments>[1] = {
+    const listOptions = {
       categoryId: url.searchParams.get("categoryId") ?? undefined,
       categoryCode: url.searchParams.get("categoryCode") ?? undefined,
       visibility:
@@ -29,11 +48,19 @@ async function getHandler(req: Request) {
       limit: Number(url.searchParams.get("limit")) || 100,
       offset: Number(url.searchParams.get("offset")) || 0,
     };
-    if (ctx && !ctx.isPlatformSuperadmin && ctx.activeOrgId) {
-      listOptions.organizationId = ctx.activeOrgId;
-    }
-    const result = await listDocuments(prisma, listOptions);
-    return NextResponse.json(result);
+    const result = await getVisibleDocuments(
+      prisma,
+      {
+        organizationId: ctx.activeOrgId ?? null,
+        isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+      },
+      listOptions
+    );
+    const forSuperadmin = ctx.isPlatformSuperadmin;
+    return NextResponse.json({
+      documents: result.documents.map((d) => formatDocumentListItem(d as ListedDoc, forSuperadmin)),
+      total: result.total,
+    });
   } catch (e) {
     console.error("GET /api/saas/documents error:", e);
     return NextResponse.json({ documents: [], total: 0 });
@@ -41,12 +68,14 @@ async function getHandler(req: Request) {
 }
 
 async function postHandler(req: Request) {
-  const user = await requireActiveOrg();
+  const user = await requirePlatformSuperadmin();
   const body = await req.json();
   const parsed = createDocumentSchema.safeParse(body);
   if (!parsed.success) throw parsed.error;
+  const { allowedOrganizationIds, ...rest } = parsed.data;
   const doc = await createDocument(prisma, {
-    ...parsed.data,
+    ...rest,
+    allowedOrganizationIds: allowedOrganizationIds ?? [],
     createdByUserId: user.userId ?? user.id,
   });
   await createActivityLog({
@@ -57,7 +86,7 @@ async function postHandler(req: Request) {
     entityId: doc.id,
     metadata: { title: doc.title, categoryId: doc.categoryId },
   });
-  return NextResponse.json(doc, { status: 201 });
+  return NextResponse.json(formatDocumentListItem(doc as ListedDoc, true), { status: 201 });
 }
 
 export const GET = withSaaSHandler({}, getHandler);

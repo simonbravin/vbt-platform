@@ -5,6 +5,7 @@ import { Plus, FileText, Pencil, ExternalLink } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
 type DocumentCategory = { id: string; name: string; code: string };
+type PartnerOption = { id: string; name: string };
 type DocumentItem = {
   id: string;
   title: string;
@@ -13,8 +14,21 @@ type DocumentItem = {
   visibility: string;
   countryScope: string | null;
   categoryId: string;
+  organizationId?: string | null;
+  allowedOrganizationIds?: string[];
   category?: { id: string; name: string; code: string };
 };
+
+function parseApiErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err !== "object" || err === null) return fallback;
+  const e = err as { error?: unknown };
+  if (typeof e.error === "string") return e.error;
+  if (typeof e.error === "object" && e.error !== null && "message" in e.error) {
+    const m = (e.error as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return fallback;
+}
 
 const VISIBILITY_OPTIONS = ["public", "partners_only", "internal"] as const;
 
@@ -34,6 +48,8 @@ export function DocumentsAdminClient() {
   const [filters, setFilters] = useState({ categoryId: "", visibility: "" });
   const [formOpen, setFormOpen] = useState<"new" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [partners, setPartners] = useState<PartnerOption[]>([]);
+  const [editingDocumentOrgId, setEditingDocumentOrgId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -41,6 +57,7 @@ export function DocumentsAdminClient() {
     fileUrl: "",
     visibility: "partners_only" as (typeof VISIBILITY_OPTIONS)[number],
     countryScope: "",
+    allowedOrganizationIds: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -52,6 +69,18 @@ export function DocumentsAdminClient() {
     if (!res.ok) return;
     const data = await res.json();
     setCategories(Array.isArray(data) ? data : []);
+  }, []);
+
+  const fetchPartners = useCallback(async () => {
+    const res = await fetch("/api/saas/partners?limit=500");
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.partners ?? [];
+    setPartners(
+      Array.isArray(list)
+        ? list.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }))
+        : []
+    );
   }, []);
 
   const fetchDocuments = useCallback(async () => {
@@ -79,7 +108,8 @@ export function DocumentsAdminClient() {
 
   useEffect(() => {
     fetchCategories();
-  }, [fetchCategories]);
+    fetchPartners();
+  }, [fetchCategories, fetchPartners]);
 
   useEffect(() => {
     fetchDocuments();
@@ -93,10 +123,12 @@ export function DocumentsAdminClient() {
       fileUrl: "",
       visibility: "partners_only",
       countryScope: "",
+      allowedOrganizationIds: [],
     });
     setFormError(null);
     setFormOpen("new");
     setEditingId(null);
+    setEditingDocumentOrgId(null);
   };
 
   const openEdit = (doc: DocumentItem) => {
@@ -107,17 +139,22 @@ export function DocumentsAdminClient() {
       fileUrl: doc.fileUrl,
       visibility: doc.visibility as (typeof VISIBILITY_OPTIONS)[number],
       countryScope: doc.countryScope ?? "",
+      allowedOrganizationIds: [...(doc.allowedOrganizationIds ?? [])],
     });
     setFormError(null);
     setFormOpen(null);
     setEditingId(doc.id);
+    setEditingDocumentOrgId(doc.organizationId ?? null);
   };
 
   const closeForm = () => {
     setFormOpen(null);
     setEditingId(null);
+    setEditingDocumentOrgId(null);
     setUploadError(null);
   };
+
+  const isPlatformDocumentForm = editingDocumentOrgId === null;
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -131,7 +168,7 @@ export function DocumentsAdminClient() {
       const res = await fetch("/api/saas/documents/upload", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setUploadError((data?.error as string) ?? t("superadmin.documents.uploadFailed"));
+        setUploadError(parseApiErrorMessage(data, t("superadmin.documents.uploadFailed")));
         return;
       }
       if (typeof data?.url === "string" && data.url) {
@@ -153,7 +190,7 @@ export function DocumentsAdminClient() {
     }
     setSaving(true);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         title: form.title.trim(),
         description: form.description.trim() || null,
         categoryId: form.categoryId || undefined,
@@ -161,6 +198,9 @@ export function DocumentsAdminClient() {
         visibility: form.visibility,
         countryScope: form.countryScope.trim() || null,
       };
+      if (isPlatformDocumentForm) {
+        payload.allowedOrganizationIds = form.allowedOrganizationIds;
+      }
       if (editingId) {
         const res = await fetch(`/api/saas/documents/${editingId}`, {
           method: "PATCH",
@@ -169,7 +209,7 @@ export function DocumentsAdminClient() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          setFormError(err?.error ?? t("superadmin.documents.updateFailed"));
+          setFormError(parseApiErrorMessage(err, t("superadmin.documents.updateFailed")));
           return;
         }
       } else {
@@ -185,7 +225,7 @@ export function DocumentsAdminClient() {
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          setFormError(err?.error ?? t("superadmin.documents.createFailed"));
+          setFormError(parseApiErrorMessage(err, t("superadmin.documents.createFailed")));
           return;
         }
       }
@@ -316,6 +356,51 @@ export function DocumentsAdminClient() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
+            {isPlatformDocumentForm && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldPartnerAllowlist")}</label>
+                <p className="text-xs text-gray-500 mb-2">{t("superadmin.documents.partnerAllowlistHint")}</p>
+                {partners.length === 0 ? (
+                  <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{t("superadmin.documents.partnersLoadEmpty")}</p>
+                ) : (
+                  <>
+                    <select
+                      multiple
+                      size={Math.min(10, Math.max(4, partners.length))}
+                      value={form.allowedOrganizationIds}
+                      onChange={(e) => {
+                        const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
+                        setForm((f) => ({ ...f, allowedOrganizationIds: selected }));
+                      }}
+                      className="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm min-h-[120px]"
+                    >
+                      {partners.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, allowedOrganizationIds: [] }))}
+                        className="text-sm text-vbt-blue hover:underline"
+                      >
+                        {t("superadmin.documents.clearPartnerSelection")}
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        {form.allowedOrganizationIds.length === 0
+                          ? t("superadmin.documents.allPartners")
+                          : t("superadmin.documents.selectedPartnersCount", { count: form.allowedOrganizationIds.length })}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {!isPlatformDocumentForm && (
+              <p className="text-sm text-gray-500 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
+                {t("superadmin.documents.partnerOwnedDocHint")}
+              </p>
+            )}
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -357,6 +442,7 @@ export function DocumentsAdminClient() {
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCategory")}</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colVisibility")}</th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCountry")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colPartners")}</th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colActions")}</th>
                 </tr>
               </thead>
@@ -377,6 +463,13 @@ export function DocumentsAdminClient() {
                     <td className="px-5 py-3 text-sm text-gray-600">{doc.category?.name ?? doc.categoryId}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{visibilityOptionLabel(t, doc.visibility)}</td>
                     <td className="px-5 py-3 text-sm text-gray-500">{doc.countryScope ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-gray-600">
+                      {doc.organizationId
+                        ? t("superadmin.documents.oneOrganizationDoc")
+                        : (doc.allowedOrganizationIds?.length ?? 0) === 0
+                          ? t("superadmin.documents.allPartners")
+                          : t("superadmin.documents.selectedPartnersCount", { count: doc.allowedOrganizationIds?.length ?? 0 })}
+                    </td>
                     <td className="px-5 py-3 text-right">
                       <button
                         type="button"

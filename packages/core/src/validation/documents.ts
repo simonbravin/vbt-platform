@@ -9,6 +9,8 @@ export const createDocumentSchema = z.object({
   fileUrl: z.string().min(1),
   visibility: documentVisibilityEnum.optional(),
   countryScope: z.string().nullable().optional(),
+  /** Platform docs: restrict to these partner orgs; omit or [] = all partners. */
+  allowedOrganizationIds: z.array(z.string().min(1)).optional(),
 });
 
 export const updateDocumentSchema = z.object({
@@ -18,4 +20,5 @@ export const updateDocumentSchema = z.object({
   fileUrl: z.string().min(1).optional(),
   visibility: documentVisibilityEnum.optional(),
   countryScope: z.string().nullable().optional(),
+  allowedOrganizationIds: z.array(z.string().min(1)).optional(),
 });

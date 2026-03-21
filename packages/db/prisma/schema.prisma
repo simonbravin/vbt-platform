@@ -232,6 +232,7 @@ model Organization {
   taxRuleSets         TaxRuleSet[]
   inventoryTransactions InventoryTransaction[]
   documents             Document[]
+  documentAllowances    DocumentAllowedOrganization[]
   billingEntities       BillingEntity[]
   sales                 Sale[]
   payments              Payment[]
@@ -798,6 +799,21 @@ model DocumentCategory {
   @@map("document_categories")
 }
 
+// Platform library: which partner orgs may see this document. Empty = all partners (subject to visibility/country). Only applies when document.organizationId is null.
+model DocumentAllowedOrganization {
+  id             String   @id @default(cuid())
+  documentId     String   @map("document_id")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  document     Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, organizationId])
+  @@index([organizationId])
+  @@map("document_allowed_organizations")
+}
+
 model Document {
   id                   String            @id @default(cuid())
   categoryId           String            @map("category_id")
@@ -817,11 +833,12 @@ model Document {
   createdAt            DateTime          @default(now()) @map("created_at")
   updatedAt            DateTime          @updatedAt @map("updated_at")
 
-  category            DocumentCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  project             Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  engineeringRequest  EngineeringRequest? @relation(fields: [engineeringRequestId], references: [id], onDelete: SetNull)
-  organization        Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  createdByUser       User?              @relation("DocumentCreatedBy", fields: [createdByUserId], references: [id])
+  category               DocumentCategory               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  project                Project?                       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  engineeringRequest     EngineeringRequest?            @relation(fields: [engineeringRequestId], references: [id], onDelete: SetNull)
+  organization           Organization?                  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdByUser          User?                          @relation("DocumentCreatedBy", fields: [createdByUserId], references: [id])
+  allowedOrganizations   DocumentAllowedOrganization[]
 
   @@index([categoryId])
   @@index([visibility])

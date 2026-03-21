@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext } from "@/lib/tenant";
-import { getDocumentById } from "@vbt/core";
+import { getDocumentById, canReadDocument } from "@vbt/core";
 import { getDownloadUrl, isR2StorageKey } from "@/lib/r2-client";
-
-function canAccessDocument(
-  doc: { organizationId: string | null; visibility: string },
-  ctx: { isPlatformSuperadmin: boolean; activeOrgId: string | null } | null
-): boolean {
-  if (!ctx) return false;
-  if (!ctx.isPlatformSuperadmin && doc.visibility === "internal") return false;
-  if (!doc.organizationId) return true;
-  if (ctx.isPlatformSuperadmin) return true;
-  return ctx.activeOrgId === doc.organizationId;
-}
 
 /** GET: redirect to signed R2 URL or legacy URL. Access checked first. */
 export async function GET(
@@ -24,7 +13,16 @@ export async function GET(
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessDocument(doc, ctx)) {
+  if (
+    !canReadDocument(
+      {
+        organizationId: doc.organizationId,
+        visibility: doc.visibility,
+        allowedOrganizations: doc.allowedOrganizations,
+      },
+      { isPlatformSuperadmin: ctx.isPlatformSuperadmin, activeOrgId: ctx.activeOrgId ?? null }
+    )
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const fileUrl = doc.fileUrl?.trim();

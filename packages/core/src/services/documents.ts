@@ -1,8 +1,75 @@
-import type { PrismaClient, Document, DocumentCategory } from "@vbt/db";
+import type { Prisma, PrismaClient, DocumentCategory } from "@vbt/db";
+
+const PARTNER_ORG_TYPES = ["commercial_partner", "master_partner"] as const;
+
+export class InvalidDocumentOrgIdsError extends Error {
+  constructor() {
+    super("Invalid partner organization ids for document allowlist");
+    this.name = "InvalidDocumentOrgIdsError";
+  }
+}
+
+const documentListInclude = {
+  category: { select: { id: true, name: true, code: true } },
+  allowedOrganizations: {
+    select: {
+      organizationId: true,
+      organization: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
+async function assertPartnerOrgIds(
+  prisma: Prisma.TransactionClient | PrismaClient,
+  ids: string[]
+): Promise<void> {
+  if (ids.length === 0) return;
+  const rows = await prisma.organization.findMany({
+    where: { id: { in: ids }, organizationType: { in: [...PARTNER_ORG_TYPES] } },
+    select: { id: true },
+  });
+  if (rows.length !== ids.length) {
+    throw new InvalidDocumentOrgIdsError();
+  }
+}
+
+export type DocumentForAccess = {
+  organizationId: string | null;
+  visibility: string;
+  allowedOrganizations?: { organizationId: string }[];
+};
+
+/** Read access: list, GET one, file download. */
+export function canReadDocument(
+  doc: DocumentForAccess,
+  ctx: { isPlatformSuperadmin: boolean; activeOrgId: string | null }
+): boolean {
+  if (!ctx) return false;
+  if (!ctx.isPlatformSuperadmin && doc.visibility === "internal") return false;
+  if (doc.organizationId) {
+    if (ctx.isPlatformSuperadmin) return true;
+    return ctx.activeOrgId === doc.organizationId;
+  }
+  if (ctx.isPlatformSuperadmin) return true;
+  if (!ctx.activeOrgId) return false;
+  const allowed = doc.allowedOrganizations ?? [];
+  if (allowed.length === 0) return true;
+  return allowed.some((a) => a.organizationId === ctx.activeOrgId);
+}
+
+/** Write access: PATCH (and future partner-owned uploads). Platform docs: superadmin only. */
+export function canMutateDocument(
+  doc: { organizationId: string | null },
+  ctx: { isPlatformSuperadmin: boolean; activeOrgId: string | null }
+): boolean {
+  if (ctx.isPlatformSuperadmin) return true;
+  if (!doc.organizationId) return false;
+  return ctx.activeOrgId === doc.organizationId;
+}
 
 /**
  * Document library: platform docs have organizationId null; partner docs have organizationId set.
- * When organizationId is passed (partner), list returns platform docs + that org's docs only.
+ * When organizationId is passed (partner), list returns platform docs (with allowlist/country rules) + that org's docs only.
  */
 export type ListDocumentsOptions = {
   categoryId?: string;
@@ -27,10 +94,7 @@ export async function listDocumentCategories(
   });
 }
 
-export async function listDocuments(
-  prisma: PrismaClient,
-  options: ListDocumentsOptions = {}
-): Promise<{ documents: Document[]; total: number }> {
+export async function listDocuments(prisma: PrismaClient, options: ListDocumentsOptions = {}) {
   const and: Record<string, unknown>[] = [];
   const base: Record<string, unknown> = {};
   if (options.categoryId) base.categoryId = options.categoryId;
@@ -45,7 +109,26 @@ export async function listDocuments(
   if (options.engineeringRequestId) base.engineeringRequestId = options.engineeringRequestId;
   and.push(base);
   if (options.organizationId !== undefined && options.organizationId !== null) {
-    and.push({ OR: [{ organizationId: null }, { organizationId: options.organizationId }] });
+    and.push({
+      OR: [
+        { organizationId: options.organizationId },
+        {
+          AND: [
+            { organizationId: null },
+            {
+              OR: [
+                { allowedOrganizations: { none: {} } },
+                {
+                  allowedOrganizations: {
+                    some: { organizationId: options.organizationId },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
   }
   if (options.countryScope) {
     and.push({
@@ -63,7 +146,7 @@ export async function listDocuments(
   const [documents, total] = await Promise.all([
     prisma.document.findMany({
       where,
-      include: { category: { select: { id: true, name: true, code: true } } },
+      include: documentListInclude,
       orderBy: [{ categoryId: "asc" }, { title: "asc" }],
       take: options.limit ?? 100,
       skip: options.offset ?? 0,
@@ -95,7 +178,7 @@ export async function getVisibleDocuments(
     countryScope?: string;
     organizationId?: string | null;
   } = {}
-): Promise<{ documents: Document[]; total: number }> {
+) {
   if (!ctx.isPlatformSuperadmin && !ctx.organizationId) {
     return { documents: [], total: 0 };
   }
@@ -118,13 +201,18 @@ export async function getVisibleDocuments(
   return listDocuments(prisma, listOptions);
 }
 
-export async function getDocumentById(
-  prisma: PrismaClient,
-  documentId: string
-): Promise<Document | null> {
+export async function getDocumentById(prisma: PrismaClient, documentId: string) {
   return prisma.document.findUnique({
     where: { id: documentId },
-    include: { category: true },
+    include: {
+      category: true,
+      allowedOrganizations: {
+        select: {
+          organizationId: true,
+          organization: { select: { id: true, name: true } },
+        },
+      },
+    },
   });
 }
 
@@ -140,28 +228,46 @@ export type CreateDocumentInput = {
   engineeringRequestId?: string | null;
   organizationId?: string | null;
   createdByUserId?: string | null;
+  /** Platform docs only: restrict to these partner orgs; empty = all partners. */
+  allowedOrganizationIds?: string[];
 };
 
-export async function createDocument(
-  prisma: PrismaClient,
-  input: CreateDocumentInput
-): Promise<Document> {
+export async function createDocument(prisma: PrismaClient, input: CreateDocumentInput) {
   await prisma.documentCategory.findUniqueOrThrow({ where: { id: input.categoryId } });
-  return prisma.document.create({
-    data: {
-      title: input.title,
-      description: input.description ?? null,
-      categoryId: input.categoryId,
-      fileUrl: input.fileUrl,
-      visibility: input.visibility ?? "partners_only",
-      countryScope: input.countryScope ?? null,
-      documentType: input.documentType ?? null,
-      projectId: input.projectId ?? null,
-      engineeringRequestId: input.engineeringRequestId ?? null,
-      organizationId: input.organizationId ?? null,
-      createdByUserId: input.createdByUserId ?? null,
-    },
-    include: { category: { select: { id: true, name: true, code: true } } },
+  const orgIds = input.allowedOrganizationIds ?? [];
+  const isPlatform = (input.organizationId ?? null) == null;
+  if (isPlatform && orgIds.length > 0) {
+    await assertPartnerOrgIds(prisma, orgIds);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const row = await tx.document.create({
+      data: {
+        title: input.title,
+        description: input.description ?? null,
+        categoryId: input.categoryId,
+        fileUrl: input.fileUrl,
+        visibility: input.visibility ?? "partners_only",
+        countryScope: input.countryScope ?? null,
+        documentType: input.documentType ?? null,
+        projectId: input.projectId ?? null,
+        engineeringRequestId: input.engineeringRequestId ?? null,
+        organizationId: input.organizationId ?? null,
+        createdByUserId: input.createdByUserId ?? null,
+      },
+    });
+    if (isPlatform && orgIds.length > 0) {
+      await tx.documentAllowedOrganization.createMany({
+        data: orgIds.map((organizationId) => ({
+          documentId: row.id,
+          organizationId,
+        })),
+      });
+    }
+    return tx.document.findUniqueOrThrow({
+      where: { id: row.id },
+      include: documentListInclude,
+    });
   });
 }
 
@@ -172,23 +278,55 @@ export type UpdateDocumentInput = {
   fileUrl?: string;
   visibility?: "public" | "partners_only" | "internal";
   countryScope?: string | null;
+  /** Platform docs only: replace allowlist; omit to leave unchanged; [] = all partners. */
+  allowedOrganizationIds?: string[];
 };
 
 export async function updateDocument(
   prisma: PrismaClient,
   documentId: string,
   data: UpdateDocumentInput
-): Promise<Document> {
-  return prisma.document.update({
-    where: { id: documentId },
-    data: {
-      ...(data.title != null && { title: data.title }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.categoryId != null && { categoryId: data.categoryId }),
-      ...(data.fileUrl != null && { fileUrl: data.fileUrl }),
-      ...(data.visibility != null && { visibility: data.visibility }),
-      ...(data.countryScope !== undefined && { countryScope: data.countryScope }),
-    },
-    include: { category: { select: { id: true, name: true, code: true } } },
+) {
+  const { allowedOrganizationIds, ...patch } = data;
+
+  return prisma.$transaction(async (tx) => {
+    if (allowedOrganizationIds !== undefined) {
+      const existing = await tx.document.findUnique({
+        where: { id: documentId },
+        select: { organizationId: true },
+      });
+      if (existing?.organizationId == null) {
+        await assertPartnerOrgIds(tx, allowedOrganizationIds);
+        await tx.documentAllowedOrganization.deleteMany({ where: { documentId } });
+        if (allowedOrganizationIds.length > 0) {
+          await tx.documentAllowedOrganization.createMany({
+            data: allowedOrganizationIds.map((organizationId) => ({
+              documentId,
+              organizationId,
+            })),
+          });
+        }
+      }
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (patch.title != null) updateData.title = patch.title;
+    if (patch.description !== undefined) updateData.description = patch.description;
+    if (patch.categoryId != null) updateData.categoryId = patch.categoryId;
+    if (patch.fileUrl != null) updateData.fileUrl = patch.fileUrl;
+    if (patch.visibility != null) updateData.visibility = patch.visibility;
+    if (patch.countryScope !== undefined) updateData.countryScope = patch.countryScope;
+
+    if (Object.keys(updateData).length > 0) {
+      return tx.document.update({
+        where: { id: documentId },
+        data: updateData as Prisma.DocumentUpdateInput,
+        include: documentListInclude,
+      });
+    }
+    return tx.document.findUniqueOrThrow({
+      where: { id: documentId },
+      include: documentListInclude,
+    });
   });
 }
