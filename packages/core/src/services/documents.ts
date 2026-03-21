@@ -1,5 +1,40 @@
 import type { Prisma, PrismaClient, DocumentCategory } from "@vbt/db";
 
+/** Platform doc country field vs viewer ISO-2 (supports comma-separated scopes in DB). */
+export function documentCountryVisibleToViewer(
+  docCountryScope: string | null | undefined,
+  viewerCountryCode: string | null
+): boolean {
+  const scopeRaw = (docCountryScope ?? "").trim();
+  if (!scopeRaw || scopeRaw === "*") return true;
+  const viewer = (viewerCountryCode ?? "").trim().toUpperCase();
+  if (!viewer) return false;
+  const normScope = scopeRaw.toUpperCase();
+  if (normScope === viewer) return true;
+  const parts = normScope.split(/[\s,;]+/).map((p) => p.trim().toUpperCase()).filter(Boolean);
+  return parts.includes(viewer);
+}
+
+function buildPlatformCountryWhere(viewerCode: string | null): Prisma.DocumentWhereInput {
+  if (viewerCode) {
+    const C = viewerCode;
+    return {
+      OR: [
+        { countryScope: null },
+        { countryScope: "" },
+        { countryScope: "*" },
+        { countryScope: { equals: C, mode: "insensitive" } },
+        { countryScope: { startsWith: `${C},`, mode: "insensitive" } },
+        { countryScope: { endsWith: `,${C}`, mode: "insensitive" } },
+        { countryScope: { contains: `,${C},`, mode: "insensitive" } },
+      ],
+    };
+  }
+  return {
+    OR: [{ countryScope: null }, { countryScope: "" }, { countryScope: "*" }],
+  };
+}
+
 const PARTNER_ORG_TYPES = ["commercial_partner", "master_partner"] as const;
 
 export class InvalidDocumentOrgIdsError extends Error {
@@ -36,22 +71,36 @@ async function assertPartnerOrgIds(
 export type DocumentForAccess = {
   organizationId: string | null;
   visibility: string;
+  countryScope?: string | null;
   allowedOrganizations?: { organizationId: string }[];
 };
 
+export type DocumentReadContext = {
+  isPlatformSuperadmin: boolean;
+  activeOrgId: string | null;
+  /** From active org (or query override in list). Ignored when superadmin has no active org. */
+  viewerCountryCode?: string | null;
+};
+
 /** Read access: list, GET one, file download. */
-export function canReadDocument(
-  doc: DocumentForAccess,
-  ctx: { isPlatformSuperadmin: boolean; activeOrgId: string | null }
-): boolean {
+export function canReadDocument(doc: DocumentForAccess, ctx: DocumentReadContext): boolean {
   if (!ctx) return false;
   if (!ctx.isPlatformSuperadmin && doc.visibility === "internal") return false;
+
   if (doc.organizationId) {
     if (ctx.isPlatformSuperadmin) return true;
     return ctx.activeOrgId === doc.organizationId;
   }
-  if (ctx.isPlatformSuperadmin) return true;
+
+  if (ctx.activeOrgId) {
+    if (!documentCountryVisibleToViewer(doc.countryScope ?? null, ctx.viewerCountryCode ?? null)) {
+      return false;
+    }
+  }
+
+  if (ctx.isPlatformSuperadmin && !ctx.activeOrgId) return true;
   if (!ctx.activeOrgId) return false;
+
   const allowed = doc.allowedOrganizations ?? [];
   if (allowed.length === 0) return true;
   return allowed.some((a) => a.organizationId === ctx.activeOrgId);
@@ -77,11 +126,15 @@ export type ListDocumentsOptions = {
   visibility?: "public" | "partners_only" | "internal";
   /** Exclude these visibility values (e.g. hide `internal` for partners). */
   excludeVisibilities?: ("public" | "partners_only" | "internal")[];
-  countryScope?: string; // e.g. "PA" or "*"
   projectId?: string;
   engineeringRequestId?: string;
   /** When set (partner), filter to platform docs (org null) + this org's docs. When omitted (superadmin), no org filter. */
   organizationId?: string | null;
+  /**
+   * When listing with `organizationId`, restricts **platform** rows by country (null = org sin país → solo docs globales).
+   * `undefined` = no filtro por país (listado superadmin sin contexto de org).
+   */
+  partnerViewerCountryCode?: string | null;
   limit?: number;
   offset?: number;
 };
@@ -109,34 +162,24 @@ export async function listDocuments(prisma: PrismaClient, options: ListDocuments
   if (options.engineeringRequestId) base.engineeringRequestId = options.engineeringRequestId;
   and.push(base);
   if (options.organizationId !== undefined && options.organizationId !== null) {
-    and.push({
-      OR: [
-        { organizationId: options.organizationId },
-        {
-          AND: [
-            { organizationId: null },
-            {
-              OR: [
-                { allowedOrganizations: { none: {} } },
-                {
-                  allowedOrganizations: {
-                    some: { organizationId: options.organizationId },
-                  },
-                },
-              ],
+    const platformAnd: Prisma.DocumentWhereInput[] = [
+      { organizationId: null },
+      {
+        OR: [
+          { allowedOrganizations: { none: {} } },
+          {
+            allowedOrganizations: {
+              some: { organizationId: options.organizationId },
             },
-          ],
-        },
-      ],
-    });
-  }
-  if (options.countryScope) {
+          },
+        ],
+      },
+    ];
+    if (options.partnerViewerCountryCode !== undefined) {
+      platformAnd.push(buildPlatformCountryWhere(options.partnerViewerCountryCode));
+    }
     and.push({
-      OR: [
-        { countryScope: options.countryScope },
-        { countryScope: "*" },
-        { countryScope: null },
-      ],
+      OR: [{ organizationId: options.organizationId }, { AND: platformAnd }],
     });
   }
   if (options.excludeVisibilities?.length) {
@@ -174,7 +217,8 @@ export type DocumentVisibilityContext = {
 export async function getVisibleDocuments(
   prisma: PrismaClient,
   ctx: DocumentVisibilityContext,
-  options: Omit<ListDocumentsOptions, "organizationId" | "countryScope" | "excludeVisibilities"> & {
+  options: Omit<ListDocumentsOptions, "organizationId" | "partnerViewerCountryCode"> & {
+    /** Query override; takes precedence over ctx.countryCode when listing with an org context. */
     countryScope?: string;
     organizationId?: string | null;
   } = {}
@@ -183,21 +227,35 @@ export async function getVisibleDocuments(
     return { documents: [], total: 0 };
   }
 
-  const countryScope = options.countryScope ?? ctx.countryCode ?? undefined;
-  const listOptions: ListDocumentsOptions = {
-    ...options,
-    countryScope,
-  };
+  const orgForList =
+    options.organizationId !== undefined ? options.organizationId : (ctx.organizationId ?? undefined);
 
-  if (ctx.isPlatformSuperadmin) {
-    if (options.organizationId !== undefined) {
-      listOptions.organizationId = options.organizationId;
-    }
-    return listDocuments(prisma, listOptions);
+  let partnerViewerCountryCode: string | null | undefined = undefined;
+  if (orgForList != null) {
+    const fromQuery =
+      options.countryScope != null && options.countryScope !== ""
+        ? options.countryScope.trim().toUpperCase()
+        : undefined;
+    partnerViewerCountryCode =
+      fromQuery !== undefined
+        ? fromQuery
+        : ctx.countryCode != null && ctx.countryCode !== ""
+          ? ctx.countryCode.trim().toUpperCase()
+          : null;
   }
 
-  listOptions.organizationId = ctx.organizationId;
-  listOptions.excludeVisibilities = ["internal"];
+  const { countryScope: _q, organizationId: _oid, ...rest } = options;
+
+  const listOptions: ListDocumentsOptions = {
+    ...rest,
+    organizationId: orgForList,
+    partnerViewerCountryCode,
+  };
+
+  if (!ctx.isPlatformSuperadmin) {
+    listOptions.excludeVisibilities = ["internal"];
+  }
+
   return listDocuments(prisma, listOptions);
 }
 

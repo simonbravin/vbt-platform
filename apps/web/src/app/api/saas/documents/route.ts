@@ -8,6 +8,7 @@ import { getVisibleDocuments, createDocument } from "@vbt/core";
 import { createDocumentSchema } from "@vbt/core/validation";
 import { createActivityLog } from "@/lib/audit";
 import { withSaaSHandler } from "@/lib/saas-handler";
+import { resolveDocumentViewerCountryCode } from "@/lib/document-viewer-country";
 
 const VISIBILITY = ["public", "partners_only", "internal"] as const;
 
@@ -48,11 +49,13 @@ async function getHandler(req: Request) {
       limit: Number(url.searchParams.get("limit")) || 100,
       offset: Number(url.searchParams.get("offset")) || 0,
     };
+    const viewerCountryCode = await resolveDocumentViewerCountryCode(prisma, ctx.activeOrgId);
     const result = await getVisibleDocuments(
       prisma,
       {
         organizationId: ctx.activeOrgId ?? null,
         isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+        countryCode: viewerCountryCode,
       },
       listOptions
     );

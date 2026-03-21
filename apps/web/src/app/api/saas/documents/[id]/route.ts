@@ -8,6 +8,7 @@ import {
   canMutateDocument,
 } from "@vbt/core";
 import { updateDocumentSchema } from "@vbt/core/validation";
+import { resolveDocumentViewerCountryCode } from "@/lib/document-viewer-country";
 
 type ListedDoc = {
   allowedOrganizations?: { organizationId: string }[];
@@ -33,14 +34,20 @@ export async function GET(
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const viewerCountryCode = await resolveDocumentViewerCountryCode(prisma, ctx.activeOrgId);
   if (
     !canReadDocument(
       {
         organizationId: doc.organizationId,
         visibility: doc.visibility,
+        countryScope: doc.countryScope,
         allowedOrganizations: doc.allowedOrganizations,
       },
-      { isPlatformSuperadmin: ctx.isPlatformSuperadmin, activeOrgId: ctx.activeOrgId ?? null }
+      {
+        isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+        activeOrgId: ctx.activeOrgId ?? null,
+        viewerCountryCode,
+      }
     )
   ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

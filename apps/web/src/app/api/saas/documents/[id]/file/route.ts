@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getTenantContext } from "@/lib/tenant";
 import { getDocumentById, canReadDocument } from "@vbt/core";
 import { getDownloadUrl, isR2StorageKey } from "@/lib/r2-client";
+import { resolveDocumentViewerCountryCode } from "@/lib/document-viewer-country";
 
 /** GET: redirect to signed R2 URL or legacy URL. Access checked first. */
 export async function GET(
@@ -13,14 +14,20 @@ export async function GET(
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const viewerCountryCode = await resolveDocumentViewerCountryCode(prisma, ctx.activeOrgId);
   if (
     !canReadDocument(
       {
         organizationId: doc.organizationId,
         visibility: doc.visibility,
+        countryScope: doc.countryScope,
         allowedOrganizations: doc.allowedOrganizations,
       },
-      { isPlatformSuperadmin: ctx.isPlatformSuperadmin, activeOrgId: ctx.activeOrgId ?? null }
+      {
+        isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+        activeOrgId: ctx.activeOrgId ?? null,
+        viewerCountryCode,
+      }
     )
   ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
