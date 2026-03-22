@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Wrench, ChevronRight, Search, LayoutGrid, List, Download } from "lucide-react";
+import { Wrench, ChevronRight, Search, Download } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 const ENGINEERING_STATUSES = [
   "draft",
@@ -189,24 +190,7 @@ export function SuperadminEngineeringListClient() {
           <Download className="h-4 w-4" />
           {t("superadmin.engineeringList.exportCsv")}
         </a>
-        <div className="flex overflow-hidden rounded-sm border border-border">
-          <button
-            type="button"
-            onClick={() => setView("table")}
-            title={t("projects.tableView")}
-            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("cards")}
-            title={t("projects.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-        </div>
+        <ViewLayoutToggle view={view} onViewChange={setView} />
         <button
           type="button"
           onClick={() => setStatusFilter("")}

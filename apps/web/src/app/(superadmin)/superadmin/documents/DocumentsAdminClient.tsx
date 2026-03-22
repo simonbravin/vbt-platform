@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, FileText, Pencil, ExternalLink, Search, LayoutGrid, LayoutList } from "lucide-react";
+import { Plus, FileText, Pencil, ExternalLink, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 import { documentMatchesSearchQuery } from "@/lib/documents-list-utils";
 
 const VIEW_STORAGE_KEY = "vbt-documents-view-superadmin";
@@ -488,40 +489,7 @@ export function DocumentsAdminClient() {
               autoComplete="off"
             />
           </div>
-          <div
-            className="inline-flex shrink-0 rounded-sm border border-border/60 bg-muted/30 p-0.5 ring-1 ring-border/40"
-            role="group"
-            aria-label={t("superadmin.documents.layoutToggleGroup")}
-          >
-            <button
-              type="button"
-              onClick={() => setView("table")}
-              aria-pressed={viewMode === "table"}
-              title={t("superadmin.documents.viewTableAria")}
-              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
-                viewMode === "table"
-                  ? "bg-background text-foreground ring-1 ring-border/50"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutList className="h-4 w-4" />
-              {t("superadmin.documents.viewTable")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("cards")}
-              aria-pressed={viewMode === "cards"}
-              title={t("superadmin.documents.viewCardsAria")}
-              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
-                viewMode === "cards"
-                  ? "bg-background text-foreground ring-1 ring-border/50"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="h-4 w-4" />
-              {t("superadmin.documents.viewCards")}
-            </button>
-          </div>
+          <ViewLayoutToggle view={viewMode} onViewChange={setView} />
         </div>
       )}
 

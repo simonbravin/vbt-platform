@@ -148,11 +148,13 @@
 }
 
 /* Dark mode: map legacy gray/white utilities to tokens */
+/* Slashes in Tailwind class names must be escaped as \/ for valid CSS selectors */
 .dark .bg-white {
   background-color: hsl(var(--card));
 }
-.dark .bg-muted/30,
-.dark .bg-muted/30\/50 {
+.dark .bg-muted\/30,
+.dark .bg-muted\/50,
+.dark .bg-muted\/30\/50 {
   background-color: hsl(var(--muted));
 }
 .dark .bg-muted {
@@ -161,31 +163,23 @@
 .dark .text-foreground {
   color: hsl(var(--foreground));
 }
-.dark .text-foreground {
-  color: hsl(var(--foreground));
-}
 .dark .text-muted-foreground {
   color: hsl(var(--muted-foreground));
 }
-.dark .text-muted-foreground {
+.dark .text-muted-foreground\/70 {
   color: hsl(var(--muted-foreground));
 }
-.dark .text-muted-foreground/70 {
-  color: hsl(var(--muted-foreground));
-}
-.dark .border-border/60,
-.dark .border-input,
-.dark .border-border/60 {
+.dark .border-border\/60,
+.dark .border-input {
   border-color: hsl(var(--border));
 }
-.dark .divide-border/60 > * + * {
+.dark .divide-border\/60 > * + * {
   border-color: hsl(var(--border));
 }
-.dark .hover\:bg-muted/30:hover,
-.dark .hover\:bg-muted/30:focus {
+.dark .hover\:bg-muted\/30:hover,
+.dark .hover\:bg-muted\/30:focus {
   background-color: hsl(var(--muted));
 }
-.dark .hover\:text-foreground:hover,
 .dark .hover\:text-foreground:hover {
   color: hsl(var(--foreground));
 }
@@ -201,16 +195,16 @@
 .dark .shadow-sm {
   box-shadow: 0 0 0 1px hsl(var(--border) / 0.35);
 }
-.dark thead.bg-muted/30 {
+.dark thead.bg-muted\/30 {
   background-color: hsl(var(--muted));
 }
 .dark tbody.bg-white {
   background-color: hsl(var(--card));
 }
-.dark tbody.divide-y.divide-border/60 > tr {
+.dark tbody.divide-y.divide-border\/60 > tr {
   border-top-color: hsl(var(--border));
 }
-.dark tr.hover\:bg-muted/30:hover {
+.dark tr.hover\:bg-muted\/30:hover {
   background-color: hsl(var(--muted));
 }
 .dark .text-red-600,

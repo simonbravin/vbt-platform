@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { FolderOpen, MapPin, User, LayoutGrid, List, Search } from "lucide-react";
+import { FolderOpen, MapPin, User, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-projects-view";
@@ -127,22 +128,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
         >
           {searching ? t("projects.searching") : t("projects.search")}
         </button>
-        <div className="flex rounded-sm border border-border overflow-hidden">
-          <button
-            onClick={() => setView("cards")}
-            title={t("projects.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView("table")}
-            title={t("projects.tableView")}
-            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
-          >
-            <List className="w-4 h-4" />
-          </button>
-        </div>
+        <ViewLayoutToggle view={view} onViewChange={setView} />
       </div>
 
       {projects.length === 0 ? (

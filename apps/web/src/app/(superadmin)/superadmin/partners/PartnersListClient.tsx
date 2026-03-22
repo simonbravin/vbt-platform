@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Building2, MapPin, Mail, LayoutGrid, List, ChevronRight } from "lucide-react";
+import { Plus, Building2, MapPin, Mail, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-superadmin-partners-view";
@@ -147,24 +148,7 @@ export function PartnersListClient() {
           >
             {t("superadmin.partners.search")}
           </button>
-          <div className="flex overflow-hidden rounded-sm border border-border">
-            <button
-              type="button"
-              onClick={() => setView("table")}
-              title={t("projects.tableView")}
-              className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-            >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("cards")}
-              title={t("projects.cardView")}
-              className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-          </div>
+          <ViewLayoutToggle view={view} onViewChange={setView} />
           <Link
             href="/superadmin/partners/new"
             className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"

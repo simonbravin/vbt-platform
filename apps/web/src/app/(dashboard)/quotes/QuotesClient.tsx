@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { LayoutGrid, List, FileText, Search, Trash2 } from "lucide-react";
+import { FileText, Search, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getCountryName } from "@/lib/countries";
 import { useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-quotes-view";
@@ -146,22 +147,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
             <Search className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex rounded-sm border border-border/60 overflow-hidden bg-background">
-          <button
-            onClick={() => setView("table")}
-            title={t("projects.tableView")}
-            className={`p-2 transition-colors border-r border-border/60 ${view === "table" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/60"}`}
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView("cards")}
-            title={t("projects.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted/60"}`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-        </div>
+        <ViewLayoutToggle view={view} onViewChange={setView} />
       </div>
 
       {quotes.length === 0 ? (

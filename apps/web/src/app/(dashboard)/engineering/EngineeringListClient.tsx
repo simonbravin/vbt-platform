@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Wrench, FolderOpen, Search, LayoutGrid, List } from "lucide-react";
+import { Plus, Wrench, FolderOpen, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 type RequestRow = {
   id: string;
@@ -126,24 +127,7 @@ export function EngineeringListClient() {
           >
             {searching ? t("partner.engineering.searching") : t("partner.engineering.search")}
           </button>
-          <div className="flex overflow-hidden rounded-sm border border-border">
-            <button
-              type="button"
-              onClick={() => setView("cards")}
-              title={t("projects.cardView")}
-              className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("table")}
-              title={t("projects.tableView")}
-              className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}
-            >
-              <List className="h-4 w-4" />
-            </button>
-          </div>
+          <ViewLayoutToggle view={view} onViewChange={setView} />
         </div>
         <Link
           href="/engineering/new"

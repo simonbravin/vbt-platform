@@ -3,21 +3,13 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import {
-  Building2,
-  LayoutGrid,
-  List,
-  Search,
-  Plus,
-  Pencil,
-  Mail,
-  Phone,
-} from "lucide-react";
+import { Building2, Search, Plus, Pencil, Mail, Phone } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
 type Country = { id: string; name: string; code: string };
 type Client = {
@@ -395,24 +387,7 @@ export function ClientsClient({
         <Button type="button" onClick={runSearch} disabled={searching} className="border border-primary/20 shrink-0">
           {searching ? "…" : t("common.search")}
         </Button>
-        <div className="flex shrink-0 overflow-hidden rounded-sm border border-border/60 ring-1 ring-border/40">
-          <button
-            type="button"
-            onClick={() => setView("cards")}
-            title={t("clients.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("table")}
-            title={t("clients.tableView")}
-            className={`border-l border-border/60 p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
+        <ViewLayoutToggle view={view} onViewChange={setView} />
       </div>
 
       {clients.length === 0 ? (

@@ -28,6 +28,11 @@ export const translations = {
     "common.no": "No",
     "common.phone": "Phone",
     "common.country": "Country",
+    "common.viewLayout.groupAria": "Layout",
+    "common.viewLayout.table": "Table",
+    "common.viewLayout.cards": "Cards",
+    "common.viewLayout.tableAria": "Table view",
+    "common.viewLayout.cardsAria": "Card view",
 
     // Auth
     "auth.signIn": "Sign in to your account",
@@ -1961,6 +1966,11 @@ export const translations = {
     "common.no": "No",
     "common.phone": "Teléfono",
     "common.country": "País",
+    "common.viewLayout.groupAria": "Disposición",
+    "common.viewLayout.table": "Tabla",
+    "common.viewLayout.cards": "Tarjetas",
+    "common.viewLayout.tableAria": "Vista tabla",
+    "common.viewLayout.cardsAria": "Vista tarjetas",
 
     // Auth
     "auth.signIn": "Iniciar sesión",
