@@ -91,7 +91,7 @@ export function DocumentsPartnerClient() {
     );
   }
   if (error) {
-    return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
+    return <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">{error}</div>;
   }
 
   return (
@@ -100,7 +100,7 @@ export function DocumentsPartnerClient() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 min-w-0">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
               aria-hidden
             />
             <input
@@ -152,37 +152,37 @@ export function DocumentsPartnerClient() {
       <div className="surface-card-overflow">
         {documents.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">{t("partner.documents.noDocuments")}</p>
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-2 text-sm font-medium text-foreground">{t("partner.documents.noDocuments")}</p>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="p-12 text-center text-sm text-gray-500">{t("partner.documents.noSearchResults")}</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("partner.documents.noSearchResults")}</div>
         ) : viewMode === "table" ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {t("partner.documents.colTitle")}
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {t("partner.documents.colCategory")}
                   </th>
-                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {t("partner.documents.colOpen")}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60 bg-card">
                 {filteredDocuments.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
+                  <tr key={doc.id} className="hover:bg-muted/40">
                     <td className="px-5 py-3">
-                      <div className="font-medium text-gray-900">{doc.title}</div>
+                      <div className="font-medium text-foreground">{doc.title}</div>
                       {doc.description && (
-                        <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{doc.description}</p>
+                        <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{doc.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{doc.category?.name ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{doc.category?.name ?? "—"}</td>
                     <td className="px-5 py-3 text-right">
                       {doc.fileUrl?.trim() ? (
                         <a
@@ -195,7 +195,7 @@ export function DocumentsPartnerClient() {
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
-                        <span className="text-sm text-gray-400">—</span>
+                        <span className="text-sm text-muted-foreground/70">—</span>
                       )}
                     </td>
                   </tr>
@@ -211,14 +211,14 @@ export function DocumentsPartnerClient() {
                 className="flex flex-col rounded-sm border border-border/60 bg-muted/20 p-4 transition-colors hover:border-border"
               >
                 <div className="mb-2 flex items-start gap-2">
-                  <FileText className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
+                  <FileText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground/70" />
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-gray-900">{doc.title}</h3>
+                    <h3 className="font-medium text-foreground">{doc.title}</h3>
                     {doc.description && (
-                      <p className="mt-1 line-clamp-3 text-sm text-gray-600">{doc.description}</p>
+                      <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{doc.description}</p>
                     )}
                     {doc.category && (
-                      <p className="mt-2 text-xs font-medium text-gray-500">{doc.category.name}</p>
+                      <p className="mt-2 text-xs font-medium text-muted-foreground">{doc.category.name}</p>
                     )}
                   </div>
                 </div>
@@ -234,7 +234,7 @@ export function DocumentsPartnerClient() {
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   ) : (
-                    <span className="block text-center text-sm text-gray-400">{t("partner.documents.noFile")}</span>
+                    <span className="block text-center text-sm text-muted-foreground/70">{t("partner.documents.noFile")}</span>
                   )}
                 </div>
               </div>
@@ -242,7 +242,7 @@ export function DocumentsPartnerClient() {
           </div>
         )}
         {documents.length > 0 && (
-          <p className="border-t border-gray-100 px-5 py-2 text-xs text-gray-500">
+          <p className="border-t border-border/60 px-5 py-2 text-xs text-muted-foreground">
             {hasSearch
               ? t("partner.documents.searchSummary", {
                   shown: filteredDocuments.length,

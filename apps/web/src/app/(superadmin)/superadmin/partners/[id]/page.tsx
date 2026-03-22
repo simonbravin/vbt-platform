@@ -35,13 +35,13 @@ export default async function PartnerDetailPage({ params, searchParams }: PagePr
       <div>
         <Link
           href="/superadmin/partners"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 mb-2"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
         >
           <ArrowLeft className="h-4 w-4" />
           {t("superadmin.page.backToPartners")}
         </Link>
-        <h1 className="text-2xl font-semibold text-gray-900">{partner.name}</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold text-foreground">{partner.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           {t("superadmin.page.partnerDetailSubtitle")}
         </p>
       </div>

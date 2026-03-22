@@ -20,7 +20,7 @@ export default async function SuperadminInventoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("superadmin.page.inventoryTitle")}</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t("superadmin.page.inventoryTitle")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.inventorySubtitle")}</p>
       </div>
       <SuperadminInventoryClient />

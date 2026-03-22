@@ -205,7 +205,7 @@ export function PartnerDetailClient({
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border/60">
         <nav className="-mb-px flex gap-6">
           {TABS.map((tab) => (
             <button
@@ -214,8 +214,8 @@ export function PartnerDetailClient({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-medium ${
                 activeTab === tab.id
-                  ? "border-vbt-blue text-vbt-blue"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:border-input hover:text-foreground"
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -226,7 +226,7 @@ export function PartnerDetailClient({
       </div>
 
       {inviteSent && !dismissInviteBanner && (
-        <div className="rounded-sm bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
+        <div className="rounded-sm border border-alert-successBorder bg-alert-success px-4 py-3 text-sm text-foreground flex items-center justify-between">
           <span>
             {inviteSent === "new"
               ? t("superadmin.partner.inviteBannerNewAccount")
@@ -235,7 +235,7 @@ export function PartnerDetailClient({
           <button
             type="button"
             onClick={() => setDismissInviteBanner(true)}
-            className="text-green-600 hover:text-green-800 ml-2"
+            className="ml-2 text-primary hover:underline"
             aria-label={t("common.dismiss")}
           >
             ×
@@ -244,7 +244,7 @@ export function PartnerDetailClient({
       )}
 
       {error && (
-        <div className="rounded-sm bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-sm border border-alert-errorBorder bg-alert-error px-4 py-3 text-sm text-foreground">
           {error}
         </div>
       )}
@@ -253,23 +253,23 @@ export function PartnerDetailClient({
         <div className="surface-card p-6 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.company")}</p>
-              <p className="mt-1 text-gray-900 font-medium">{partner.name}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.company")}</p>
+              <p className="mt-1 text-foreground font-medium">{partner.name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.partnerType")}</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.partnerType")}</p>
+              <p className="mt-1 text-foreground">
                 {partnerTypeDisplay(t, partner.partnerProfile?.partnerType)}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.status")}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.status")}</p>
               <p className="mt-1">
                 <span
                   className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     partner.status === "active"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-700"
+                      ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
+                      : "bg-muted text-foreground"
                   }`}
                 >
                   {organizationStatusLabel(t, partner.status)}
@@ -278,22 +278,22 @@ export function PartnerDetailClient({
             </div>
             {partner.countryCode && (
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-700">{partner.countryCode}</span>
+                <MapPin className="h-4 w-4 text-muted-foreground/70" />
+                <span className="text-foreground">{partner.countryCode}</span>
               </div>
             )}
             {partner.partnerProfile?.contactName && (
               <div>
-                <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.contact")}</p>
-                <p className="mt-1 text-gray-900">{partner.partnerProfile.contactName}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.contact")}</p>
+                <p className="mt-1 text-foreground">{partner.partnerProfile.contactName}</p>
               </div>
             )}
             {partner.partnerProfile?.contactEmail && (
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-gray-400" />
+                <Mail className="h-4 w-4 text-muted-foreground/70" />
                 <a
                   href={`mailto:${partner.partnerProfile.contactEmail}`}
-                  className="text-vbt-blue hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {partner.partnerProfile.contactEmail}
                 </a>
@@ -301,40 +301,40 @@ export function PartnerDetailClient({
             )}
             {partner.website && (
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-gray-400" />
+                <Globe className="h-4 w-4 text-muted-foreground/70" />
                 <a
                   href={partner.website.startsWith("http") ? partner.website : `https://${partner.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-vbt-blue hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {partner.website}
                 </a>
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.engineeringFeeMode")}</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.engineeringFeeMode")}</p>
+              <p className="mt-1 text-foreground">
                 {engineeringFeeModeLabel(t, partner.partnerProfile?.engineeringFeeMode)}
               </p>
             </div>
           </div>
 
-          <div className="rounded-sm border border-border/60 bg-amber-500/10 p-4">
+          <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900">{t("superadmin.partner.commissionSectionTitle")}</h3>
+              <h3 className="text-sm font-medium text-foreground">{t("superadmin.partner.commissionSectionTitle")}</h3>
               <Link
                 href={`/superadmin/partners/${partnerId}/edit`}
-                className="text-sm text-vbt-blue hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {t("common.edit")}
               </Link>
             </div>
-            <p className="mt-1 text-xs text-gray-500">{t("superadmin.partner.commissionSectionHelp")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("superadmin.partner.commissionSectionHelp")}</p>
             <div className="mt-2 flex flex-wrap gap-4">
               <div>
-                <p className="text-xs text-gray-500">{t("superadmin.partner.commissionPctLabel")}</p>
-                <p className="font-medium text-gray-900">
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionPctLabel")}</p>
+                <p className="font-medium text-foreground">
                   {partner.partnerProfile?.visionLatamCommissionPct != null
                     ? `${partner.partnerProfile.visionLatamCommissionPct}%`
                     : t("superadmin.partner.commissionUsesGlobal")}
@@ -342,8 +342,8 @@ export function PartnerDetailClient({
               </div>
               {partner.partnerProfile?.visionLatamCommissionFixedUsd != null && partner.partnerProfile.visionLatamCommissionFixedUsd > 0 && (
                 <div>
-                  <p className="text-xs text-gray-500">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
+                  <p className="font-medium text-foreground">
                     {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(partner.partnerProfile.visionLatamCommissionFixedUsd)}
                   </p>
                 </div>
@@ -355,29 +355,29 @@ export function PartnerDetailClient({
           <div className="rounded-sm border border-border/60 bg-muted/30 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-indigo-600" />
-                <h3 className="text-sm font-medium text-gray-900">{t("superadmin.partner.detail.annualGoals")}</h3>
+                <Target className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-medium text-foreground">{t("superadmin.partner.detail.annualGoals")}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTab("parameters")}
-                className="text-sm text-vbt-blue hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {t("superadmin.partner.detail.editInParameters")}
               </button>
             </div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div>
-                <p className="text-xs text-gray-500">{t("superadmin.partner.detail.salesTargetUsd")}</p>
-                <p className="mt-0.5 font-medium text-gray-900">
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.detail.salesTargetUsd")}</p>
+                <p className="mt-0.5 font-medium text-foreground">
                   {partner.partnerProfile?.salesTargetAnnualUsd != null
                     ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(partner.partnerProfile.salesTargetAnnualUsd)
                     : "—"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">{t("superadmin.partner.detail.salesTargetM2")}</p>
-                <p className="mt-0.5 font-medium text-gray-900">
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.detail.salesTargetM2")}</p>
+                <p className="mt-0.5 font-medium text-foreground">
                   {partner.partnerProfile?.salesTargetAnnualM2 != null
                     ? partner.partnerProfile.salesTargetAnnualM2.toLocaleString()
                     : "—"}
@@ -414,8 +414,8 @@ export function PartnerDetailClient({
 
       {activeTab === "onboarding" && (
         <div className="surface-card p-6">
-          <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.onboardingState")}</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.onboardingState")}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             {t("superadmin.partner.onboardingHelp")}
           </p>
           <div className="mt-4">
@@ -432,7 +432,7 @@ export function PartnerDetailClient({
                 </option>
               ))}
             </select>
-            {saving && <p className="mt-2 text-sm text-gray-500">{t("superadmin.partner.detail.saving")}</p>}
+            {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
           </div>
         </div>
       )}
@@ -519,7 +519,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   return (
     <div className="surface-card p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.team")}</h3>
+        <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.team")}</h3>
         <button
           type="button"
           onClick={() => setInviteOpen(true)}
@@ -532,18 +532,18 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
 
       {inviteOpen && (
         <div className="rounded-sm border border-border/60 bg-muted/30 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-foreground">
             {t("superadmin.partner.inviteMemberTo", { partner: partnerName })}
           </p>
           {inviteError && (
-            <p className="text-sm text-red-600">{inviteError}</p>
+            <p className="text-sm text-destructive">{inviteError}</p>
           )}
           {inviteSuccess && (
-            <p className="text-sm text-green-700">{inviteSuccess}</p>
+            <p className="text-sm text-foreground">{inviteSuccess}</p>
           )}
           <form onSubmit={handleInvite} className="flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("auth.email")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("auth.email")}</label>
               <input
                 type="email"
                 required
@@ -554,7 +554,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("admin.users.role")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("admin.users.role")}</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
@@ -582,42 +582,42 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
               {t("common.cancel")}
             </button>
           </form>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {t("superadmin.partner.teamInviteHelp")}
           </p>
         </div>
       )}
 
       {inviteSuccess && (
-        <div className="rounded-sm bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
+        <div className="rounded-sm border border-alert-successBorder bg-alert-success px-4 py-2 text-sm text-foreground">
           {inviteSuccess}
         </div>
       )}
       {loading ? (
-        <p className="text-sm text-gray-500">{t("superadmin.partners.loadingMembers")}</p>
+        <p className="text-sm text-muted-foreground">{t("superadmin.partners.loadingMembers")}</p>
       ) : members.length === 0 ? (
-        <p className="text-sm text-gray-500">{t("superadmin.partners.noMembersYetInvite")}</p>
+        <p className="text-sm text-muted-foreground">{t("superadmin.partners.noMembersYetInvite")}</p>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-border/60">
           {members.map((m) => (
             <li key={m.id} className="py-3 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">{m.user?.fullName ?? "—"}</p>
-                <p className="text-sm text-gray-500 flex items-center gap-1">
+                <p className="font-medium text-foreground">{m.user?.fullName ?? "—"}</p>
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Mail className="h-3 w-3" />
                   {m.user?.email ?? "—"}
                 </p>
               </div>
-              <span className="text-xs rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-700">
+              <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-foreground">
                 {memberRoleDisplay(t, m.role)}
               </span>
               <span
                 className={`text-xs rounded-full px-2.5 py-0.5 ${
                   m.status === "active"
-                    ? "bg-green-100 text-green-800"
+                    ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
                     : m.status === "invited"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-gray-100 text-gray-700"
+                      ? "bg-amber-500/15 text-amber-900 dark:text-amber-200"
+                      : "bg-muted text-foreground"
                 }`}
               >
                 {memberStatusDisplay(t, m.status)}
@@ -709,7 +709,7 @@ function TerritoriesSection({
   return (
     <div className="surface-card p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.territories")}</h3>
+        <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.territories")}</h3>
         {!adding ? (
           <button
             type="button"
@@ -723,33 +723,33 @@ function TerritoriesSection({
 
       {adding && (
         <div className="rounded-sm border border-border/60 bg-muted/30 p-4 space-y-3">
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm text-destructive">{err}</p>}
           <div className="flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.countryCode")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.countryCode")}</label>
               <input
                 type="text"
                 maxLength={2}
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                className="mt-1 block w-20 rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-20 rounded-sm border border-input px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.region")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.region")}</label>
               <input
                 type="text"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="mt-1 block w-32 rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-32 rounded-sm border border-input px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.territoryType")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.territoryType")}</label>
               <select
                 value={territoryType}
                 onChange={(e) => setTerritoryType(e.target.value as "exclusive" | "open" | "referral")}
-                className="mt-1 block rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 block rounded-sm border border-input px-2 py-1.5 text-sm"
               >
                 <option value="exclusive">{t("superadmin.partner.territoryType.exclusive")}</option>
                 <option value="open">{t("superadmin.partner.territoryType.open")}</option>
@@ -776,20 +776,20 @@ function TerritoriesSection({
       )}
 
       {territories.length === 0 ? (
-        <p className="text-sm text-gray-500">{t("superadmin.partner.detail.noTerritoriesYet")}</p>
+        <p className="text-sm text-muted-foreground">{t("superadmin.partner.detail.noTerritoriesYet")}</p>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-border/60">
           {territories.map((territory) => (
             <li key={territory.id} className="py-3 flex items-center justify-between">
               <span className="font-medium">{territory.countryCode}</span>
-              {territory.region && <span className="text-gray-500">{territory.region}</span>}
-              <span className="text-xs rounded bg-gray-100 px-2 py-0.5">
+              {territory.region && <span className="text-muted-foreground">{territory.region}</span>}
+              <span className="text-xs rounded-sm bg-muted px-2 py-0.5">
                 {territoryTypeDisplay(t, territory.territoryType)}
               </span>
               <button
                 type="button"
                 onClick={() => setRemoveTerritoryId(territory.id)}
-                className="text-sm text-red-600 hover:underline"
+                className="text-sm text-destructive hover:underline"
               >
                 {t("superadmin.partner.removeTerritory")}
               </button>
@@ -925,25 +925,25 @@ function ParametersSection({
 
   return (
     <div className="surface-card p-6 space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.parametersTitle")}</h3>
-      <p className="text-sm text-gray-500">
+      <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.parametersTitle")}</h3>
+      <p className="text-sm text-muted-foreground">
         {t("superadmin.partner.parametersIntro")}
       </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       {successMessage && (
-        <div className="rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+        <div className="rounded-sm border border-alert-successBorder bg-alert-success p-3 text-sm text-foreground">
           {successMessage}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.fees")}</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.fees")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">
+              <label className="block text-xs font-medium text-muted-foreground">
                 {t("superadmin.partner.paramEntryFeeUsd")}
                 {defaults?.pricing?.defaultEntryFeeUsd != null && entryFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-gray-400">
+                  <span className="ml-1 font-normal text-muted-foreground/70">
                     {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultEntryFeeUsd })}
                   </span>
                 )}
@@ -951,10 +951,10 @@ function ParametersSection({
               <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">
+              <label className="block text-xs font-medium text-muted-foreground">
                 {t("superadmin.partner.paramTrainingFeeUsd")}
                 {defaults?.pricing?.defaultTrainingFeeUsd != null && trainingFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-gray-400">
+                  <span className="ml-1 font-normal text-muted-foreground/70">
                     {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultTrainingFeeUsd })}
                   </span>
                 )}
@@ -962,11 +962,11 @@ function ParametersSection({
               <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.materialCreditUsd")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.materialCreditUsd")}</label>
               <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
               <select value={engineeringFeeMode} onChange={(e) => setEngineeringFeeMode(e.target.value)} className="input-native mt-1">
                 <option value="">{t("superadmin.partner.onboardingNotSet")}</option>
                 {ENGINEERING_FEE_MODES.map((m) => (
@@ -975,19 +975,19 @@ function ParametersSection({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
               <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")} />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.marginsPricing")}</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.marginsPricing")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">
+              <label className="block text-xs font-medium text-muted-foreground">
                 {t("superadmin.partner.paramMinMarginPct")}
                 {defaults?.pricing?.defaultMarginMinPct != null && marginMinPct === "" && (
-                  <span className="ml-1 font-normal text-gray-400">
+                  <span className="ml-1 font-normal text-muted-foreground/70">
                     {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMinPct })}
                   </span>
                 )}
@@ -995,10 +995,10 @@ function ParametersSection({
               <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">
+              <label className="block text-xs font-medium text-muted-foreground">
                 {t("superadmin.partner.paramMaxMarginPct")}
                 {defaults?.pricing?.defaultMarginMaxPct != null && marginMaxPct === "" && (
-                  <span className="ml-1 font-normal text-gray-400">
+                  <span className="ml-1 font-normal text-muted-foreground/70">
                     {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMaxPct })}
                   </span>
                 )}
@@ -1006,37 +1006,37 @@ function ParametersSection({
               <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="input-native mt-1" />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
               <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")} />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.salesTargets")}</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.salesTargets")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetUsd")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetUsd")}</label>
               <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetM2")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetM2")}</label>
               <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="input-native mt-1" />
             </div>
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{t("superadmin.partner.detail.agreement")}</h4>
+          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.agreement")}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.startDate")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.startDate")}</label>
               <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.endDate")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.endDate")}</label>
               <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.status")}</label>
+              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.status")}</label>
               <select value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="input-native mt-1">
                 {AGREEMENT_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value || "_empty"} value={opt.value}>{t(opt.labelKey)}</option>

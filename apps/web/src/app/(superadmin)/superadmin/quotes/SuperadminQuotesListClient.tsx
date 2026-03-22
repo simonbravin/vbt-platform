@@ -96,7 +96,7 @@ export function SuperadminQuotesListClient() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">
           <span>
             {error}
             {quotes.length === 0 && t("superadmin.quotesList.emptyListHint")}
@@ -104,7 +104,7 @@ export function SuperadminQuotesListClient() {
           <button
             type="button"
             onClick={() => fetchQuotes()}
-            className="rounded-sm px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
+            className="rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             {t("superadmin.quotesList.retry")}
           </button>
@@ -232,11 +232,11 @@ export function SuperadminQuotesListClient() {
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                             q.status === "accepted"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
                               : q.status === "rejected"
-                                ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                ? "border border-destructive/25 bg-destructive/10 text-destructive"
                                 : q.status === "sent"
-                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                                  ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
                                   : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -273,17 +273,17 @@ export function SuperadminQuotesListClient() {
                   className="surface-card p-5 transition-colors hover:border-border"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-orange-50 dark:bg-orange-950/40">
-                      <FileText className="h-5 w-5 text-vbt-orange" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10">
+                      <FileText className="h-5 w-5 text-primary" />
                     </div>
                     <span
                       className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                         q.status === "accepted"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
                           : q.status === "rejected"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            ? "border border-destructive/25 bg-destructive/10 text-destructive"
                             : q.status === "sent"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                              ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
                               : "bg-muted text-muted-foreground"
                       }`}
                     >

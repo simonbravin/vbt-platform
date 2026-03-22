@@ -178,7 +178,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
   };
 
   if (loading) return <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
-  if (error || !request) return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error ?? t("partner.engineering.notFound")}</div>;
+  if (error || !request) return <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">{error ?? t("partner.engineering.notFound")}</div>;
 
   const requestTypeLabel =
     request.requestType && ["new_design", "revision", "technical_support", "other"].includes(request.requestType)
@@ -198,7 +198,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
   return (
     <div className="space-y-6">
       {attachBanner && (
-        <div className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           <span>{t("partner.engineering.attachmentsUploadFailed")}</span>
           <button
             type="button"
@@ -254,7 +254,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
             <p className="text-sm text-muted-foreground">
               <span className="text-muted-foreground">{t("partner.engineering.systemType")}:</span>{" "}
               {systemTypeLabels.map((s) => (
-                <span key={s.code} className="inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground mr-1">
+                <span key={s.code} className="inline-flex rounded-sm px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground mr-1">
                   {s.label}
                 </span>
               ))}
@@ -310,7 +310,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
         {!canUploadFiles && (
           <p className="border-b border-border/60 px-5 py-2 text-xs text-muted-foreground">{t("partner.engineering.uploadLockedHint")}</p>
         )}
-        {uploadError && <p className="px-5 py-2 text-sm text-red-600">{uploadError}</p>}
+        {uploadError && <p className="px-5 py-2 text-sm text-destructive">{uploadError}</p>}
         {request.files && request.files.length > 0 ? (
           <ul className="p-5 space-y-2">
             {request.files.map((f) => (
@@ -376,7 +376,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{new Date(ev.createdAt).toLocaleString(dateLocale)}</span>
                     {systemEntry && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {t("partner.engineering.timeline.systemBadge")}
                       </span>
                     )}
@@ -403,7 +403,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
 
       <div className="overflow-hidden surface-card p-5">
         <h3 className="text-lg font-semibold text-foreground">{t("partner.engineering.addPartnerNote")}</h3>
-        {noteError && <p className="mt-2 text-sm text-red-600">{noteError}</p>}
+        {noteError && <p className="mt-2 text-sm text-destructive">{noteError}</p>}
         <textarea
           value={noteBody}
           onChange={(e) => setNoteBody(e.target.value)}
@@ -417,7 +417,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
               type="checkbox"
               checked={resubmit}
               onChange={(e) => setResubmit(e.target.checked)}
-              className="h-4 w-4 rounded border-input"
+              className="h-4 w-4 rounded-sm border-input"
             />
             {t("partner.engineering.resubmitLabel")}
           </label>

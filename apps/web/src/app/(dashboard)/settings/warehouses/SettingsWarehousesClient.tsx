@@ -129,7 +129,7 @@ export default function SettingsWarehousesClient() {
       <div className="flex items-center gap-3">
         <Link
           href="/settings"
-          className="p-2 rounded-lg border border-border hover:bg-muted"
+          className="p-2 rounded-sm border border-border hover:bg-muted"
         >
           <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </Link>
@@ -140,14 +140,14 @@ export default function SettingsWarehousesClient() {
         <button
           type="button"
           onClick={openAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-sm text-sm font-medium hover:bg-primary/90"
         >
           <Plus className="w-4 h-4" /> {t("admin.warehouses.add")}
         </button>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 text-destructive px-4 py-2 text-sm">{error}</div>
+        <div className="rounded-sm bg-destructive/10 text-destructive px-4 py-2 text-sm">{error}</div>
       )}
 
       {loading ? (

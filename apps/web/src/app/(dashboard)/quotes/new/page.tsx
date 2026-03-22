@@ -21,7 +21,7 @@ export default function NewQuotePage() {
         {t("quotes.newQuoteTitle")} — redirecting to create draft…
       </p>
       <p className="text-sm">
-        <Link href="/quotes/create" className="text-vbt-blue hover:underline">
+        <Link href="/quotes/create" className="text-primary hover:underline">
           Go to Create Quote
         </Link>
       </p>

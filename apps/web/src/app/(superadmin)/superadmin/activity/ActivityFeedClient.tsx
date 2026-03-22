@@ -116,7 +116,7 @@ export function ActivityFeedClient() {
               type="date"
               value={exportFrom}
               onChange={(e) => setExportFrom(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              className="rounded-sm border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -125,7 +125,7 @@ export function ActivityFeedClient() {
               type="date"
               value={exportTo}
               onChange={(e) => setExportTo(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              className="rounded-sm border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <a

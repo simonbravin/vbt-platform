@@ -52,12 +52,12 @@ export default function FreightPage() {
   };
 
   const getStatus = (p: { expiryDate?: string | null }) => {
-    if (!p.expiryDate) return { label: t("admin.freight.statusActive"), className: "bg-green-100 text-green-700" };
+    if (!p.expiryDate) return { label: t("admin.freight.statusActive"), className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" };
     const exp = new Date(p.expiryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     exp.setHours(0, 0, 0, 0);
-    return exp < today ? { label: t("admin.freight.statusExpired"), className: "bg-amber-100 text-amber-800" } : { label: t("admin.freight.statusActive"), className: "bg-green-100 text-green-700" };
+    return exp < today ? { label: t("admin.freight.statusExpired"), className: "bg-amber-500/15 text-amber-900 dark:text-amber-200" } : { label: t("admin.freight.statusActive"), className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" };
   };
 
   const save = async () => {
@@ -97,12 +97,12 @@ export default function FreightPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("admin.freight.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{t("admin.freight.subtitle")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("admin.freight.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{t("admin.freight.subtitle")}</p>
         </div>
         <button
           onClick={openAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> {t("admin.freight.add")}
         </button>
@@ -110,34 +110,34 @@ export default function FreightPage() {
 
       <div className="surface-card-overflow">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-muted/30 border-b border-border/60">
             <tr>
               {tableHeaders.map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-border/40">
             {profiles.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t("admin.freight.noProfiles")}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground/70">{t("admin.freight.noProfiles")}</td></tr>
             ) : profiles.map((p) => {
               const status = getStatus(p);
               return (
-              <tr key={p.id} className="hover:bg-gray-50">
+              <tr key={p.id} className="hover:bg-muted/40">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <Ship className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <Ship className="w-4 h-4 text-muted-foreground/70 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-gray-800">{p.name}</p>
-                      {p.notes && <p className="text-gray-400 text-xs truncate max-w-xs">{p.notes}</p>}
+                      <p className="font-medium text-foreground">{p.name}</p>
+                      {p.notes && <p className="text-muted-foreground/70 text-xs truncate max-w-xs">{p.notes}</p>}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{p.country?.name ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground">{p.country?.name ?? "—"}</td>
                 <td className="px-4 py-3 font-medium">
                   {p.freightPerContainer != null ? fmt(p.freightPerContainer) : "—"}
                 </td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-muted-foreground">
                   {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -145,13 +145,13 @@ export default function FreightPage() {
                 </td>
                 <td className="px-4 py-3">
                   {p.isDefault && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">{t("admin.freight.default")}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{t("admin.freight.default")}</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => openEdit(p)}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                    className="p-1.5 text-muted-foreground/70 hover:text-muted-foreground rounded-sm"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -197,7 +197,7 @@ export default function FreightPage() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.freight.costPerContainerUsd")}</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
+                    <span className="absolute left-3 top-2.5 text-muted-foreground/70 text-sm">$</span>
                     <input
                       type="number"
                       min="0"
@@ -216,7 +216,7 @@ export default function FreightPage() {
                     onChange={(e) => setForm(p => ({ ...p, expiryDate: e.target.value }))}
                     className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
-                  <p className="text-xs text-gray-500 mt-0.5">{t("admin.freight.carrierValidity")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("admin.freight.carrierValidity")}</p>
                 </div>
                 <div className="col-span-2">
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.freight.notesLabel")}</label>

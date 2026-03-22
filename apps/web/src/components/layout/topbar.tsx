@@ -157,7 +157,7 @@ export function TopBar({ user, showContextSwitcher, activeOrgName }: TopBarProps
               type="button"
               onClick={() => setSwitcherOpen((o) => !o)}
               disabled={switching}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-header-foreground/90 hover:bg-header-foreground/10 border border-header-foreground/20"
+              className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm text-header-foreground/90 hover:bg-header-foreground/10 border border-header-foreground/20"
             >
               <Building2 className="h-4 w-4" />
               <span>{t("topbar.viewAs")}</span>
@@ -206,7 +206,7 @@ export function TopBar({ user, showContextSwitcher, activeOrgName }: TopBarProps
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
         {/* Language toggle */}
-        <div className="flex items-center rounded-lg border border-header-foreground/20 overflow-hidden text-xs font-medium">
+        <div className="flex items-center rounded-sm border border-header-foreground/20 overflow-hidden text-xs font-medium">
           <button
             onClick={() => setLocale("en")}
             className={`px-2.5 py-1.5 transition-colors ${
@@ -239,7 +239,7 @@ export function TopBar({ user, showContextSwitcher, activeOrgName }: TopBarProps
           >
             <Bell className="w-5 h-5" />
             {badgeCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-xs font-medium flex items-center justify-center">
+              <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-xs font-medium text-primary-foreground">
                 {badgeCount > 99 ? "99+" : badgeCount}
               </span>
             )}
@@ -295,7 +295,7 @@ export function TopBar({ user, showContextSwitcher, activeOrgName }: TopBarProps
               {user.name ?? user.email}
             </p>
             <span
-              className={`text-xs px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[user.role] ?? "bg-header-foreground/20 text-header-foreground"}`}
+              className={`text-xs px-1.5 py-0.5 rounded-sm font-medium ${ROLE_COLORS[user.role] ?? "bg-header-foreground/20 text-header-foreground"}`}
             >
               {user.role}
             </span>

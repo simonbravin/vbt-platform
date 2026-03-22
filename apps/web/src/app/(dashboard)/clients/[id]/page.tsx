@@ -138,7 +138,7 @@ export default async function ClientDetailPage({
                   {(p as { projectName: string }).projectName}
                 </Link>
                 {p.status && (
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     ({p.status})
                   </span>
                 )}

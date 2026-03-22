@@ -166,16 +166,16 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
               className="surface-card p-5 transition-colors hover:border-border"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-sm flex items-center justify-center">
-                  <FolderOpen className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-primary/10 rounded-sm flex items-center justify-center">
+                  <FolderOpen className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
                   {p.status && (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      p.status === "won" ? "bg-green-100 text-green-700" :
+                      p.status === "won" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
                       p.status === "lost" ? "bg-muted text-foreground" :
-                      p.status === "quoting" ? "bg-blue-100 text-blue-700" :
-                      p.status === "qualified" ? "bg-amber-100 text-amber-700" :
+                      p.status === "quoting" ? "bg-primary/10 text-primary" :
+                      p.status === "qualified" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
                       "bg-muted text-foreground"
                     }`}>{statusLabel[p.status] ?? p.status}</span>
                   )}
@@ -218,25 +218,25 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                 <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.quotes")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border/40">
               {projects.map((p) => (
                 <tr key={p.id} className="hover:bg-muted transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`/projects/${p.id}`} className="font-medium text-vbt-blue hover:underline">{displayName(p)}</Link>
+                    <Link href={`/projects/${p.id}`} className="font-medium text-primary hover:underline">{displayName(p)}</Link>
                   </td>
-                  <td className="px-4 py-3 text-foreground">{displayClient(p) || <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-foreground">{(p.city || p.countryCode) ? [p.city, p.countryCode].filter(Boolean).join(", ") : <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-foreground">{displayClient(p) || <span className="text-muted-foreground/50">—</span>}</td>
+                  <td className="px-4 py-3 text-foreground">{(p.city || p.countryCode) ? [p.city, p.countryCode].filter(Boolean).join(", ") : <span className="text-muted-foreground/50">—</span>}</td>
                   <td className="px-4 py-3">
                     {p.status ? (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        p.status === "won" ? "bg-green-100 text-green-700" :
+                        p.status === "won" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
                         p.status === "lost" ? "bg-muted text-foreground" :
-                        p.status === "quoting" ? "bg-blue-100 text-blue-700" :
-                        p.status === "qualified" ? "bg-amber-100 text-amber-700" :
+                        p.status === "quoting" ? "bg-primary/10 text-primary" :
+                        p.status === "qualified" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
                         "bg-muted text-foreground"
                       }`}>{statusLabel[p.status] ?? p.status}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-muted-foreground/50">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-center text-foreground">{areaM2(p) > 0 ? Number(areaM2(p)).toFixed(0) : "—"}</td>

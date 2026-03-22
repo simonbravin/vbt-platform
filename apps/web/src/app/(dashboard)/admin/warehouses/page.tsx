@@ -97,12 +97,12 @@ export default function WarehousesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("admin.warehouses.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{warehouses.length} {t("admin.warehouses.locationsCount")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("admin.warehouses.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{warehouses.length} {t("admin.warehouses.locationsCount")}</p>
         </div>
         <button
           onClick={openAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> {t("admin.warehouses.add")}
         </button>
@@ -113,17 +113,17 @@ export default function WarehousesPage() {
           <div key={w.id} className="surface-card p-4">
               <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
-                  <Warehouse className="w-5 h-5 text-vbt-orange" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10">
+                  <Warehouse className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{w.name}</p>
+                  <p className="font-semibold text-foreground">{w.name}</p>
                   {(w.location || w.address) && (
-                    <p className="text-gray-400 text-sm">{[w.location, w.address].filter(Boolean).join(" · ")}</p>
+                    <p className="text-muted-foreground/70 text-sm">{[w.location, w.address].filter(Boolean).join(" · ")}</p>
                   )}
-                  {w.managerName && <p className="text-gray-400 text-xs mt-0.5">{t("admin.warehouses.manager")}: {w.managerName}</p>}
+                  {w.managerName && <p className="text-muted-foreground/70 text-xs mt-0.5">{t("admin.warehouses.manager")}: {w.managerName}</p>}
                   {(w.contactPhone || w.contactEmail) && (
-                    <p className="text-gray-400 text-xs mt-0.5">
+                    <p className="text-muted-foreground/70 text-xs mt-0.5">
                       {[w.contactPhone, w.contactEmail].filter(Boolean).join(" · ")}
                     </p>
                   )}
@@ -132,14 +132,14 @@ export default function WarehousesPage() {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => openEdit(w)}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                    className="p-1.5 text-muted-foreground/70 hover:text-muted-foreground rounded-sm"
                     title={t("common.edit")}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(w)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                    className="p-1.5 text-muted-foreground/70 hover:text-destructive rounded-sm"
                     title={t("common.delete")}
                     disabled={saving}
                   >

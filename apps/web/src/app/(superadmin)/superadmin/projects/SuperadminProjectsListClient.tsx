@@ -86,7 +86,7 @@ export function SuperadminProjectsListClient() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">
           <span>
             {error}
             {projects.length === 0 && t("superadmin.projectsList.emptyListHint")}
@@ -94,7 +94,7 @@ export function SuperadminProjectsListClient() {
           <button
             type="button"
             onClick={() => fetchProjects()}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
+            className="rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             {t("superadmin.projectsList.retry")}
           </button>
@@ -104,7 +104,7 @@ export function SuperadminProjectsListClient() {
         <select
           value={organizationId}
           onChange={(e) => setOrganizationId(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[180px]"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[180px]"
         >
           <option value="">{t("superadmin.projectsList.allCompanies")}</option>
           {partners.map((p) => (
@@ -116,7 +116,7 @@ export function SuperadminProjectsListClient() {
           placeholder={t("superadmin.projectsList.countryPlaceholder")}
           value={countryCode}
           onChange={(e) => setCountryCode(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm w-32"
         />
         <input
           type="search"
@@ -124,16 +124,16 @@ export function SuperadminProjectsListClient() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
         />
         <button
           type="button"
           onClick={() => setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+          className="rounded-sm px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
         >
           {t("superadmin.projectsList.search")}
         </button>
-        <div className="flex overflow-hidden rounded-lg border border-border">
+        <div className="flex overflow-hidden rounded-sm border border-border">
           <button
             type="button"
             onClick={() => setView("table")}
@@ -154,7 +154,7 @@ export function SuperadminProjectsListClient() {
         <button
           type="button"
           onClick={() => setStatusFilter("")}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+          className={`rounded-sm px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
         >
           {t("superadmin.projectsList.allStatuses")}
         </button>
@@ -163,7 +163,7 @@ export function SuperadminProjectsListClient() {
             key={s}
             type="button"
             onClick={() => setStatusFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            className={`rounded-sm px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
           >
             {projectStatusLabel(s)}
           </button>
@@ -258,8 +258,8 @@ export function SuperadminProjectsListClient() {
                 className="surface-card p-5 transition-colors hover:border-border"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
-                    <FolderOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10 dark:bg-primary/15">
+                    <FolderOpen className="h-5 w-5 text-primary" />
                   </div>
                   <span className="inline-flex shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {projectStatusLabel(p.status)}

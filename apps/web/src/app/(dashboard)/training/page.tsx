@@ -18,8 +18,8 @@ export default async function TrainingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("partner.training.title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("partner.training.subtitle")}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("partner.training.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("partner.training.subtitle")}</p>
       </div>
       <TrainingPartnerClient />
     </div>

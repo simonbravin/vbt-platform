@@ -17,13 +17,13 @@ export default async function ProjectLogsPage() {
       <div className="flex items-center gap-3">
         <Link
           href="/projects"
-          className="text-gray-400 hover:text-gray-600"
+          className="text-muted-foreground/70 hover:text-muted-foreground"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("projects.projectActivity")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{t("projects.projectActivitySub")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("projects.projectActivity")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{t("projects.projectActivitySub")}</p>
         </div>
       </div>
       <ProjectLogsClient />

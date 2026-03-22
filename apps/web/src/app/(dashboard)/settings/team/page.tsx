@@ -17,8 +17,8 @@ export default async function TeamSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("partner.settings.teamPageTitle")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("partner.settings.teamPageSubtitle")}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("partner.settings.teamPageTitle")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("partner.settings.teamPageSubtitle")}</p>
       </div>
       <TeamSettingsClient />
     </div>

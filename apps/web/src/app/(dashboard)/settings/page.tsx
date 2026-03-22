@@ -19,8 +19,8 @@ export default async function SettingsHubPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("partner.settings.title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("partner.settings.subtitle")}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("partner.settings.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("partner.settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -29,12 +29,12 @@ export default async function SettingsHubPage() {
           className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
           <div className="rounded-sm bg-primary/10 p-2">
-            <Users className="h-6 w-6 text-vbt-blue" />
+            <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">{t("partner.settings.team")}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.teamDescription")}</p>
-            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">{t("partner.settings.open")}</span>
+            <h2 className="font-semibold text-foreground">{t("partner.settings.team")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("partner.settings.teamDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-primary">{t("partner.settings.open")}</span>
           </div>
         </Link>
 
@@ -43,12 +43,12 @@ export default async function SettingsHubPage() {
           className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
           <div className="rounded-sm bg-primary/10 p-2">
-            <Warehouse className="h-6 w-6 text-vbt-blue" />
+            <Warehouse className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">{t("partner.settings.warehouses")}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.warehousesDescription")}</p>
-            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">{t("partner.settings.open")}</span>
+            <h2 className="font-semibold text-foreground">{t("partner.settings.warehouses")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("partner.settings.warehousesDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-primary">{t("partner.settings.open")}</span>
           </div>
         </Link>
 
@@ -57,12 +57,12 @@ export default async function SettingsHubPage() {
           className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
           <div className="rounded-sm bg-primary/10 p-2">
-            <Truck className="h-6 w-6 text-vbt-blue" />
+            <Truck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">{t("partner.settings.freightRates")}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.freightRatesDescription")}</p>
-            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">{t("partner.settings.open")}</span>
+            <h2 className="font-semibold text-foreground">{t("partner.settings.freightRates")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("partner.settings.freightRatesDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-primary">{t("partner.settings.open")}</span>
           </div>
         </Link>
 
@@ -71,12 +71,12 @@ export default async function SettingsHubPage() {
           className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
           <div className="rounded-sm bg-primary/10 p-2">
-            <TrendingUp className="h-6 w-6 text-vbt-blue" />
+            <TrendingUp className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">{t("partner.settings.taxRules")}</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{t("partner.settings.taxRulesDescription")}</p>
-            <span className="inline-block mt-2 text-sm font-medium text-vbt-blue">{t("partner.settings.open")}</span>
+            <h2 className="font-semibold text-foreground">{t("partner.settings.taxRules")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("partner.settings.taxRulesDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-primary">{t("partner.settings.open")}</span>
           </div>
         </Link>
       </div>

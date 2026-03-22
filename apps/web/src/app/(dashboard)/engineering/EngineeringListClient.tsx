@@ -98,7 +98,7 @@ export function EngineeringListClient() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[140px] focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+            className="rounded-sm border border-input px-3 py-2 text-sm min-w-[140px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-transparent"
           >
             <option value="">{t("partner.engineering.allStatuses")}</option>
             {STATUS_OPTIONS.map((s) => (
@@ -115,18 +115,18 @@ export function EngineeringListClient() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && runSearchNow()}
-              className="w-full rounded-lg border border-border py-2 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-sm border border-border py-2 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <button
             type="button"
             onClick={runSearchNow}
             disabled={searching}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             {searching ? t("partner.engineering.searching") : t("partner.engineering.search")}
           </button>
-          <div className="flex overflow-hidden rounded-lg border border-border">
+          <div className="flex overflow-hidden rounded-sm border border-border">
             <button
               type="button"
               onClick={() => setView("cards")}
@@ -147,7 +147,7 @@ export function EngineeringListClient() {
         </div>
         <Link
           href="/engineering/new"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
+          className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           {t("partner.engineering.newRequest")}
@@ -155,52 +155,52 @@ export function EngineeringListClient() {
       </div>
 
       <div className="surface-card-overflow">
-        {error && <div className="p-4 bg-amber-50 text-amber-800 text-sm">{error}</div>}
+        {error && <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">{error}</div>}
         {loading ? (
-          <div className="p-12 text-center text-sm text-gray-500">{t("common.loading")}</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : requests.length === 0 ? (
           <div className="p-12 text-center">
-            <Wrench className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">
+            <Wrench className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-2 text-sm font-medium text-foreground">
               {emptyWithFilters ? t("partner.engineering.noMatchSearch") : t("partner.engineering.noRequests")}
             </p>
             {!emptyWithFilters && (
-              <Link href="/engineering/new" className="mt-2 inline-flex items-center gap-1 text-sm text-vbt-blue hover:underline">
+              <Link href="/engineering/new" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
                 <Plus className="h-4 w-4" /> {t("partner.engineering.createOne")}
               </Link>
             )}
           </div>
         ) : view === "table" ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.request")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.project")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("partner.engineering.status")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("engineering.list.colCreated")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.request")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.project")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.status")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("engineering.list.colCreated")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60 bg-card">
                 {requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted/40">
                     <td className="px-5 py-3">
-                      <Link href={`/engineering/${r.id}`} className="font-medium text-gray-900 hover:text-vbt-blue">
+                      <Link href={`/engineering/${r.id}`} className="font-medium text-foreground hover:text-primary">
                         {r.requestNumber}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">
-                      <Link href={`/projects/${r.projectId}`} className="flex items-center gap-1 text-gray-600 hover:text-vbt-blue">
+                    <td className="px-5 py-3 text-sm text-muted-foreground">
+                      <Link href={`/projects/${r.projectId}`} className="flex items-center gap-1 text-muted-foreground hover:text-primary">
                         <FolderOpen className="h-3.5 w-3.5" />
                         {r.project?.projectName ?? r.projectId.slice(0, 8)}
                       </Link>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-foreground">
                         {t(`partner.engineering.status.${r.status}`)}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-500">
+                    <td className="px-5 py-3 text-sm text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
@@ -217,8 +217,8 @@ export function EngineeringListClient() {
                 className="surface-card p-5 transition-colors hover:border-border"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                    <Wrench className="h-5 w-5 text-slate-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-muted">
+                    <Wrench className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <span className="inline-flex shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {t(`partner.engineering.status.${r.status}`)}
@@ -237,7 +237,7 @@ export function EngineeringListClient() {
           </div>
         )}
         {!loading && requests.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+          <p className="px-5 py-2 text-xs text-muted-foreground border-t border-border/60">
             {t("partner.engineering.listSummary", { shown: requests.length, total })}
           </p>
         )}

@@ -76,27 +76,27 @@ export function TeamSettingsClient() {
   return (
     <div className="space-y-6">
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.inviteByEmail")}</h2>
+        <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold text-foreground">{t("partner.team.inviteByEmail")}</h2>
         </div>
         <form onSubmit={handleInvite} className="p-5 flex flex-wrap items-end gap-3">
           {inviteError && <p className="w-full text-sm text-red-600">{inviteError}</p>}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("auth.email")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("auth.email")}</label>
             <input
               type="email"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder={t("auth.placeholderEmail")}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-56"
+              className="rounded-sm border border-input px-3 py-2 text-sm w-56"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("admin.users.role")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("admin.users.role")}</label>
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-sm border border-input px-3 py-2 text-sm"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -106,52 +106,52 @@ export function TeamSettingsClient() {
           <button
             type="submit"
             disabled={inviting}
-            className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50 flex items-center gap-2"
+            className="rounded-sm bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             {inviting ? t("partner.team.inviting") : t("partner.team.invite")}
           </button>
         </form>
-        <p className="px-5 pb-3 text-xs text-gray-500">{t("partner.team.inviteHint")}</p>
-        <p className="px-5 pb-4 text-xs text-gray-600 border-t border-gray-100 pt-3">{t("partner.team.rolesMatrix")}</p>
+        <p className="px-5 pb-3 text-xs text-muted-foreground">{t("partner.team.inviteHint")}</p>
+        <p className="px-5 pb-4 text-xs text-muted-foreground border-t border-border/60 pt-3">{t("partner.team.rolesMatrix")}</p>
       </div>
 
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.members")}</h2>
+        <div className="px-5 py-4 border-b border-border/60">
+          <h2 className="text-lg font-semibold text-foreground">{t("partner.team.members")}</h2>
         </div>
-        {error && <div className="p-4 text-sm text-amber-800 bg-amber-50">{error}</div>}
+        {error && <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">{error}</div>}
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : members.length === 0 ? (
           <div className="p-12 text-center">
-            <User className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">{t("partner.team.noMembersYet")}</p>
-            <p className="text-sm text-gray-500 mt-1">{t("partner.team.inviteSomeoneAbove")}</p>
+            <User className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-2 text-sm font-medium text-foreground">{t("partner.team.noMembersYet")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("partner.team.inviteSomeoneAbove")}</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border/60">
             {members.map((m) => (
               <li key={m.id} className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="h-4 w-4 text-gray-500" />
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                    <User className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{m.user?.fullName ?? m.user?.email ?? "—"}</p>
-                    {m.user?.email && <p className="text-sm text-gray-500 flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {m.user.email}</p>}
+                    <p className="font-medium text-foreground">{m.user?.fullName ?? m.user?.email ?? "—"}</p>
+                    {m.user?.email && <p className="text-sm text-muted-foreground flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {m.user.email}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">{m.role}</span>
-                  <span className="text-xs text-gray-500">{m.status}</span>
+                  <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-foreground">{m.role}</span>
+                  <span className="text-xs text-muted-foreground">{m.status}</span>
                 </div>
               </li>
             ))}
           </ul>
         )}
         {!loading && members.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">{total} member(s)</p>
+          <p className="px-5 py-2 text-xs text-muted-foreground border-t border-border/60">{total} member(s)</p>
         )}
       </div>
     </div>

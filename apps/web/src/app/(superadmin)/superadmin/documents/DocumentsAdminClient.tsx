@@ -375,7 +375,7 @@ export function DocumentsAdminClient() {
                   {uploadingFile ? t("superadmin.documents.uploading") : t("superadmin.documents.uploadFileButton")}
                 </label>
               </div>
-              {uploadError && <p className="text-sm text-red-600 mb-2">{uploadError}</p>}
+              {uploadError && <p className="mb-2 text-sm text-destructive">{uploadError}</p>}
               <input
                 type="text"
                 value={form.fileUrl}
@@ -412,7 +412,7 @@ export function DocumentsAdminClient() {
                 <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldPartnerAllowlist")}</label>
                 <p className="mb-2 text-xs text-muted-foreground">{t("superadmin.documents.partnerAllowlistHint")}</p>
                 {partners.length === 0 ? (
-                  <p className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-foreground">{t("superadmin.documents.partnersLoadEmpty")}</p>
+                  <p className="rounded-sm border border-alert-warningBorder bg-alert-warning px-3 py-2 text-sm text-foreground">{t("superadmin.documents.partnersLoadEmpty")}</p>
                 ) : (
                   <>
                     <select
@@ -527,7 +527,7 @@ export function DocumentsAdminClient() {
 
       <div className="surface-card-overflow">
         {error && (
-          <div className="p-4 bg-amber-50 text-amber-800 text-sm">{error}</div>
+          <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">{error}</div>
         )}
         {loading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.documents.loadingDocuments")}</div>

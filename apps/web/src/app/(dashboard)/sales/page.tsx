@@ -18,8 +18,8 @@ export default async function SalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t("partner.sales.title")}</h1>
-        <p className="text-gray-500 text-sm mt-0.5">{t("partner.sales.subtitle")}</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("partner.sales.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{t("partner.sales.subtitle")}</p>
       </div>
       <SalesClient />
     </div>

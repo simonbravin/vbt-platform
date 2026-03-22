@@ -151,7 +151,7 @@ export function GlobalSettingsClient() {
                 step={0.5}
                 value={marginMinPct}
                 onChange={(e) => setMarginMinPct(e.target.value)}
-                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder={t("superadmin.settings.placeholderEg15")}
               />
             </div>
@@ -165,7 +165,7 @@ export function GlobalSettingsClient() {
                 step={0.5}
                 value={marginMaxPct}
                 onChange={(e) => setMarginMaxPct(e.target.value)}
-                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder={t("superadmin.settings.placeholderEg20")}
               />
             </div>
@@ -177,7 +177,7 @@ export function GlobalSettingsClient() {
                 step={1}
                 value={entryFeeUsd}
                 onChange={(e) => setEntryFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder={t("superadmin.settings.placeholderZero")}
               />
             </div>
@@ -189,7 +189,7 @@ export function GlobalSettingsClient() {
                 step={1}
                 value={trainingFeeUsd}
                 onChange={(e) => setTrainingFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder={t("superadmin.settings.placeholderZero")}
               />
             </div>
@@ -202,7 +202,7 @@ export function GlobalSettingsClient() {
                 step={0.5}
                 value={visionLatamCommissionPct}
                 onChange={(e) => setVisionLatamCommissionPct(e.target.value)}
-                className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground"
+                className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
                 placeholder={t("superadmin.settings.placeholderEg20")}
               />
               <p className="mt-0.5 text-xs text-muted-foreground">{t("superadmin.settings.vlCommissionHelp")}</p>
@@ -218,7 +218,7 @@ export function GlobalSettingsClient() {
                     step={0.5}
                     value={rateS80}
                     onChange={(e) => setRateS80(e.target.value)}
-                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm"
                     placeholder={t("superadmin.settings.placeholderEg37")}
                   />
                 </div>
@@ -230,7 +230,7 @@ export function GlobalSettingsClient() {
                     step={0.5}
                     value={rateS150}
                     onChange={(e) => setRateS150(e.target.value)}
-                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm"
                     placeholder={t("superadmin.settings.placeholderEg67")}
                   />
                 </div>
@@ -242,7 +242,7 @@ export function GlobalSettingsClient() {
                     step={0.5}
                     value={rateS200}
                     onChange={(e) => setRateS200(e.target.value)}
-                    className="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm"
                     placeholder={t("superadmin.settings.placeholderEg85")}
                   />
                 </div>
@@ -268,7 +268,7 @@ export function GlobalSettingsClient() {
                   type="checkbox"
                   checked={visibility[key] ?? true}
                   onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
-                  className="h-4 w-4 rounded border-input"
+                  className="h-4 w-4 rounded-sm border-input"
                 />
                 <span className="text-sm text-foreground">{t(labelKey)}</span>
               </label>

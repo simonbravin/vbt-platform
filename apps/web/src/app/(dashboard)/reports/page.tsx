@@ -52,7 +52,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-6">
       {dataLoadError && clients.length > 0 && (
-        <div className="bg-amber-500/15 border border-amber-500/40 rounded-sm px-4 py-3 text-sm flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           <p className="text-foreground">
             <span className="font-medium">{t("dashboard.errorLoad")}</span>
             <span className="text-muted-foreground ml-1">{t("dashboard.errorHelp")}</span>
@@ -63,8 +63,8 @@ export default async function ReportsPage() {
         </div>
       )}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t("partner.reports.title")}</h1>
-        <p className="text-gray-500 text-sm mt-0.5">{t("partner.reports.subtitle")}</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("partner.reports.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{t("partner.reports.subtitle")}</p>
       </div>
       <ReportsClient countries={countries} clients={clients} canSendReport={canSendReport} />
     </div>

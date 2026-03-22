@@ -253,10 +253,10 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
     <div className="space-y-6">
       {/* Filters */}
       <div className="surface-card p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">{t("partner.reports.filtersTitle")}</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-4">{t("partner.reports.filtersTitle")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterStatus")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("partner.reports.filterStatus")}</label>
             <select
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
@@ -269,7 +269,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterCountry")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("partner.reports.filterCountry")}</label>
             <select
               value={countryId}
               onChange={(e) => { setCountryId(e.target.value); setPage(1); }}
@@ -282,7 +282,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.filterClient")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("partner.reports.filterClient")}</label>
             <select
               value={clientId}
               onChange={(e) => { setClientId(e.target.value); setPage(1); }}
@@ -295,7 +295,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.soldFrom")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("partner.reports.soldFrom")}</label>
             <input
               type="date"
               value={soldFrom}
@@ -304,7 +304,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t("partner.reports.soldTo")}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t("partner.reports.soldTo")}</label>
             <input
               type="date"
               value={soldTo}
@@ -336,7 +336,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {salesSummary && (
         <div className="surface-card p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" /> {t("partner.reports.salesSection")}
             </h2>
             <div className="flex items-center gap-2">
@@ -347,36 +347,36 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               >
                 <Download className="w-4 h-4" /> {t("partner.reports.exportCsv")}
               </button>
-              <Link href="/sales" className="text-sm text-vbt-blue hover:underline font-medium">{t("partner.reports.viewSalesLink")}</Link>
+              <Link href="/sales" className="text-sm text-primary hover:underline font-medium">{t("partner.reports.viewSalesLink")}</Link>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
-              <div className="text-gray-500 text-xs">{t("partner.reports.kpiTotalSales")}</div>
-              <p className="text-lg font-bold text-gray-900">{salesSummary.totalSales}</p>
+              <div className="text-muted-foreground text-xs">{t("partner.reports.kpiTotalSales")}</div>
+              <p className="text-lg font-bold text-foreground">{salesSummary.totalSales}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">{t("partner.reports.kpiTotalValueDdp")}</div>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(salesSummary.totalValue)}</p>
+              <div className="text-muted-foreground text-xs">{t("partner.reports.kpiTotalValueDdp")}</div>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(salesSummary.totalValue)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">{t("partner.reports.kpiInvoiced")}</div>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(salesSummary.totalInvoiced)}</p>
+              <div className="text-muted-foreground text-xs">{t("partner.reports.kpiInvoiced")}</div>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(salesSummary.totalInvoiced)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">{t("partner.reports.kpiPaid")}</div>
-              <p className="text-lg font-bold text-green-700">{formatCurrency(salesSummary.totalPaid)}</p>
+              <div className="text-muted-foreground text-xs">{t("partner.reports.kpiPaid")}</div>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(salesSummary.totalPaid)}</p>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">{t("partner.reports.kpiPending")}</div>
-              <p className="text-lg font-bold text-amber-600">{formatCurrency(salesSummary.totalPending)}</p>
+              <div className="text-muted-foreground text-xs">{t("partner.reports.kpiPending")}</div>
+              <p className="text-lg font-bold text-primary">{formatCurrency(salesSummary.totalPending)}</p>
             </div>
           </div>
           {salesSummary.entitySummary?.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-sm text-gray-600">
+            <div className="mt-3 pt-3 border-t border-border/60 space-y-1 text-sm text-muted-foreground">
               {salesSummary.entitySummary.map((e) => (
                 <div key={e.id} className="flex justify-between gap-2 flex-wrap">
-                  <span className="font-medium text-gray-700">{e.name}</span>
+                  <span className="font-medium text-foreground">{e.name}</span>
                   <span>
                     {t("partner.reports.entityBalances", {
                       invoiced: formatCurrency(e.invoiced),
@@ -395,34 +395,34 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div className="surface-card p-4">
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <BarChart3 className="w-4 h-4" /> {t("partner.reports.kpiTotalQuoted")}
             </div>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{summary.totalQuoted}</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{summary.totalQuoted}</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiInProgress")}</div>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{summary.inProgress}</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiInProgress")}</div>
+            <p className="mt-1 text-2xl font-bold text-primary">{summary.inProgress}</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiSold")}</div>
-            <p className="text-2xl font-bold text-green-600 mt-1">{summary.sold}</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiSold")}</div>
+            <p className="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-400">{summary.sold}</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiArchived")}</div>
-            <p className="text-2xl font-bold text-gray-600 mt-1">{summary.archived}</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiArchived")}</div>
+            <p className="text-2xl font-bold text-muted-foreground mt-1">{summary.archived}</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiWinRate")}</div>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{summary.conversionRate}%</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiWinRate")}</div>
+            <p className="text-2xl font-bold text-foreground mt-1">{summary.conversionRate}%</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueQuotedFob")}</div>
-            <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(summary.totalValueQuoted)}</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiTotalValueQuotedFob")}</div>
+            <p className="text-lg font-bold text-foreground mt-1">{formatCurrency(summary.totalValueQuoted)}</p>
           </div>
           <div className="surface-card p-4">
-            <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueSold")}</div>
-            <p className="text-lg font-bold text-green-700 mt-1">{formatCurrency(summary.totalValueSold)}</p>
+            <div className="text-muted-foreground text-sm">{t("partner.reports.kpiTotalValueSold")}</div>
+            <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(summary.totalValueSold)}</p>
           </div>
         </div>
       )}
@@ -431,22 +431,22 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {pieces && (pieces.byQty.length > 0 || pieces.byKg.length > 0 || pieces.byM2.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="surface-card-overflow">
-            <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopQty")}</h3>
+            <div className="p-3 border-b border-border/60 flex items-center gap-2">
+              <Package className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-semibold text-foreground text-sm">{t("partner.reports.piecesTopQty")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-muted/30 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colQty")}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colQty")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/40">
                   {pieces.byQty.map((row, i) => (
                     <tr key={row.pieceId + i}>
-                      <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
+                      <td className="px-3 py-2 text-foreground truncate max-w-[180px]" title={row.description}>{row.description}</td>
                       <td className="px-3 py-2 text-right font-medium">{row.qty.toLocaleString(numberLocale)}</td>
                     </tr>
                   ))}
@@ -455,22 +455,22 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </div>
           </div>
           <div className="surface-card-overflow">
-            <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopKg")}</h3>
+            <div className="p-3 border-b border-border/60 flex items-center gap-2">
+              <Package className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-semibold text-foreground text-sm">{t("partner.reports.piecesTopKg")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-muted/30 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colKg")}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colKg")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/40">
                   {pieces.byKg.map((row, i) => (
                     <tr key={row.pieceId + i}>
-                      <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
+                      <td className="px-3 py-2 text-foreground truncate max-w-[180px]" title={row.description}>{row.description}</td>
                       <td className="px-3 py-2 text-right font-medium">{row.kg.toLocaleString(numberLocale, { maximumFractionDigits: 0 })}</td>
                     </tr>
                   ))}
@@ -479,22 +479,22 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             </div>
           </div>
           <div className="surface-card-overflow">
-            <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-gray-500" />
-              <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopM2")}</h3>
+            <div className="p-3 border-b border-border/60 flex items-center gap-2">
+              <Package className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-semibold text-foreground text-sm">{t("partner.reports.piecesTopM2")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-muted/30 sticky top-0">
                   <tr>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colPiece")}</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500">{t("partner.reports.colM2")}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colPiece")}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-muted-foreground">{t("partner.reports.colM2")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/40">
                   {pieces.byM2.map((row, i) => (
                     <tr key={row.pieceId + i}>
-                      <td className="px-3 py-2 text-gray-800 truncate max-w-[180px]" title={row.description}>{row.description}</td>
+                      <td className="px-3 py-2 text-foreground truncate max-w-[180px]" title={row.description}>{row.description}</td>
                       <td className="px-3 py-2 text-right font-medium">{row.m2.toLocaleString(numberLocale, { maximumFractionDigits: 1 })}</td>
                     </tr>
                   ))}
@@ -507,8 +507,8 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
 
       {/* Table + Export */}
       <div className="surface-card-overflow">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{t("partner.reports.projectsSection")}</h2>
+        <div className="p-4 border-b border-border/60 flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">{t("partner.reports.projectsSection")}</h2>
           <div className="flex items-center gap-2">
             {canSendReport && (
               <button
@@ -536,50 +536,50 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
           </div>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-gray-500">{t("partner.reports.loading")}</div>
+          <div className="p-8 text-center text-muted-foreground">{t("partner.reports.loading")}</div>
         ) : projects.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">{t("partner.reports.noProjectsMatch")}</div>
+          <div className="p-8 text-center text-muted-foreground">{t("partner.reports.noProjectsMatch")}</div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-muted/30 border-b border-border/60">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colProject")}</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colClient")}</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colCountry")}</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colStatus")}</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colBaselineQuote")}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colFob")}</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colSaleDate")}</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colFinalAmount")}</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("partner.reports.colQuotes")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colProject")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colClient")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colCountry")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colStatus")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colBaselineQuote")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colFob")}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colSaleDate")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colFinalAmount")}</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("partner.reports.colQuotes")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/40">
                   {projects.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50">
+                    <tr key={p.id} className="hover:bg-muted/40">
                       <td className="px-4 py-3">
-                        <Link href={`/projects/${p.id}`} className="font-medium text-vbt-blue hover:underline">
+                        <Link href={`/projects/${p.id}`} className="font-medium text-primary hover:underline">
                           {p.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{(p.clientRecord?.name ?? p.client) ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.country?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{(p.clientRecord?.name ?? p.client) ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{p.country?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.status === "won" || p.status === "SOLD" ? "bg-green-100 text-green-700" :
-                          p.status === "lost" || p.status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
-                          p.status === "quoting" || p.status === "QUOTE_SENT" ? "bg-blue-100 text-blue-700" :
-                          p.status === "qualified" || p.status === "QUOTED" ? "bg-amber-100 text-amber-700" :
-                          p.status === "engineering" ? "bg-indigo-100 text-indigo-700" :
-                          p.status === "on_hold" ? "bg-yellow-100 text-yellow-700" :
-                          "bg-gray-100 text-gray-600"
+                          p.status === "won" || p.status === "SOLD" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+                          p.status === "lost" || p.status === "ARCHIVED" ? "bg-muted text-muted-foreground" :
+                          p.status === "quoting" || p.status === "QUOTE_SENT" ? "bg-primary/10 text-primary" :
+                          p.status === "qualified" || p.status === "QUOTED" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
+                          p.status === "engineering" ? "bg-primary/10 text-primary" :
+                          p.status === "on_hold" ? "bg-muted text-muted-foreground ring-1 ring-border/50" :
+                          "bg-muted text-muted-foreground"
                         }`}>{projectStatusLabel(p.status)}</span>
                       </td>
                       <td className="px-4 py-3">
                         {p.baselineQuote ? (
-                          <Link href={`/quotes/${p.baselineQuote.id}`} className="text-vbt-blue hover:underline">
+                          <Link href={`/quotes/${p.baselineQuote.id}`} className="text-primary hover:underline">
                             {p.baselineQuote.quoteNumber ?? "—"}
                           </Link>
                         ) : (
@@ -587,7 +587,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">{p.baselineQuote ? formatCurrency(p.baselineQuote.fobUsd) : "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.soldAt ? new Date(p.soldAt).toLocaleDateString(numberLocale) : "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{p.soldAt ? new Date(p.soldAt).toLocaleDateString(numberLocale) : "—"}</td>
                       <td className="px-4 py-3 text-right font-medium">{p.finalAmountUsd != null ? formatCurrency(p.finalAmountUsd) : "—"}</td>
                       <td className="px-4 py-3 text-center">{p._count.quotes}</td>
                     </tr>
@@ -596,7 +596,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               </table>
             </div>
             {total > limit && (
-              <div className="p-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+              <div className="p-3 border-t border-border/60 flex items-center justify-between text-sm text-muted-foreground">
                 <span>
                   {t("partner.reports.showingRange", {
                     from: (page - 1) * limit + 1,
@@ -656,7 +656,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 />
               </div>
               {emailMessage && (
-                <p className={`text-sm ${emailMessage.type === "success" ? "text-green-600" : "text-destructive"}`}>{emailMessage.text}</p>
+                <p className={`text-sm ${emailMessage.type === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>{emailMessage.text}</p>
               )}
             </div>
             <div className="mt-4 flex justify-end gap-3">

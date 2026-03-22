@@ -18,7 +18,7 @@ export default async function EngineeringDetailPage({ params }: { params: { id: 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/engineering" className="text-sm text-gray-500 hover:text-vbt-blue">{t("partner.engineering.back")}</Link>
+        <Link href="/engineering" className="text-sm text-muted-foreground hover:text-primary">{t("partner.engineering.back")}</Link>
       </div>
       <EngineeringDetailClient requestId={params.id} />
     </div>

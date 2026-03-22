@@ -65,7 +65,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
   return (
     <div className="space-y-5">
       {dataLoadError && quotes.length > 0 && (
-        <div className="bg-amber-500/15 border border-amber-500/40 rounded-sm px-4 py-3 text-sm flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           <p className="text-foreground">
             <span className="font-medium">{t("dashboard.errorLoad")}</span>
             <span className="text-muted-foreground ml-1">{t("dashboard.errorHelp")}</span>
@@ -84,7 +84,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
         </div>
         <Link
           href="/quotes/create"
-          className="inline-flex shrink-0 items-center justify-center gap-2 self-start border border-orange-600/30 bg-vbt-orange px-4 py-2.5 text-sm font-semibold text-white rounded-sm hover:brightness-110 sm:self-auto"
+          className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 sm:self-auto"
         >
           <Plus className="h-4 w-4 shrink-0" /> {t("quotes.newQuote")}
         </Link>

@@ -102,13 +102,13 @@ export function CreatePartnerForm() {
   return (
     <form onSubmit={handleSubmit} className="surface-card max-w-2xl p-6 space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-sm border border-alert-errorBorder bg-alert-error px-4 py-3 text-sm text-foreground">
           {error}
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="companyName" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldCompanyName")}
           </label>
           <input
@@ -121,7 +121,7 @@ export function CreatePartnerForm() {
           />
         </div>
         <div>
-          <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="contactName" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldContactName")}
           </label>
           <input
@@ -133,7 +133,7 @@ export function CreatePartnerForm() {
           />
         </div>
         <div>
-          <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="contactEmail" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldContactEmail")}
           </label>
           <input
@@ -145,7 +145,7 @@ export function CreatePartnerForm() {
           />
         </div>
         <div>
-          <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="website" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldWebsite")}
           </label>
           <input
@@ -158,7 +158,7 @@ export function CreatePartnerForm() {
           />
         </div>
         <div>
-          <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="country" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.countryCode")}
           </label>
           <input
@@ -172,7 +172,7 @@ export function CreatePartnerForm() {
           />
         </div>
         <div>
-          <label htmlFor="partnerType" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="partnerType" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.partnerType")}
           </label>
           <select
@@ -190,7 +190,7 @@ export function CreatePartnerForm() {
           </select>
         </div>
         <div>
-          <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.engineeringFeeMode")}
           </label>
           <select
@@ -208,7 +208,7 @@ export function CreatePartnerForm() {
           </select>
         </div>
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="status" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.accountStatus")}
           </label>
           <select
@@ -223,19 +223,19 @@ export function CreatePartnerForm() {
           </select>
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+      <div className="flex items-center gap-2 rounded-sm border border-border/60 bg-muted/30/50 p-4">
         <input
           id="sendInvite"
           type="checkbox"
           checked={form.sendInvite}
           onChange={(e) => setForm((f) => ({ ...f, sendInvite: e.target.checked }))}
-          className="h-4 w-4 rounded border-gray-300 text-vbt-blue focus:ring-vbt-blue"
+          className="h-4 w-4 rounded-sm border-input text-primary focus-visible:ring-ring"
         />
-        <label htmlFor="sendInvite" className="text-sm font-medium text-gray-700">
+        <label htmlFor="sendInvite" className="text-sm font-medium text-foreground">
           {t("superadmin.partners.sendInviteLabel")}
         </label>
       </div>
-      <p className="text-xs text-gray-500 -mt-2">
+      <p className="text-xs text-muted-foreground -mt-2">
         {t("superadmin.partners.sendInviteHelp")}
       </p>
       <div className="flex gap-3">

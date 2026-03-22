@@ -25,10 +25,10 @@ export default async function SettingsTaxesPage() {
           href="/settings"
           className="rounded-sm border border-border/60 p-2 hover:bg-muted/40"
         >
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </Link>
       </div>
-      <p className="text-sm text-gray-500">{t("partner.settings.taxesPartnerIntro")}</p>
+      <p className="text-sm text-muted-foreground">{t("partner.settings.taxesPartnerIntro")}</p>
       <TaxesPage />
     </div>
   );

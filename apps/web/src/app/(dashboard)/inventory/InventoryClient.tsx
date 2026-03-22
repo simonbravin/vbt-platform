@@ -162,12 +162,12 @@ export function InventoryClient() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-sm bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+        <div className="rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">
           {error}
         </div>
       )}
       {lowStockLevels.length > 0 && (
-        <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <div className="rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           {t("partner.inventory.lowStockBanner", {
             count: lowStockLevels.length,
             threshold: lowStockThreshold,
@@ -383,7 +383,7 @@ export function InventoryClient() {
                 <li key={tx.id} className="flex flex-wrap gap-2 text-foreground">
                   <span className="font-medium">{tx.warehouse.name}</span>
                   <span>{tx.catalogPiece.canonicalName}</span>
-                  <span className={tx.quantityDelta >= 0 ? "text-green-600" : "text-red-600"}>{tx.quantityDelta >= 0 ? "+" : ""}{tx.quantityDelta}</span>
+                  <span className={tx.quantityDelta >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}>{tx.quantityDelta >= 0 ? "+" : ""}{tx.quantityDelta}</span>
                   <span className="text-muted-foreground text-xs">{tx.type}</span>
                   <span className="text-muted-foreground text-xs">{new Date(tx.createdAt).toLocaleDateString()}</span>
                 </li>

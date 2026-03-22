@@ -127,7 +127,7 @@ export function NewEngineeringRequestForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.project")} *</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.project")} *</label>
           <select
             value={form.projectId}
             onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
@@ -143,7 +143,7 @@ export function NewEngineeringRequestForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.request")} # *</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.request")} # *</label>
           <input
             type="text"
             value={form.requestNumber}
@@ -154,7 +154,7 @@ export function NewEngineeringRequestForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.requestTypeLabel")}</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.requestTypeLabel")}</label>
           <select
             value={form.requestType}
             onChange={(e) => setForm((f) => ({ ...f, requestType: e.target.value }))}
@@ -169,7 +169,7 @@ export function NewEngineeringRequestForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.wallAreaM2")}</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.wallAreaM2")}</label>
           <input
             type="number"
             step="any"
@@ -179,7 +179,7 @@ export function NewEngineeringRequestForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.systemType")}</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.systemType")}</label>
           <div className="flex flex-wrap gap-4">
             {SYSTEM_OPTIONS.map((opt) => (
               <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
@@ -187,15 +187,15 @@ export function NewEngineeringRequestForm() {
                   type="checkbox"
                   checked={form.systemTypeIds.includes(opt.value)}
                   onChange={() => toggleSystem(opt.value)}
-                  className="rounded border-gray-300"
+                  className="rounded-sm border-input"
                 />
-                <span className="text-sm text-gray-700">{t(opt.labelKey)}</span>
+                <span className="text-sm text-foreground">{t(opt.labelKey)}</span>
               </label>
             ))}
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.notes")}</label>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.notes")}</label>
           <textarea
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -204,8 +204,8 @@ export function NewEngineeringRequestForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.engineering.attachmentsOnCreate")}</label>
-          <p className="text-xs text-gray-500 mb-2">{t("partner.engineering.attachmentsHint")}</p>
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.engineering.attachmentsOnCreate")}</label>
+          <p className="text-xs text-muted-foreground mb-2">{t("partner.engineering.attachmentsHint")}</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -226,7 +226,7 @@ export function NewEngineeringRequestForm() {
             {t("partner.engineering.uploadFile")}
           </button>
           {pendingFiles.length > 0 && (
-            <ul className="mt-2 text-sm text-gray-600 list-disc list-inside space-y-0.5">
+            <ul className="mt-2 text-sm text-muted-foreground list-disc list-inside space-y-0.5">
               {pendingFiles.map((f, i) => (
                 <li key={`${i}-${f.name}-${f.size}-${f.lastModified}`}>{f.name}</li>
               ))}

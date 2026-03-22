@@ -159,7 +159,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
           type="button"
           disabled={scope === "platform" && !organizationId}
           onClick={() => { setAddOpen(true); setError(null); }}
-          className="inline-flex items-center gap-2 rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
         >
           <Plus className="w-4 h-4" /> {t("admin.entities.addEntity")}
         </button>
@@ -196,7 +196,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
                     <button
                       type="button"
                       onClick={() => setEditId(e.id)}
-                      className="p-2 text-muted-foreground hover:text-orange-600"
+                      className="p-2 text-muted-foreground hover:text-primary"
                       title={t("admin.entities.editTitle")}
                     >
                       <Pencil className="w-4 h-4" />
@@ -214,7 +214,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
           <div className="surface-modal max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-4 font-semibold text-foreground">{t("admin.entities.addEntityTitle")}</h3>
             <form onSubmit={handleAdd} className="space-y-4">
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
               <div>
                 <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.nameLabel")}</label>
                 <input
@@ -239,7 +239,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
                 <p className="mt-0.5 text-xs text-muted-foreground">{t("admin.entities.slugHint")}</p>
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={saving} className="rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
                   {saving ? t("common.saving") : t("common.save")}
                 </button>
                 <button type="button" onClick={() => !saving && setAddOpen(false)} className="rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40">
@@ -256,7 +256,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
           <div className="surface-modal max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-4 font-semibold text-foreground">{t("admin.entities.editEntityTitle")}</h3>
             <form onSubmit={handleUpdate} className="space-y-4">
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
               <div>
                 <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.nameLabel")}</label>
                 <input
@@ -283,12 +283,12 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
                   id="edit-active"
                   checked={editActive}
                   onChange={(e) => setEditActive(e.target.checked)}
-                  className="rounded border-input"
+                  className="rounded-sm border-input"
                 />
                 <label htmlFor="edit-active" className="text-sm text-foreground">{t("admin.entities.activeInDropdowns")}</label>
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={saving} className="rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
                   {saving ? t("common.saving") : t("common.save")}
                 </button>
                 <button type="button" onClick={() => !saving && setEditId(null)} className="rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40">

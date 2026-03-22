@@ -61,22 +61,22 @@ function CreateQuotePage() {
       <div className="flex items-center gap-3">
         <Link
           href={projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/quotes"}
-          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+          className="p-2 rounded-sm border border-border/60 hover:bg-muted/40"
         >
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </Link>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">{t("quotes.newQuoteTitle")}</h1>
-          <p className="text-sm text-gray-500">{t("quotes.createDraftSubtitle")}</p>
+          <h1 className="text-xl font-semibold text-foreground">{t("quotes.newQuoteTitle")}</h1>
+          <p className="text-sm text-muted-foreground">{t("quotes.createDraftSubtitle")}</p>
         </div>
       </div>
 
       <div className="surface-card space-y-4 p-5">
-        <label className="block text-sm font-medium text-gray-700">{t("quotes.selectProject")}</label>
+        <label className="block text-sm font-medium text-foreground">{t("quotes.selectProject")}</label>
         <select
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-vbt-blue focus:border-vbt-blue"
+          className="w-full px-3 py-2 border border-input rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-input"
           disabled={!!projectIdFromQuery}
         >
           <option value="">{t("quotes.selectProjectPlaceholder")}</option>
@@ -87,25 +87,25 @@ function CreateQuotePage() {
           ))}
         </select>
         {projectIdFromQuery && (
-          <p className="text-xs text-gray-500">{t("quotes.projectFixedFromLink")}</p>
+          <p className="text-xs text-muted-foreground">{t("quotes.projectFixedFromLink")}</p>
         )}
 
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
 
         <button
           type="button"
           onClick={handleCreate}
           disabled={loading || !projectId.trim()}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-vbt-orange text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 disabled:pointer-events-none"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2.5 font-semibold text-white hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
         >
           <FileText className="w-4 h-4" />
           {loading ? t("quotes.creating") : t("quotes.createDraftButton")}
         </button>
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         {t("quotes.createDraftHint")}
       </p>
     </div>

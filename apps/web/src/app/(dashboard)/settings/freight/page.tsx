@@ -18,10 +18,10 @@ export default async function SettingsFreightPage() {
           href="/settings"
           className="rounded-sm border border-border/60 p-2 hover:bg-muted/40"
         >
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </Link>
       </div>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         Tarifas base de Vision Latam y las tuyas (si no usas los servicios cotizados por Vision Latam). Puedes agregar o editar solo tus propias tarifas.
       </p>
       <FreightPage />

@@ -254,7 +254,7 @@ export function SuperadminInventoryClient() {
                     placeholder={t("admin.inventory.searchPartnerPlaceholder")}
                     value={partnerSearchQuery}
                     onChange={(e) => setPartnerSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded border border-input bg-background text-sm"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-sm border border-input bg-background text-sm"
                   />
                 </div>
                 <div className="overflow-y-auto p-2">
@@ -264,13 +264,13 @@ export function SuperadminInventoryClient() {
                     filteredPartnersForDropdown.map((org) => (
                       <label
                         key={org.id}
-                        className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                        className="flex items-center gap-2 py-1.5 px-2 rounded-sm hover:bg-muted/50 cursor-pointer text-sm"
                       >
                         <input
                           type="checkbox"
                           checked={selectedPartnerIds.includes(org.id)}
                           onChange={() => togglePartnerFilter(org.id)}
-                          className="rounded border-input"
+                          className="rounded-sm border-input"
                         />
                         {org.name}
                       </label>
@@ -500,7 +500,7 @@ export function SuperadminInventoryClient() {
                     type="button"
                     onClick={handleAffect}
                     disabled={txSaving || !affectQuoteId.trim()}
-                    className="rounded-sm px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1"
+                    className="flex items-center gap-1 rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
                     <ArrowDownToLine className="h-4 w-4" /> {t("admin.inventory.affectButton")}
                   </button>

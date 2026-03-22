@@ -190,24 +190,24 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
     }
   };
 
-  if (loading) return <div className="py-8 text-center text-gray-500">{t("partner.sales.loading")}</div>;
-  if (!sale) return <div className="py-8 text-center text-gray-500">{t("partner.sales.saleNotFound")}</div>;
+  if (loading) return <div className="py-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>;
+  if (!sale) return <div className="py-8 text-center text-muted-foreground">{t("partner.sales.saleNotFound")}</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
       <div className="flex gap-4">
-        <Link href={`/sales/${saleId}`} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+        <Link href={`/sales/${saleId}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm">
           <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSale")}
         </Link>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+        <div className="rounded-sm border border-alert-errorBorder bg-alert-error p-3 text-sm text-foreground">{error}</div>
       )}
 
       <div className="surface-card p-6">
-        <h2 className="font-semibold text-gray-800 mb-2">{t("partner.sales.edit.saleCardTitle")}</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="font-semibold text-foreground mb-2">{t("partner.sales.edit.saleCardTitle")}</h2>
+        <p className="text-sm text-muted-foreground">
           {sale.saleNumber} · {sale.client?.name} · {sale.project?.name}
           {sale.quote
             ? ` · ${t("partner.sales.detail.quote")}: ${sale.quote.quoteNumber ?? sale.quote.id}`
@@ -218,32 +218,32 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
       </div>
 
       <div className="surface-card p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">{t("partner.sales.colStatus")}</h2>
+        <h2 className="font-semibold text-foreground">{t("partner.sales.colStatus")}</h2>
         {["PAID", "PARTIALLY_PAID", "DUE"].includes(sale.status) ? (
           <>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {t("partner.sales.edit.statusLabelPrefix")}{" "}
               <strong>{t(`partner.sales.status.${sale.status}`)}</strong>{" "}
               {t("partner.sales.edit.statusAutoSuffix")}
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.edit.changeStatus")}</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <label className="block text-sm font-medium text-foreground mb-1">{t("partner.sales.edit.changeStatus")}</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-input rounded-sm text-sm">
                 <option value="">{t("partner.sales.edit.keepStatus")}</option>
                 <option value="CANCELLED">{t("partner.sales.edit.cancelSaleOption")}</option>
               </select>
             </div>
           </>
         ) : (
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full max-w-xs px-3 py-2 border border-input rounded-sm text-sm">
             {statusOptions.map((s) => (
               <option key={s} value={s}>{t(`partner.sales.status.${s}`)}</option>
             ))}
           </select>
         )}
         <div className="mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.salesConditionLabel")}</label>
-          <select value={invoicedBasis} onChange={(e) => setInvoicedBasis(e.target.value as "EXW" | "FOB" | "CIF" | "DDP")} className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <label className="block text-sm font-medium text-foreground mb-1">{t("partner.sales.new.salesConditionLabel")}</label>
+          <select value={invoicedBasis} onChange={(e) => setInvoicedBasis(e.target.value as "EXW" | "FOB" | "CIF" | "DDP")} className="w-full max-w-xs px-3 py-2 border border-input rounded-sm text-sm">
             {INVOICED_BASIS_OPTIONS.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
@@ -252,7 +252,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
       </div>
 
       <div className="surface-card p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionFinancials")}</h2>
+        <h2 className="font-semibold text-foreground">{t("partner.sales.new.sectionFinancials")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
             [
@@ -267,17 +267,17 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
             ] as [string, number, (n: number) => void, boolean][]
           ).map(([labelKey, val, setter, isCurrency]) => (
             <div key={labelKey}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t(labelKey)}</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{t(labelKey)}</label>
               {isCurrency ? (
-                <div className="relative rounded-lg border border-gray-300">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">$</span>
+                <div className="relative rounded-sm border border-input">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">$</span>
                   <input
                     type="number"
                     min={0}
                     step={0.01}
                     value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
                     onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border-0 text-sm bg-transparent"
+                    className="w-full pl-7 pr-3 py-2 rounded-sm border-0 text-sm bg-transparent"
                   />
                 </div>
               ) : (
@@ -287,35 +287,35 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
                   step={0.1}
                   value={typeof val === "number" ? Number(val.toFixed(2)) : ""}
                   onChange={(e) => (setter as (n: number) => void)(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-input rounded-sm text-sm"
                 />
               )}
             </div>
           ))}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" rows={2} />
+          <label className="block text-sm font-medium text-foreground mb-1">{t("common.notes")}</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2 border border-input rounded-sm text-sm" rows={2} />
         </div>
       </div>
 
       <div className="surface-card p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
+          <h2 className="font-semibold text-foreground">{t("partner.sales.new.sectionInvoices")}</h2>
           <button
             type="button"
             onClick={() => setInvoices((prev) => [...prev, { entityId: "", amountUsd: 0, dueDate: "", sequence: prev.length + 1, referenceNumber: "", notes: "" }])}
-            className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium text-vbt-blue hover:bg-blue-50 rounded-lg"
+            className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium text-primary hover:bg-primary/10 rounded-sm"
           >
             <Plus className="w-4 h-4" /> {t("partner.sales.new.addLine")}
           </button>
         </div>
-        <p className="text-xs text-gray-500">{t("partner.sales.edit.invoicesHint")}</p>
+        <p className="text-xs text-muted-foreground">{t("partner.sales.edit.invoicesHint")}</p>
         {invoices.filter((i) => i.entityId).length > 0 && (() => {
           const sum = invoices.filter((i) => i.entityId).reduce((a, i) => a + Number(i.amountUsd), 0);
           const max = getMaxInvoiced(invoicedBasis, exwUsd, fobUsd, cifUsd, landedDdpUsd);
           return sum > max ? (
-            <p className="text-sm text-amber-600">
+            <p className="text-sm text-muted-foreground">
               {t("partner.sales.new.invoiceSumExceeds", {
                 sum: sum.toFixed(2),
                 basis: invoicedBasis,
@@ -325,17 +325,17 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
           ) : null;
         })()}
         {invoices.length === 0 ? (
-          <p className="text-sm text-gray-500">{t("partner.sales.new.noInvoiceLines")}</p>
+          <p className="text-sm text-muted-foreground">{t("partner.sales.new.noInvoiceLines")}</p>
         ) : (
           <ul className="space-y-3">
             {invoices.map((inv, idx) => (
-              <li key={idx} className="flex flex-wrap items-end gap-2 p-3 bg-gray-50 rounded-lg">
+              <li key={idx} className="flex flex-wrap items-end gap-2 p-3 bg-muted/30 rounded-sm">
                 <div className="min-w-[140px] flex-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.entity")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("partner.sales.new.entity")}</label>
                   <select
                     value={inv.entityId}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, entityId: e.target.value } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                   >
                     <option value="">{t("partner.sales.new.selectEntity")}</option>
                     {entities.map((e) => (
@@ -344,59 +344,59 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
                   </select>
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.amountUsd")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("partner.sales.new.amountUsd")}</label>
                   <input
                     type="number"
                     min={0}
                     step={0.01}
                     value={inv.amountUsd === 0 ? "" : inv.amountUsd}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, amountUsd: parseFloat(e.target.value) || 0 } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                   />
                 </div>
                 <div className="w-36">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.dueDate")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("partner.sales.new.dueDate")}</label>
                   <input
                     type="date"
                     value={inv.dueDate}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, dueDate: e.target.value } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                   />
                 </div>
                 <div className="w-16">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.seq")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("partner.sales.new.seq")}</label>
                   <input
                     type="number"
                     min={1}
                     value={inv.sequence}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, sequence: parseInt(e.target.value, 10) || 1 } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                   />
                 </div>
                 <div className="min-w-[120px] flex-1">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("partner.sales.new.refNumber")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("partner.sales.new.refNumber")}</label>
                   <input
                     type="text"
                     value={inv.referenceNumber}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, referenceNumber: e.target.value } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                     placeholder={t("partner.sales.new.externalInvoicePlaceholder")}
                   />
                 </div>
                 <div className="flex-1 min-w-[100px]">
-                  <label className="block text-xs font-medium text-gray-600 mb-0.5">{t("common.notes")}</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-0.5">{t("common.notes")}</label>
                   <input
                     type="text"
                     value={inv.notes}
                     onChange={(e) => setInvoices((prev) => prev.map((p, i) => (i === idx ? { ...p, notes: e.target.value } : p)))}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1.5 border border-input rounded-sm text-sm"
                     placeholder={t("partner.sales.new.lineNotesPlaceholder")}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => setInvoices((prev) => prev.filter((_, i) => i !== idx))}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                  className="p-1.5 text-muted-foreground/70 hover:text-destructive rounded-sm"
                   title={t("partner.sales.new.removeLineTitle")}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -408,10 +408,10 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
       </div>
 
       <div className="flex gap-3">
-        <button type="submit" disabled={saving} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
           {saving ? t("common.saving") : t("partner.sales.saveChanges")}
         </button>
-        <Link href={`/sales/${saleId}`} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <Link href={`/sales/${saleId}`} className="px-4 py-2 border border-border/60 rounded-sm text-sm font-medium text-foreground hover:bg-muted/40">
           {t("common.cancel")}
         </Link>
       </div>

@@ -216,7 +216,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             type="button"
             onClick={handleApprove}
             disabled={!!actionLoading}
-            className="rounded-sm bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {actionLoading ? "…" : t("superadmin.quoteDetail.approve")}
           </button>
@@ -227,7 +227,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             onClick={handleReject}
             disabled={!!actionLoading}
             title={!comment.trim() ? t("superadmin.quoteDetail.commentRequiredToReject") : undefined}
-            className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="rounded-sm border border-destructive/30 bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:opacity-90 disabled:opacity-50"
           >
             {actionLoading ? "…" : t("superadmin.quoteDetail.reject")}
           </button>
@@ -236,7 +236,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
           <button
             type="button"
             onClick={() => setModifyOpen(!modifyOpen)}
-            className="rounded-sm bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
+            className="rounded-sm border border-border/60 bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
           >
             {modifyOpen ? t("superadmin.quoteDetail.cancelModify") : t("superadmin.quoteDetail.modify")}
           </button>
@@ -268,7 +268,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             type="button"
             onClick={handleModifySubmit}
             disabled={!!actionLoading}
-            className="mt-4 rounded-sm bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="mt-4 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {actionLoading ? t("superadmin.quoteDetail.saving") : t("superadmin.quoteDetail.saveChanges")}
           </button>

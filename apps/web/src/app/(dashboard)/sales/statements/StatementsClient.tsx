@@ -172,39 +172,39 @@ export function StatementsClient({
 
   return (
     <div className="space-y-4">
-      <Link href={backHref} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+      <Link href={backHref} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm">
         <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
       </Link>
 
       {fetchError ? (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground">{fetchError}</div>
+        <div className="rounded-sm border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">{fetchError}</div>
       ) : null}
 
       <div className="flex flex-wrap gap-2 items-center">
-        <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[160px]">
+        <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="px-3 py-1.5 border border-input rounded-sm text-sm min-w-[160px]">
           <option value="">{t("partner.sales.allClients")}</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
-        <select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[160px]">
+        <select value={entityId} onChange={(e) => setEntityId(e.target.value)} className="px-3 py-1.5 border border-input rounded-sm text-sm min-w-[160px]">
           <option value="">{t("partner.sales.allEntities")}</option>
           {data?.entities?.map((e) => (
             <option key={e.id} value={e.id}>{e.name}</option>
           ))}
         </select>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-        <button type="button" onClick={fetchData} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium">
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-input rounded-sm text-sm" />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-input rounded-sm text-sm" />
+        <button type="button" onClick={fetchData} className="px-3 py-1.5 bg-primary text-white rounded-sm text-sm font-medium">
           {t("partner.sales.apply")}
         </button>
-        <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
+        <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-1 px-3 py-1.5 border border-border/60 rounded-sm text-sm font-medium hover:bg-muted/40">
           <Download className="w-4 h-4" /> {t("partner.sales.exportCsv")}
         </button>
-        <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
+        <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-1 px-3 py-1.5 border border-border/60 rounded-sm text-sm font-medium hover:bg-muted/40">
           <FileText className="w-4 h-4" /> {t("partner.sales.exportPdf")}
         </button>
-        <button type="button" onClick={() => { setEmailOpen(true); setEmailResult(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:opacity-90">
+        <button type="button" onClick={() => { setEmailOpen(true); setEmailResult(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-sm text-sm font-medium hover:opacity-90">
           <Mail className="w-4 h-4" /> {t("partner.sales.sendByEmail")}
         </button>
       </div>
@@ -223,7 +223,7 @@ export function StatementsClient({
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.emailMessageLabel")}</label>
                 <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder={t("partner.sales.emailMessagePlaceholder")} className="w-full resize-none rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
-              {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-green-600" : "text-destructive"}`}>{emailResult.text}</p>}
+              {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>{emailResult.text}</p>}
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted">
@@ -240,27 +240,27 @@ export function StatementsClient({
 
       <div className="overflow-x-auto rounded-sm border border-border/60 bg-card ring-1 ring-border/40">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">{t("partner.sales.loading")}</div>
+          <div className="p-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>
         ) : !data?.statements?.length ? (
-          <div className="p-8 text-center text-gray-500">{t("partner.sales.noDataForFilters")}</div>
+          <div className="p-8 text-center text-muted-foreground">{t("partner.sales.noDataForFilters")}</div>
         ) : (
           <div className="p-4 space-y-6">
             {data.statements.map((st) => (
-              <div key={st.client.id} className="border border-gray-100 rounded-lg p-4">
+              <div key={st.client.id} className="border border-border/60 rounded-sm p-4">
                 <div className="flex justify-between items-center mb-3">
-                  <h2 className="font-semibold text-gray-900">{st.client.name}</h2>
+                  <h2 className="font-semibold text-foreground">{st.client.name}</h2>
                   <div className="text-sm">
-                    <span className="text-gray-500">{t("partner.sales.statementSummaryInvoiced")} </span>
+                    <span className="text-muted-foreground">{t("partner.sales.statementSummaryInvoiced")} </span>
                     <span className="font-medium">{formatCurrency(st.totalInvoiced)}</span>
-                    <span className="text-gray-500 ml-3">{t("partner.sales.statementSummaryPaid")} </span>
+                    <span className="text-muted-foreground ml-3">{t("partner.sales.statementSummaryPaid")} </span>
                     <span className="font-medium">{formatCurrency(st.totalPaid)}</span>
-                    <span className="text-gray-500 ml-3">{t("partner.sales.statementSummaryBalance")} </span>
-                    <span className={`font-medium ${st.balance > 0 ? "text-amber-600" : "text-gray-900"}`}>{formatCurrency(st.balance)}</span>
+                    <span className="text-muted-foreground ml-3">{t("partner.sales.statementSummaryBalance")} </span>
+                    <span className={`font-medium ${st.balance > 0 ? "text-primary" : "text-foreground"}`}>{formatCurrency(st.balance)}</span>
                   </div>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
+                    <tr className="text-left text-muted-foreground border-b">
                       <th className="pb-2 pr-4">{t("partner.sales.colSaleNumber")}</th>
                       <th className="pb-2 pr-4">{t("partner.sales.colProject")}</th>
                       <th className="pb-2 pr-4 text-right">{t("partner.sales.colLineInvoiced")}</th>
@@ -279,15 +279,15 @@ export function StatementsClient({
                           ? sale.statementPaid
                           : sale.payments?.reduce((a: number, p: any) => a + (p.amountUsd ?? 0), 0) ?? 0;
                       return (
-                        <tr key={sale.id} className="border-b border-gray-50">
+                        <tr key={sale.id} className="border-b border-border/40">
                           <td className="py-2 pr-4">
-                            <Link href={`${saleDetailBasePath.replace(/\/$/, "")}/${sale.id}`} className="text-vbt-blue hover:underline">
+                            <Link href={`${saleDetailBasePath.replace(/\/$/, "")}/${sale.id}`} className="text-primary hover:underline">
                               {sale.saleNumber ?? sale.id?.slice(0, 8)}
                             </Link>
                           </td>
-                          <td className="py-2 pr-4 text-gray-700">{sale.project?.name ?? ""}</td>
-                          <td className="py-2 pr-4 text-right text-gray-700">{formatCurrency(invTotal)}</td>
-                          <td className="py-2 pr-4 text-right text-gray-700">{formatCurrency(payTotal)}</td>
+                          <td className="py-2 pr-4 text-foreground">{sale.project?.name ?? ""}</td>
+                          <td className="py-2 pr-4 text-right text-foreground">{formatCurrency(invTotal)}</td>
+                          <td className="py-2 pr-4 text-right text-foreground">{formatCurrency(payTotal)}</td>
                           <td className="py-2 text-right font-medium">{formatCurrency(invTotal - payTotal)}</td>
                         </tr>
                       );

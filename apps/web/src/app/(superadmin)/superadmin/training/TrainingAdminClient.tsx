@@ -96,43 +96,43 @@ export function TrainingAdminClient() {
   return (
     <div className="space-y-8">
       {error && (
-        <div className="rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">
           {error}
         </div>
       )}
 
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.programs")}</h2>
+        <div className="px-5 py-4 border-b border-border/60 flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">{t("superadmin.training.programs")}</h2>
         </div>
         {loadingPrograms ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : programs.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("superadmin.training.noProgramsYet")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("superadmin.training.noProgramsYet")}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colTitle")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colLevel")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colEnrollments")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colTitle")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colLevel")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colEnrollments")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60 bg-card">
                 {programs.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
+                  <tr key={p.id} className="hover:bg-muted/40">
                     <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{p.title}</p>
+                      <p className="font-medium text-foreground">{p.title}</p>
                       {p.description && (
-                        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{p.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{p.level ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{programStatusLabel(t, p.status)}</td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">{p._count?.enrollments ?? 0}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{p.level ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{programStatusLabel(t, p.status)}</td>
+                    <td className="px-5 py-3 text-right text-sm text-muted-foreground">{p._count?.enrollments ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
@@ -142,36 +142,36 @@ export function TrainingAdminClient() {
       </div>
 
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <Users className="h-5 w-5 text-gray-500" />
-          <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.enrollments")}</h2>
+        <div className="px-5 py-4 border-b border-border/60 flex items-center gap-2">
+          <Users className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">{t("superadmin.training.enrollments")}</h2>
         </div>
         {loadingEnrollments ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : enrollments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("superadmin.training.noEnrollmentsYet")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("superadmin.training.noEnrollmentsYet")}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colUser")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colProgram")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colPartner")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colProgress")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colUser")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colProgram")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colPartner")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colStatus")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.training.colProgress")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60 bg-card">
                 {enrollments.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 text-sm text-gray-900">
+                  <tr key={e.id} className="hover:bg-muted/40">
+                    <td className="px-5 py-3 text-sm text-foreground">
                       {e.user?.fullName ?? e.user?.email ?? "—"}
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{e.trainingProgram?.title ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{e.organization?.name ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{enrollmentStatusLabel(t, e.status)}</td>
-                    <td className="px-5 py-3 text-right text-sm text-gray-600">{e.progressPct}%</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{e.trainingProgram?.title ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{e.organization?.name ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{enrollmentStatusLabel(t, e.status)}</td>
+                    <td className="px-5 py-3 text-right text-sm text-muted-foreground">{e.progressPct}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -179,7 +179,7 @@ export function TrainingAdminClient() {
           </div>
         )}
         {!loadingEnrollments && enrollments.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+          <p className="px-5 py-2 text-xs text-muted-foreground border-t border-border/60">
             {t("superadmin.training.enrollmentsTotal", { count: enrollmentsTotal })}
           </p>
         )}

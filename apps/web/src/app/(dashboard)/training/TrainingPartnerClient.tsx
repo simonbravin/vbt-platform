@@ -64,28 +64,28 @@ export function TrainingPartnerClient() {
   };
 
   if (loading) return <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
-  if (error) return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
+  if (error) return <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">{error}</div>;
 
   return (
     <div className="space-y-8">
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.myEnrollments")}</h2>
+        <div className="px-5 py-4 border-b border-border/60">
+          <h2 className="text-lg font-semibold text-foreground">{t("partner.training.myEnrollments")}</h2>
         </div>
         {enrollments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("partner.training.notEnrolledYet")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("partner.training.notEnrolledYet")}</div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border/60">
             {enrollments.map((e) => (
               <li key={e.id} className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <BookOpen className="h-5 w-5 text-gray-400" />
+                  <BookOpen className="h-5 w-5 text-muted-foreground/70" />
                   <div>
-                    <p className="font-medium text-gray-900">{e.trainingProgram?.title ?? t("partner.training.programFallback")}</p>
-                    <p className="text-sm text-gray-500">{e.status} · {e.progressPct}%</p>
+                    <p className="font-medium text-foreground">{e.trainingProgram?.title ?? t("partner.training.programFallback")}</p>
+                    <p className="text-sm text-muted-foreground">{e.status} · {e.progressPct}%</p>
                   </div>
                 </div>
-                {e.completedAt && <CheckCircle className="h-5 w-5 text-green-500" />}
+                {e.completedAt && <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
               </li>
             ))}
           </ul>
@@ -93,22 +93,22 @@ export function TrainingPartnerClient() {
       </div>
 
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.availablePrograms")}</h2>
+        <div className="px-5 py-4 border-b border-border/60">
+          <h2 className="text-lg font-semibold text-foreground">{t("partner.training.availablePrograms")}</h2>
         </div>
         {programs.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">{t("partner.training.noProgramsAvailable")}</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">{t("partner.training.noProgramsAvailable")}</div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border/60">
             {programs.map((p) => {
               const enrolled = isEnrolled(p.id);
               return (
                 <li key={p.id} className="px-5 py-4 flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-medium text-gray-900">{p.title}</p>
-                    {p.description && <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>}
+                    <p className="font-medium text-foreground">{p.title}</p>
+                    {p.description && <p className="text-sm text-muted-foreground mt-0.5">{p.description}</p>}
                     {p.level && (
-                      <p className="text-xs text-gray-400 mt-1">{t("partner.training.levelLabel", { level: p.level })}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">{t("partner.training.levelLabel", { level: p.level })}</p>
                     )}
                   </div>
                   {!enrolled && (

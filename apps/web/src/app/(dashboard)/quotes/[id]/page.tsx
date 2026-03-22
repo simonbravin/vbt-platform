@@ -294,7 +294,7 @@ export default function QuoteDetailPage() {
                     if (s === "sent" || s === "accepted")
                       return "border-emerald-600/45 bg-emerald-500/10 text-emerald-950 dark:text-emerald-300";
                     if (s === "draft")
-                      return "border-amber-600/45 bg-amber-500/10 text-amber-950 dark:text-amber-200";
+                      return "border border-alert-warningBorder bg-alert-warning text-foreground";
                     return "border-border bg-muted text-muted-foreground";
                   })()
                 }`}
@@ -324,7 +324,7 @@ export default function QuoteDetailPage() {
           {quote.projectId && (
             <Link
               href={`/sales/new?quoteId=${quote.id}&projectId=${quote.projectId}&clientId=${(quote.project as any)?.clientId ?? ""}`}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-vbt-orange text-white rounded-sm text-sm font-semibold hover:brightness-110 border border-orange-600/30"
+              className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
             >
               <ShoppingCart className="w-4 h-4 shrink-0" /> {t("quotes.createSale")}
             </Link>
@@ -766,7 +766,7 @@ export default function QuoteDetailPage() {
                 type="button"
                 onClick={saveEdit}
                 disabled={saving}
-                className="px-4 py-2 bg-vbt-orange text-white rounded-sm text-sm font-semibold hover:brightness-110 disabled:opacity-50 border border-orange-600/30"
+                className="rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? t("common.saving") : t("common.save")}
               </button>

@@ -91,9 +91,9 @@ export default function CatalogPage() {
   };
 
   const SYS_COLORS: Record<string, string> = {
-    S80: "bg-blue-100 text-blue-700",
-    S150: "bg-green-100 text-green-700",
-    S200: "bg-purple-100 text-purple-700",
+    S80: "bg-primary/10 text-primary",
+    S150: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
+    S200: "bg-muted text-foreground",
   };
   const SYS_LABELS: Record<string, string> = useMemo(
     () => ({
@@ -129,7 +129,7 @@ export default function CatalogPage() {
         <button
           type="button"
           onClick={() => setImportDialog(true)}
-          className="inline-flex items-center gap-2 rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+          className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
           <Upload className="w-4 h-4" /> {t("admin.catalog.import")}
         </button>
@@ -152,7 +152,7 @@ export default function CatalogPage() {
             type="checkbox"
             checked={incompleteOnly}
             onChange={(e) => setIncompleteOnly(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
+            className="h-4 w-4 rounded-sm border-input"
           />
           <span>{t("admin.catalog.incompleteOnly")}</span>
         </label>
@@ -166,10 +166,10 @@ export default function CatalogPage() {
             const on = systemOn[code];
             const onClass =
               code === "S80"
-                ? "bg-blue-100 text-blue-800 border-blue-300"
+                ? "border-primary/40 bg-primary/10 text-primary"
                 : code === "S150"
-                  ? "bg-green-100 text-green-800 border-green-300"
-                  : "bg-purple-100 text-purple-800 border-purple-300";
+                  ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
+                  : "border-border bg-muted text-foreground";
             const offClass = "bg-muted/30 text-muted-foreground border-border/60 hover:bg-muted";
             return (
               <button
@@ -230,7 +230,7 @@ export default function CatalogPage() {
                   <td className="px-3 py-2.5 text-center font-medium tabular-nums">
                     {p.costs?.[0]?.pricePerM2Cored
                       ? `$${p.costs[0].pricePerM2Cored.toFixed(2)}`
-                      : <span className="text-gray-300">—</span>}
+                      : <span className="text-muted-foreground/50">—</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${p.isActive ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" : "bg-muted text-muted-foreground"}`}>
@@ -267,8 +267,8 @@ export default function CatalogPage() {
             {importResult && (
               <div className="mt-4 space-y-1 rounded-sm border border-border/60 bg-muted/20 p-4 text-sm">
                 <p className="font-medium">{importResult.dryRun ? t("admin.catalog.dryRunPreview") : t("admin.catalog.importComplete")}</p>
-                <p className="text-green-700">{t("admin.catalog.created")}: {importResult.created}</p>
-                <p className="text-blue-700">{t("admin.catalog.updated")}: {importResult.updated}</p>
+                <p className="text-primary">{t("admin.catalog.created")}: {importResult.created}</p>
+                <p className="text-primary">{t("admin.catalog.updated")}: {importResult.updated}</p>
                 <p className="text-muted-foreground">{t("admin.catalog.unchanged")}: {importResult.unchanged}</p>
                 <p className="text-muted-foreground">{t("admin.catalog.total")}: {importResult.total}</p>
               </div>

@@ -179,21 +179,21 @@ export function SuperadminSalesListClient() {
                 ? `/superadmin/sales/new?organizationId=${encodeURIComponent(organizationId)}`
                 : "/superadmin/sales/new"
             }
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+            className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> {t("superadmin.sales.newSaleButton")}
           </Link>
           {organizationId ? (
             <Link
               href={`/superadmin/sales/statements?organizationId=${encodeURIComponent(organizationId)}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted"
             >
               {t("partner.sales.statementsLink")}
             </Link>
           ) : null}
           <a
             href={exportQuery ? `/api/sales/export?${exportQuery}` : "/api/sales/export"}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -202,7 +202,7 @@ export function SuperadminSalesListClient() {
           {dueCount > 0 && organizationId ? (
             <Link
               href={`/superadmin/sales/statements?organizationId=${encodeURIComponent(organizationId)}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 rounded-sm text-sm font-medium"
             >
               <Bell className="w-4 h-4" /> {t("partner.sales.paymentsDue", { count: dueCount })}
             </Link>
@@ -219,7 +219,7 @@ export function SuperadminSalesListClient() {
             setClientId("");
             setProjectId("");
           }}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
         >
           <option value="">{t("superadmin.quotesList.allCompanies")}</option>
           {partners.map((p) => (
@@ -233,12 +233,12 @@ export function SuperadminSalesListClient() {
           placeholder={t("superadmin.salesList.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm w-56"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm w-56"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm"
         >
           <option value="">{t("partner.sales.allStatuses")}</option>
           {statusOptions.map(({ value: v, label: l }) => (
@@ -250,7 +250,7 @@ export function SuperadminSalesListClient() {
         <select
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm min-w-[140px]"
           disabled={!organizationId}
         >
           <option value="">{t("partner.sales.allClients")}</option>
@@ -263,7 +263,7 @@ export function SuperadminSalesListClient() {
         <select
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm min-w-[140px]"
           disabled={!organizationId}
         >
           <option value="">{t("partner.sales.allProjects")}</option>
@@ -277,7 +277,7 @@ export function SuperadminSalesListClient() {
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm"
           aria-label={t("partner.sales.dateFrom")}
           title={t("partner.sales.dateFrom")}
         />
@@ -285,7 +285,7 @@ export function SuperadminSalesListClient() {
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm"
           aria-label={t("partner.sales.dateTo")}
           title={t("partner.sales.dateTo")}
         />
@@ -334,16 +334,16 @@ export function SuperadminSalesListClient() {
                   <td className="px-2 py-2 text-center text-foreground font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
                   <td className="px-2 py-2">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                      className={`inline-flex px-2 py-0.5 rounded-sm text-xs font-medium ${
                         s.status === "PAID"
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
                           : s.status === "DUE"
-                            ? "bg-amber-100 text-amber-800"
+                            ? "bg-amber-500/15 text-amber-900 dark:text-amber-200"
                             : s.status === "CANCELLED"
                               ? "bg-muted text-muted-foreground"
                               : s.status === "PARTIALLY_PAID"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-blue-100 text-blue-700"
+                                ? "bg-amber-500/15 text-amber-900 dark:text-amber-200"
+                                : "bg-primary/10 text-primary"
                       }`}
                     >
                       {SALE_STATUSES.includes(s.status as (typeof SALE_STATUSES)[number])
@@ -369,7 +369,7 @@ export function SuperadminSalesListClient() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-sm text-sm disabled:opacity-50"
           >
             {t("partner.sales.previous")}
           </button>
@@ -380,7 +380,7 @@ export function SuperadminSalesListClient() {
             type="button"
             disabled={page >= Math.ceil(total / limit)}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-sm text-sm disabled:opacity-50"
           >
             {t("partner.sales.next")}
           </button>

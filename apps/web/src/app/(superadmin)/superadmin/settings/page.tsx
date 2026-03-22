@@ -16,8 +16,8 @@ export default async function SuperadminSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("nav.superadmin.settings")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("superadmin.page.settingsSubtitle")}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("nav.superadmin.settings")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.settingsSubtitle")}</p>
       </div>
       <GlobalSettingsClient />
     </div>

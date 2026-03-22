@@ -114,18 +114,18 @@ export function EditPartnerForm({
       className="surface-card max-w-2xl p-6 space-y-6"
     >
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-sm border border-alert-errorBorder bg-alert-error px-4 py-3 text-sm text-foreground">
           {error}
         </div>
       )}
       {successMessage && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div className="rounded-sm border border-alert-successBorder bg-alert-success px-4 py-3 text-sm text-foreground">
           {successMessage}
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="companyName" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldCompanyName")}
           </label>
           <input
@@ -138,7 +138,7 @@ export function EditPartnerForm({
           />
         </div>
         <div>
-          <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="contactName" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldContactName")}
           </label>
           <input
@@ -150,7 +150,7 @@ export function EditPartnerForm({
           />
         </div>
         <div>
-          <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="contactEmail" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldContactEmail")}
           </label>
           <input
@@ -162,7 +162,7 @@ export function EditPartnerForm({
           />
         </div>
         <div>
-          <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="website" className="block text-sm font-medium text-foreground">
             {t("superadmin.partners.fieldWebsite")}
           </label>
           <input
@@ -174,7 +174,7 @@ export function EditPartnerForm({
           />
         </div>
         <div>
-          <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="country" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.countryCode")}
           </label>
           <input
@@ -187,7 +187,7 @@ export function EditPartnerForm({
           />
         </div>
         <div>
-          <label htmlFor="partnerType" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="partnerType" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.partnerType")}
           </label>
           <select
@@ -207,7 +207,7 @@ export function EditPartnerForm({
           </select>
         </div>
         <div>
-          <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="engineeringFeeMode" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.engineeringFeeMode")}
           </label>
           <select
@@ -225,21 +225,21 @@ export function EditPartnerForm({
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-muted/30/80 px-4 py-3">
             <input
               type="checkbox"
               checked={form.requireDeliveredEngineeringForQuotes}
               onChange={(e) => setForm((f) => ({ ...f, requireDeliveredEngineeringForQuotes: e.target.checked }))}
-              className="mt-1 h-4 w-4 rounded border-gray-300"
+              className="mt-1 h-4 w-4 rounded-sm border-input"
             />
             <span>
-              <span className="block text-sm font-medium text-gray-900">{t("superadmin.partner.requireDeliveredEngineeringQuotes")}</span>
-              <span className="mt-0.5 block text-xs text-gray-500">{t("superadmin.partner.requireDeliveredEngineeringQuotesHelp")}</span>
+              <span className="block text-sm font-medium text-foreground">{t("superadmin.partner.requireDeliveredEngineeringQuotes")}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t("superadmin.partner.requireDeliveredEngineeringQuotesHelp")}</span>
             </span>
           </label>
         </div>
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="status" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.edit.accountStatus")}
           </label>
           <select
@@ -254,7 +254,7 @@ export function EditPartnerForm({
           </select>
         </div>
         <div>
-          <label htmlFor="visionLatamCommissionPct" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="visionLatamCommissionPct" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.commissionPctFieldLabel")}
           </label>
           <input
@@ -268,10 +268,10 @@ export function EditPartnerForm({
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionPct: e.target.value }))}
             className="input-native mt-1"
           />
-          <p className="mt-0.5 text-xs text-gray-500">{t("superadmin.partner.commissionPctHelp")}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("superadmin.partner.commissionPctHelp")}</p>
         </div>
         <div>
-          <label htmlFor="visionLatamCommissionFixedUsd" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="visionLatamCommissionFixedUsd" className="block text-sm font-medium text-foreground">
             {t("superadmin.partner.commissionFixedFieldLabel")}
           </label>
           <input
@@ -286,8 +286,8 @@ export function EditPartnerForm({
           />
         </div>
         <div className="sm:col-span-2">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">{t("superadmin.partner.moduleVisibilityTitle")}</h4>
-          <p className="text-xs text-gray-500 mb-2">{t("superadmin.partner.moduleVisibilityHelp")}</p>
+          <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.moduleVisibilityTitle")}</h4>
+          <p className="text-xs text-muted-foreground mb-2">{t("superadmin.partner.moduleVisibilityHelp")}</p>
           <div className="flex flex-wrap gap-4">
             {MODULE_KEYS.map(({ key, labelKey }) => (
               <label key={key} className="flex items-center gap-2">
@@ -295,16 +295,16 @@ export function EditPartnerForm({
                   type="checkbox"
                   checked={visibility[key] ?? true}
                   onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded-sm border-input"
                 />
-                <span className="text-sm text-gray-700">{t(labelKey)}</span>
+                <span className="text-sm text-foreground">{t(labelKey)}</span>
               </label>
             ))}
           </div>
         </div>
         <div className="sm:col-span-2">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">{t("superadmin.partner.enabledSystemsTitle")}</h4>
-          <p className="text-xs text-gray-500 mb-2">{t("superadmin.partner.enabledSystemsHelp")}</p>
+          <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.enabledSystemsTitle")}</h4>
+          <p className="text-xs text-muted-foreground mb-2">{t("superadmin.partner.enabledSystemsHelp")}</p>
           <div className="flex flex-wrap gap-4">
             {SYSTEM_OPTIONS.map(({ value, labelKey }) => (
               <label key={value} className="flex items-center gap-2">
@@ -315,9 +315,9 @@ export function EditPartnerForm({
                     if (e.target.checked) setEnabledSystems((s) => (s.includes(value) ? s : [...s, value]));
                     else setEnabledSystems((s) => s.filter((x) => x !== value));
                   }}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded-sm border-input"
                 />
-                <span className="text-sm text-gray-700">{t(labelKey)}</span>
+                <span className="text-sm text-foreground">{t(labelKey)}</span>
               </label>
             ))}
           </div>

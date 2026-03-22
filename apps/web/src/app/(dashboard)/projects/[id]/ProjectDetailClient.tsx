@@ -214,29 +214,29 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/projects" className="text-gray-400 hover:text-gray-600">
+          <Link href="/projects" className="text-muted-foreground/70 hover:text-muted-foreground">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{projectName}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{projectName}</h1>
             {(project.client?.name ?? (project as any).clientRecord?.name ?? (project as any).client) && (
-              <p className="text-gray-500 text-sm">{project.client?.name ?? (project as any).clientRecord?.name ?? (project as any).client}</p>
+              <p className="text-muted-foreground text-sm">{project.client?.name ?? (project as any).clientRecord?.name ?? (project as any).client}</p>
             )}
             {(project.city ?? project.countryCode ?? project.address) && (
-              <p className="text-gray-500 text-sm">{[project.city, project.countryCode, project.address].filter(Boolean).join(" · ")}</p>
+              <p className="text-muted-foreground text-sm">{[project.city, project.countryCode, project.address].filter(Boolean).join(" · ")}</p>
             )}
             <div className="flex flex-wrap items-center gap-2 mt-1">
               {(project as any).status && (
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  (project as any).status === "won" || (project as any).status === "SOLD" ? "bg-green-100 text-green-700" :
-                  (project as any).status === "lost" || (project as any).status === "ARCHIVED" ? "bg-gray-200 text-gray-600" :
-                  (project as any).status === "quoting" || (project as any).status === "QUOTE_SENT" ? "bg-blue-100 text-blue-700" :
-                  (project as any).status === "qualified" || (project as any).status === "QUOTED" ? "bg-amber-100 text-amber-700" :
-                  "bg-gray-100 text-gray-600"
+                  (project as any).status === "won" || (project as any).status === "SOLD" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+                  (project as any).status === "lost" || (project as any).status === "ARCHIVED" ? "bg-muted text-muted-foreground" :
+                  (project as any).status === "quoting" || (project as any).status === "QUOTE_SENT" ? "bg-primary/10 text-primary" :
+                  (project as any).status === "qualified" || (project as any).status === "QUOTED" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
+                  "bg-muted text-muted-foreground"
                 }`}>{projectStatusLabel((project as any).status)}</span>
               )}
               {project.expectedCloseDate && (
-                <p className="text-gray-400 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</p>
+                <p className="text-muted-foreground/70 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</p>
               )}
             </div>
           </div>
@@ -245,14 +245,14 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           <button
             type="button"
             onClick={openEdit}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-sm text-sm text-foreground hover:bg-muted/40"
           >
             <Pencil className="w-4 h-4" /> {t("common.edit")}
           </button>
           <button
             type="button"
             onClick={() => setDeleteDialog(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+            className="inline-flex items-center gap-2 rounded-sm border border-destructive/30 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4" /> {t("common.delete")}
           </button>
@@ -274,14 +274,14 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Project info */}
       <div className="surface-card p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">{t("projects.projectDetails")}</h2>
+        <h2 className="font-semibold text-foreground mb-4">{t("projects.projectDetails")}</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           {(project.client?.name ?? (project as any).clientRecord?.name) && (
             <>
-              <dt className="text-gray-500">{t("projects.client")}</dt>
-              <dd className="text-gray-900 font-medium">
+              <dt className="text-muted-foreground">{t("projects.client")}</dt>
+              <dd className="text-foreground font-medium">
                 {(project.client?.id ?? (project as any).clientRecord?.id) ? (
-                  <Link href={`/clients/${project.client?.id ?? (project as any).clientRecord?.id}`} className="text-vbt-blue hover:underline">
+                  <Link href={`/clients/${project.client?.id ?? (project as any).clientRecord?.id}`} className="text-primary hover:underline">
                     {project.client?.name ?? (project as any).clientRecord?.name}
                   </Link>
                 ) : (
@@ -292,20 +292,20 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           )}
           {(project.city ?? project.countryCode) && (
             <>
-              <dt className="text-gray-500">{t("projects.location")}</dt>
-              <dd className="text-gray-900">{[project.city, project.countryCode].filter(Boolean).join(", ")}</dd>
+              <dt className="text-muted-foreground">{t("projects.location")}</dt>
+              <dd className="text-foreground">{[project.city, project.countryCode].filter(Boolean).join(", ")}</dd>
             </>
           )}
           {project.address && (
             <>
-              <dt className="text-gray-500">{t("projects.address")}</dt>
-              <dd className="text-gray-900">{project.address}</dd>
+              <dt className="text-muted-foreground">{t("projects.address")}</dt>
+              <dd className="text-foreground">{project.address}</dd>
             </>
           )}
           {(project.estimatedTotalAreaM2 != null || project.estimatedWallAreaM2 != null) && (
             <>
-              <dt className="text-gray-500">{t("projects.estArea")}</dt>
-              <dd className="text-gray-900">
+              <dt className="text-muted-foreground">{t("projects.estArea")}</dt>
+              <dd className="text-foreground">
                 {project.estimatedTotalAreaM2 != null && t("projects.estAreaTotal", { value: Number(project.estimatedTotalAreaM2).toFixed(1) })}
                 {project.estimatedTotalAreaM2 != null && project.estimatedWallAreaM2 != null && " · "}
                 {project.estimatedWallAreaM2 != null && t("projects.estAreaWall", { value: Number(project.estimatedWallAreaM2).toFixed(1) })}
@@ -314,20 +314,20 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           )}
           {project.expectedCloseDate && (
             <>
-              <dt className="text-gray-500">{t("projects.expectedClose").replace(/:?\s*$/, "")}</dt>
-              <dd className="text-gray-900">{new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</dd>
+              <dt className="text-muted-foreground">{t("projects.expectedClose").replace(/:?\s*$/, "")}</dt>
+              <dd className="text-foreground">{new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</dd>
             </>
           )}
           {project.description && (
             <>
-              <dt className="text-gray-500 sm:col-span-1">{t("projects.description")}</dt>
-              <dd className="text-gray-900 sm:col-span-2">{project.description}</dd>
+              <dt className="text-muted-foreground sm:col-span-1">{t("projects.description")}</dt>
+              <dd className="text-foreground sm:col-span-2">{project.description}</dd>
             </>
           )}
           {(project as any).status && (
             <>
-              <dt className="text-gray-500">{t("common.status")}</dt>
-              <dd className="text-gray-900 font-medium">{projectStatusLabel((project as any).status)}</dd>
+              <dt className="text-muted-foreground">{t("common.status")}</dt>
+              <dd className="text-foreground font-medium">{projectStatusLabel((project as any).status)}</dd>
             </>
           )}
         </dl>
@@ -335,35 +335,35 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Quotes */}
       <div className="surface-card">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{t("projects.quotesWithCount", { count: project.quotes.length })}</h2>
+        <div className="p-5 border-b border-border/60 flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">{t("projects.quotesWithCount", { count: project.quotes.length })}</h2>
           <Link
             href={`/quotes/create?projectId=${project.id}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+            className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <Plus className="w-3.5 h-3.5" /> {t("quotes.newQuote")}
           </Link>
         </div>
         {project.quotes.length === 0 ? (
           <div className="p-10 text-center">
-            <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">{t("projects.noQuotesForProject")}</p>
+            <FileText className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-muted-foreground/70 text-sm">{t("projects.noQuotesForProject")}</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-border/40">
             {project.quotes.map((q) => (
-              <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between p-4 hover:bg-gray-50 gap-3">
+              <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between p-4 hover:bg-muted/40 gap-3">
                 <div>
-                  <p className="font-medium text-gray-800">{q.quoteNumber ?? q.id.slice(0, 8)}</p>
-                  <p className="text-gray-400 text-xs">
+                  <p className="font-medium text-foreground">{q.quoteNumber ?? q.id.slice(0, 8)}</p>
+                  <p className="text-muted-foreground/70 text-xs">
                     v{q.version ?? 1} · {new Date(q.createdAt).toLocaleDateString(dateLocale)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-800">{q.totalPrice != null ? formatCurrency(q.totalPrice) : "—"}</p>
+                  <p className="font-semibold text-foreground">{q.totalPrice != null ? formatCurrency(q.totalPrice) : "—"}</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    q.status === "sent" || q.status === "SENT" ? "bg-green-100 text-green-700" :
-                    q.status === "draft" || q.status === "DRAFT" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"
+                    q.status === "sent" || q.status === "SENT" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+                    q.status === "draft" || q.status === "DRAFT" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" : "bg-muted text-muted-foreground"
                   }`}>{quoteStatusLabel(q.status)}</span>
                 </div>
               </Link>
@@ -374,33 +374,33 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Sales */}
       <div className="surface-card">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{t("projects.salesWithCount", { count: sales.length })}</h2>
+        <div className="p-5 border-b border-border/60 flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">{t("projects.salesWithCount", { count: sales.length })}</h2>
           <Link
             href={`/sales/new?projectId=${project.id}&clientId=${(project as any).clientId ?? (project as any).clientRecord?.id ?? ""}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 border border-vbt-orange text-vbt-orange rounded-lg text-sm font-medium hover:bg-orange-50"
+            className="inline-flex items-center gap-2 px-3 py-1.5 border border-primary text-primary rounded-sm text-sm font-medium hover:bg-primary/10"
           >
             <ShoppingCart className="w-3.5 h-3.5" /> {t("projects.newSale")}
           </Link>
         </div>
         {sales.length === 0 ? (
           <div className="p-10 text-center">
-            <ShoppingCart className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">{t("projects.noSalesForProject")}</p>
+            <ShoppingCart className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-muted-foreground/70 text-sm">{t("projects.noSalesForProject")}</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-border/40">
             {sales.map((s) => (
-              <Link key={s.id} href={`/sales/${s.id}`} className="flex items-center justify-between p-4 hover:bg-gray-50 gap-3">
+              <Link key={s.id} href={`/sales/${s.id}`} className="flex items-center justify-between p-4 hover:bg-muted/40 gap-3">
                 <div>
-                  <p className="font-medium text-gray-800">{s.saleNumber ?? s.id.slice(0, 8)}</p>
+                  <p className="font-medium text-foreground">{s.saleNumber ?? s.id.slice(0, 8)}</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    s.status === "PAID" ? "bg-green-100 text-green-700" :
-                    s.status === "CANCELLED" ? "bg-gray-200 text-gray-600" :
-                    s.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                    s.status === "PAID" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+                    s.status === "CANCELLED" ? "bg-muted text-muted-foreground" :
+                    s.status === "PARTIALLY_PAID" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" : "bg-primary/10 text-primary"
                   }`}>{t(`partner.sales.status.${s.status}`)}</span>
                 </div>
-                <p className="font-semibold text-gray-800">{formatCurrency(s.landedDdpUsd)}</p>
+                <p className="font-semibold text-foreground">{formatCurrency(s.landedDdpUsd)}</p>
               </Link>
             ))}
           </div>
@@ -409,22 +409,22 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Activity / Change log */}
       <div className="surface-card">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">{t("projects.activity")}</h2>
-          <p className="text-gray-500 text-xs mt-0.5">{t("projects.changesAndWho")}</p>
+        <div className="p-5 border-b border-border/60">
+          <h2 className="font-semibold text-foreground">{t("projects.activity")}</h2>
+          <p className="text-muted-foreground text-xs mt-0.5">{t("projects.changesAndWho")}</p>
         </div>
         <div className="p-5">
           {loadingAudit ? (
-            <p className="text-gray-400 text-sm">{t("common.loading")}</p>
+            <p className="text-muted-foreground/70 text-sm">{t("common.loading")}</p>
           ) : auditLog.length === 0 ? (
-            <p className="text-gray-400 text-sm">{t("projects.noActivityYet")}</p>
+            <p className="text-muted-foreground/70 text-sm">{t("projects.noActivityYet")}</p>
           ) : (
             <ul className="space-y-3 text-sm">
               {auditLog.map((entry) => (
-                <li key={entry.id} className="flex flex-wrap items-baseline gap-2 text-gray-700">
+                <li key={entry.id} className="flex flex-wrap items-baseline gap-2 text-foreground">
                   <span className="font-medium">{entry.userName ?? t("projects.system")}</span>
-                  <span className="text-gray-500">{formatAction(entry.action, entry.meta)}</span>
-                  <span className="text-gray-400 text-xs">{new Date(entry.createdAt).toLocaleString(dateLocale)}</span>
+                  <span className="text-muted-foreground">{formatAction(entry.action, entry.meta)}</span>
+                  <span className="text-muted-foreground/70 text-xs">{new Date(entry.createdAt).toLocaleString(dateLocale)}</span>
                 </li>
               ))}
             </ul>

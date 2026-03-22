@@ -13,8 +13,8 @@ export function renderEngineeringTimelineBody(
 ): ReactNode {
   const p = parseEngineeringTimelineEvent(body);
   const emphasis =
-    variant === "partner" ? "font-medium text-gray-900" : "font-medium text-foreground";
-  const plain = variant === "partner" ? "text-sm text-gray-800" : "text-sm text-foreground";
+    variant === "partner" ? "font-medium text-foreground" : "font-medium text-foreground";
+  const plain = variant === "partner" ? "text-sm text-foreground" : "text-sm text-foreground";
 
   if (p?.k === "partner_file") {
     return (

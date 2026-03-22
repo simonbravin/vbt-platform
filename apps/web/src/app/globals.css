@@ -114,7 +114,7 @@
 
   /**
    * Content surfaces — border-first engineering UI (partner + superadmin).
-   * Prefer these over ad-hoc bg-white / rounded-xl / shadow-sm.
+   * Prefer these over ad-hoc bg-white / rounded-sm / shadow-sm.
    */
   .surface-card {
     @apply rounded-sm border border-border/60 bg-card text-card-foreground shadow-none ring-1 ring-border/40;
@@ -151,66 +151,66 @@
 .dark .bg-white {
   background-color: hsl(var(--card));
 }
-.dark .bg-gray-50,
-.dark .bg-gray-50\/50 {
+.dark .bg-muted/30,
+.dark .bg-muted/30\/50 {
   background-color: hsl(var(--muted));
 }
-.dark .bg-gray-100 {
+.dark .bg-muted {
   background-color: hsl(var(--muted));
 }
-.dark .text-gray-900 {
+.dark .text-foreground {
   color: hsl(var(--foreground));
 }
-.dark .text-gray-700 {
+.dark .text-foreground {
   color: hsl(var(--foreground));
 }
-.dark .text-gray-600 {
+.dark .text-muted-foreground {
   color: hsl(var(--muted-foreground));
 }
-.dark .text-gray-500 {
+.dark .text-muted-foreground {
   color: hsl(var(--muted-foreground));
 }
-.dark .text-gray-400 {
+.dark .text-muted-foreground/70 {
   color: hsl(var(--muted-foreground));
 }
-.dark .border-gray-200,
-.dark .border-gray-300,
-.dark .border-gray-100 {
+.dark .border-border/60,
+.dark .border-input,
+.dark .border-border/60 {
   border-color: hsl(var(--border));
 }
-.dark .divide-gray-200 > * + * {
+.dark .divide-border/60 > * + * {
   border-color: hsl(var(--border));
 }
-.dark .hover\:bg-gray-50:hover,
-.dark .hover\:bg-gray-50:focus {
+.dark .hover\:bg-muted/30:hover,
+.dark .hover\:bg-muted/30:focus {
   background-color: hsl(var(--muted));
 }
-.dark .hover\:text-gray-700:hover,
-.dark .hover\:text-gray-900:hover {
+.dark .hover\:text-foreground:hover,
+.dark .hover\:text-foreground:hover {
   color: hsl(var(--foreground));
 }
-.dark .hover\:border-gray-300:hover {
+.dark .hover\:border-input:hover {
   border-color: hsl(var(--border));
 }
-.dark input.border-gray-300,
-.dark select.border-gray-300,
-.dark textarea.border-gray-300,
-.dark [class*="border-gray-300"] {
+.dark input.border-input,
+.dark select.border-input,
+.dark textarea.border-input,
+.dark [class*="border-input"] {
   border-color: hsl(var(--input));
 }
 .dark .shadow-sm {
   box-shadow: 0 0 0 1px hsl(var(--border) / 0.35);
 }
-.dark thead.bg-gray-50 {
+.dark thead.bg-muted/30 {
   background-color: hsl(var(--muted));
 }
 .dark tbody.bg-white {
   background-color: hsl(var(--card));
 }
-.dark tbody.divide-y.divide-gray-200 > tr {
+.dark tbody.divide-y.divide-border/60 > tr {
   border-top-color: hsl(var(--border));
 }
-.dark tr.hover\:bg-gray-50:hover {
+.dark tr.hover\:bg-muted/30:hover {
   background-color: hsl(var(--muted));
 }
 .dark .text-red-600,

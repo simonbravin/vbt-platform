@@ -121,7 +121,7 @@ export default async function DashboardPage(props: PageProps) {
           </Link>
           <Link
             href="/quotes/create"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-sm text-sm font-semibold hover:brightness-110 transition-[filter] border border-orange-600/30"
+            className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             <Plus className="w-4 h-4" />
             {t("dashboard.newQuote")}

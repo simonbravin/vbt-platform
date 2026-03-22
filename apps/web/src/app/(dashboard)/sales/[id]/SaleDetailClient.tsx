@@ -341,7 +341,7 @@ export function SaleDetailClient({
   if (loading || !sale) {
     return (
       <div className="flex items-center justify-center py-12">
-        {loading ? <p className="text-gray-500">{t("partner.sales.loading")}</p> : <p className="text-gray-500">{t("partner.sales.saleNotFound")}</p>}
+        {loading ? <p className="text-muted-foreground">{t("partner.sales.loading")}</p> : <p className="text-muted-foreground">{t("partner.sales.saleNotFound")}</p>}
       </div>
     );
   }
@@ -350,28 +350,28 @@ export function SaleDetailClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <Link href={backHref} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm">
+          <Link href={backHref} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm">
             <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}
           </Link>
           {resolvedEditHref && sale.status !== "CANCELLED" && sale.status !== "PAID" && (
-            <Link href={resolvedEditHref} className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Link href={resolvedEditHref} className="inline-flex items-center gap-1 px-2 py-1 border border-border/60 rounded-sm text-sm font-medium text-foreground hover:bg-muted/40">
               <Pencil className="w-4 h-4" /> {t("common.edit")}
             </Link>
           )}
           <button
             type="button"
             onClick={() => setDeleteSaleOpen(true)}
-            className="inline-flex items-center gap-1 px-2 py-1 border border-red-200 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50"
+            className="inline-flex items-center gap-1 rounded-sm border border-destructive/30 px-2 py-1 text-sm font-medium text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4" /> {t("partner.sales.deleteSale")}
           </button>
         </div>
         <span
-          className={`inline-flex px-2 py-1 rounded text-sm font-medium ${
-            sale.status === "PAID" ? "bg-green-100 text-green-700" :
-            sale.status === "DUE" ? "bg-amber-100 text-amber-800" :
-            sale.status === "CANCELLED" ? "bg-gray-100 text-gray-600" :
-            sale.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+          className={`inline-flex px-2 py-1 rounded-sm text-sm font-medium ${
+            sale.status === "PAID" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+            sale.status === "DUE" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
+            sale.status === "CANCELLED" ? "bg-muted text-muted-foreground" :
+            sale.status === "PARTIALLY_PAID" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" : "bg-primary/10 text-primary"
           }`}
         >
           {t(`partner.sales.status.${sale.status}`)}
@@ -379,16 +379,16 @@ export function SaleDetailClient({
       </div>
 
       <div className="surface-card p-6">
-        <h1 className="text-xl font-bold text-gray-900">{sale.saleNumber ?? sale.id}</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          {t("partner.sales.detail.client")}: <Link href={`/clients/${sale.clientId}`} className="text-vbt-blue hover:underline">{sale.client.name}</Link>
+        <h1 className="text-xl font-bold text-foreground">{sale.saleNumber ?? sale.id}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          {t("partner.sales.detail.client")}: <Link href={`/clients/${sale.clientId}`} className="text-primary hover:underline">{sale.client.name}</Link>
           {" · "}
-          {t("partner.sales.detail.project")}: <Link href={`/projects/${sale.projectId}`} className="text-vbt-blue hover:underline">{sale.project.name}</Link>
+          {t("partner.sales.detail.project")}: <Link href={`/projects/${sale.projectId}`} className="text-primary hover:underline">{sale.project.name}</Link>
           {sale.quote && (
             <>
               {" · "}
               {t("partner.sales.detail.quote")}:{" "}
-              <Link href={`${quoteLinkPrefix}/${sale.quote.id}`} className="text-vbt-blue hover:underline">
+              <Link href={`${quoteLinkPrefix}/${sale.quote.id}`} className="text-primary hover:underline">
                 {sale.quote.quoteNumber ?? sale.quote.id}
               </Link>
             </>
@@ -400,7 +400,7 @@ export function SaleDetailClient({
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="surface-card p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">{t("partner.sales.detail.financialSummary")}</h2>
+          <h2 className="font-semibold text-foreground mb-4">{t("partner.sales.detail.financialSummary")}</h2>
           <div className="space-y-2 text-sm">
             {[
               [t("partner.sales.new.fin.exw"), sale.exwUsd],
@@ -413,66 +413,66 @@ export function SaleDetailClient({
               [t("partner.sales.new.fin.landedDdp"), sale.landedDdpUsd, true],
             ].map(([label, val, bold]) => (
               <div key={String(label)} className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
-                <span className="text-gray-600">{label}</span>
+                <span className="text-muted-foreground">{label}</span>
                 <span>{typeof val === "number" ? formatCurrency(val) : val}</span>
               </div>
             ))}
           </div>
-          {sale.notes && <p className="mt-4 text-sm text-gray-500 border-t pt-2">{sale.notes}</p>}
+          {sale.notes && <p className="mt-4 text-sm text-muted-foreground border-t pt-2">{sale.notes}</p>}
         </div>
 
         <div className="space-y-6">
           <div className="surface-card p-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
+              <h2 className="font-semibold text-foreground">{t("partner.sales.new.sectionInvoices")}</h2>
               {sale.status !== "CANCELLED" && (
                 <button
                   type="button"
                   onClick={openAddInvoice}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-vbt-orange text-white rounded text-sm font-medium hover:bg-orange-600"
+                  className="inline-flex items-center gap-1 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-2 py-1 text-sm font-semibold text-white hover:opacity-90"
                 >
                   <Plus className="w-4 h-4" /> {t("partner.sales.new.addLine")}
                 </button>
               )}
             </div>
             {sale.invoices.length === 0 ? (
-              <p className="text-gray-500 text-sm">{t("partner.sales.detail.noInvoices")}</p>
+              <p className="text-muted-foreground text-sm">{t("partner.sales.detail.noInvoices")}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {[...sale.invoices].sort((a, b) => (a.sequence ?? 1) - (b.sequence ?? 1)).map((inv) => {
                   const dueStatus = getInvoiceDueStatus(inv.dueDate);
                   return (
-                    <li key={inv.id} className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-gray-100 last:border-0">
+                    <li key={inv.id} className="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-border/60 last:border-0">
                       <div>
                         <span className="font-medium">{inv.entity?.name ?? "—"}</span>
                         {" – "}
                         {formatCurrency(inv.amountUsd)}
                         {inv.dueDate && (
-                          <span className="text-gray-500">
+                          <span className="text-muted-foreground">
                             {" "}
                             {t("partner.sales.detail.invoiceDue", { date: new Date(inv.dueDate).toLocaleDateString() })}
                           </span>
                         )}
                         {inv.referenceNumber && (
-                          <span className="text-gray-500 block text-xs">{t("partner.sales.detail.refShort", { ref: inv.referenceNumber })}</span>
+                          <span className="text-muted-foreground block text-xs">{t("partner.sales.detail.refShort", { ref: inv.referenceNumber })}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         {dueStatus === "overdue" && (
-                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">{t("partner.sales.detail.invoiceOverdue")}</span>
+                          <span className="rounded-sm border border-destructive/25 bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">{t("partner.sales.detail.invoiceOverdue")}</span>
                         )}
                         {dueStatus === "due_soon" && (
-                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">{t("partner.sales.detail.invoiceDueSoon")}</span>
+                          <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium bg-amber-500/15 text-amber-900 dark:text-amber-200">{t("partner.sales.detail.invoiceDueSoon")}</span>
                         )}
                         {sale.invoiceStatusByEntity?.[inv.entityId] && (
-                          <span className="text-xs text-gray-500">{sale.invoiceStatusByEntity[inv.entityId].status}</span>
+                          <span className="text-xs text-muted-foreground">{sale.invoiceStatusByEntity[inv.entityId].status}</span>
                         )}
                         {sale.status !== "CANCELLED" && (
                           <>
-                            <button type="button" onClick={() => openEditInvoice(inv)} className="p-1 text-gray-400 hover:text-vbt-blue rounded" title={t("common.edit")}>
+                            <button type="button" onClick={() => openEditInvoice(inv)} className="p-1 text-muted-foreground/70 hover:text-primary rounded-sm" title={t("common.edit")}>
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button type="button" onClick={() => setDeleteInvoiceId(inv.id)} className="p-1 text-gray-400 hover:text-red-600 rounded" title={t("partner.sales.detail.removeInvoiceTitle")}>
+                            <button type="button" onClick={() => setDeleteInvoiceId(inv.id)} className="p-1 text-muted-foreground/70 hover:text-destructive rounded-sm" title={t("partner.sales.detail.removeInvoiceTitle")}>
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </>
@@ -487,19 +487,19 @@ export function SaleDetailClient({
 
           <div className="surface-card p-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-800">{t("partner.sales.detail.payments")}</h2>
+              <h2 className="font-semibold text-foreground">{t("partner.sales.detail.payments")}</h2>
               {sale.status !== "CANCELLED" && (
                 <button
                   type="button"
                   onClick={() => setPaymentOpen(true)}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-vbt-orange text-white rounded text-sm font-medium hover:bg-orange-600"
+                  className="inline-flex items-center gap-1 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-2 py-1 text-sm font-semibold text-white hover:opacity-90"
                 >
                   <Plus className="w-4 h-4" /> {t("partner.sales.detail.addPayment")}
                 </button>
               )}
             </div>
             {sale.payments.length === 0 ? (
-              <p className="text-gray-500 text-sm">{t("partner.sales.detail.noPayments")}</p>
+              <p className="text-muted-foreground text-sm">{t("partner.sales.detail.noPayments")}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {sale.payments.map((p) => (
@@ -508,7 +508,7 @@ export function SaleDetailClient({
                       {p.entity.name} – {formatCurrency(p.amountUsd)}
                       {p.paidAt && t("partner.sales.detail.paidOnPrefix", { date: new Date(p.paidAt).toLocaleDateString() })}
                       {p.exchangeRate != null && p.amountLocal != null && (
-                        <span className="text-gray-500 block text-xs">
+                        <span className="text-muted-foreground block text-xs">
                           {t("partner.sales.detail.amountLocalLine", {
                             amount: String(p.amountLocal),
                             currency: p.currencyLocal ?? t("partner.sales.detail.currencyLocalFallback"),
@@ -521,7 +521,7 @@ export function SaleDetailClient({
                       <button
                         type="button"
                         onClick={() => setDeletePaymentId(p.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 rounded"
+                        className="p-1 text-muted-foreground/70 hover:text-destructive rounded-sm"
                         title={t("partner.sales.detail.removePaymentTitle")}
                       >
                         <Trash2 className="w-4 h-4" />

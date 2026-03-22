@@ -135,7 +135,7 @@ export function SalesClient() {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/sales/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-sm text-sm font-medium hover:bg-orange-600"
+            className="inline-flex items-center gap-2 rounded-sm border border-vbt-orange/30 bg-vbt-orange px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> {t("partner.sales.newSaleButton")}
           </Link>
@@ -156,7 +156,7 @@ export function SalesClient() {
           {dueCount > 0 && (
             <Link
               href="/sales/statements"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-sm text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/15 text-amber-900 dark:text-amber-200 rounded-sm text-sm font-medium"
             >
               <Bell className="w-4 h-4" /> {t("partner.sales.paymentsDue", { count: dueCount })}
             </Link>
@@ -215,7 +215,7 @@ export function SalesClient() {
           <div className="p-12 text-center">
             <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">{t("partner.sales.noSalesFound")}</p>
-            <Link href="/sales/new" className="text-vbt-orange text-sm hover:underline mt-2 block">
+            <Link href="/sales/new" className="text-primary text-sm hover:underline mt-2 block">
               {t("partner.sales.createFirstSale")}
             </Link>
           </div>
@@ -252,12 +252,12 @@ export function SalesClient() {
                   <td className="px-2 py-2 text-center text-foreground font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
                   <td className="px-2 py-2">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                        s.status === "PAID" ? "bg-green-100 text-green-700" :
-                        s.status === "DUE" ? "bg-amber-100 text-amber-800" :
+                      className={`inline-flex px-2 py-0.5 rounded-sm text-xs font-medium ${
+                        s.status === "PAID" ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" :
+                        s.status === "DUE" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
                         s.status === "CANCELLED" ? "bg-muted text-muted-foreground" :
-                        s.status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" :
-                        "bg-blue-100 text-blue-700"
+                        s.status === "PARTIALLY_PAID" ? "bg-amber-500/15 text-amber-900 dark:text-amber-200" :
+                        "bg-primary/10 text-primary"
                       }`}
                     >
                       {SALE_STATUSES.includes(s.status as (typeof SALE_STATUSES)[number])

@@ -27,7 +27,7 @@ type Quote = {
 
 const STATUS_COLORS: Record<string, string> = {
   sent: "border-emerald-600/45 bg-emerald-500/10 text-emerald-950 dark:text-emerald-300",
-  draft: "border-amber-600/45 bg-amber-500/10 text-amber-950 dark:text-amber-200",
+  draft: "border border-alert-warningBorder bg-alert-warning text-foreground",
   accepted: "border-primary/40 bg-primary/10 text-foreground",
   rejected: "border-destructive/45 bg-destructive/10 text-destructive",
   expired: "border-border bg-muted text-muted-foreground",
@@ -171,7 +171,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
             {search.trim() ? t("quotes.noSearchResults") : t("quotes.noQuotes")}
           </p>
           {!search.trim() && (
-            <Link href="/quotes/create" className="text-vbt-orange text-sm hover:underline mt-2 block">
+            <Link href="/quotes/create" className="text-primary text-sm hover:underline mt-2 block">
               {t("quotes.createFirstLink")}
             </Link>
           )}
@@ -273,7 +273,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
               <Link href={`/quotes/${q.id}`} className="block">
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-10 h-10 border border-border bg-muted/40 rounded-sm flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-vbt-orange" />
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-sm font-mono font-semibold uppercase tracking-wide border ${

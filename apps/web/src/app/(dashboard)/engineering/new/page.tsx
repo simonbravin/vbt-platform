@@ -18,8 +18,8 @@ export default async function NewEngineeringRequestPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/engineering" className="text-sm text-gray-500 hover:text-vbt-blue">{t("partner.engineering.back")}</Link>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("partner.engineering.newTitle")}</h1>
+        <Link href="/engineering" className="text-sm text-muted-foreground hover:text-primary">{t("partner.engineering.back")}</Link>
+        <h1 className="text-2xl font-semibold text-foreground">{t("partner.engineering.newTitle")}</h1>
       </div>
       <NewEngineeringRequestForm />
     </div>

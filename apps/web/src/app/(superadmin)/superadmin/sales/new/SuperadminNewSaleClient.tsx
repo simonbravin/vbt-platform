@@ -30,7 +30,7 @@ export function SuperadminNewSaleClient({ initialOrganizationId = "" }: { initia
         <select
           value={organizationId}
           onChange={(e) => setOrganizationId(e.target.value)}
-          className="w-full px-3 py-2 border border-input rounded-lg text-sm bg-background"
+          className="w-full px-3 py-2 border border-input rounded-sm text-sm bg-background"
         >
           <option value="">{t("admin.entities.selectPartner")}</option>
           {partners.map((p) => (

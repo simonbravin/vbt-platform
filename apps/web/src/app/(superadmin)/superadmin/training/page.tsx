@@ -16,8 +16,8 @@ export default async function SuperadminTrainingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{t("nav.superadmin.training")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("superadmin.page.trainingSubtitle")}</p>
+        <h1 className="text-2xl font-semibold text-foreground">{t("nav.superadmin.training")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.trainingSubtitle")}</p>
       </div>
       <TrainingAdminClient />
     </div>
