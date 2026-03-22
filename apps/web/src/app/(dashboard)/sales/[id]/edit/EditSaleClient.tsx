@@ -205,7 +205,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="surface-card p-6">
         <h2 className="font-semibold text-gray-800 mb-2">{t("partner.sales.edit.saleCardTitle")}</h2>
         <p className="text-sm text-gray-600">
           {sale.saleNumber} · {sale.client?.name} · {sale.project?.name}
@@ -217,7 +217,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">{t("partner.sales.colStatus")}</h2>
         {["PAID", "PARTIALLY_PAID", "DUE"].includes(sale.status) ? (
           <>
@@ -251,7 +251,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionFinancials")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
@@ -299,7 +299,7 @@ export function EditSaleClient({ saleId }: { saleId: string }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
           <button

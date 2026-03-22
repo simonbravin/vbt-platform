@@ -291,7 +291,7 @@ export function SuperadminSalesListClient() {
         />
       </div>
 
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-x-auto">
+      <div className="surface-card overflow-x-auto">
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>
         ) : sales.length === 0 ? (

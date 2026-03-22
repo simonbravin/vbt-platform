@@ -107,17 +107,17 @@ export function GlobalReportsClient() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="h-28 rounded-sm bg-muted animate-pulse" />
           ))}
         </div>
-        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+        <div className="h-64 rounded-sm bg-muted animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-alert-warningBorder bg-alert-warning p-6 text-foreground">
+      <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">
         <p className="font-medium">{error}</p>
         <p className="text-sm mt-1 text-muted-foreground">{t("superadmin.globalReports.errorHint")}</p>
       </div>
@@ -127,14 +127,14 @@ export function GlobalReportsClient() {
   return (
     <div className="space-y-8">
       {/* Date filter */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="surface-card flex flex-wrap items-end gap-4 p-4">
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">{t("superadmin.globalReports.dateFrom")}</label>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
@@ -143,16 +143,16 @@ export function GlobalReportsClient() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
+            className="rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-2">
+            <div className="rounded-sm bg-muted p-2">
               <FolderOpen className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -161,9 +161,9 @@ export function GlobalReportsClient() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-2">
+            <div className="rounded-sm bg-muted p-2">
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -172,9 +172,9 @@ export function GlobalReportsClient() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-2">
+            <div className="rounded-sm bg-muted p-2">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -185,9 +185,9 @@ export function GlobalReportsClient() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-2">
+            <div className="rounded-sm bg-muted p-2">
               <BarChart3 className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -202,7 +202,7 @@ export function GlobalReportsClient() {
       </div>
 
       {/* Partner leaderboard + Export */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-muted-foreground" />
@@ -211,19 +211,19 @@ export function GlobalReportsClient() {
           <div className="flex items-center gap-2">
             <a
               href={exportUrl("csv")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               <Download className="h-4 w-4" /> {t("superadmin.globalReports.exportCsv")}
             </a>
             <a
               href={exportUrl("xlsx")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               <Download className="h-4 w-4" /> {t("superadmin.globalReports.exportExcel")}
             </a>
             <Link
               href="/superadmin/analytics"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               {t("superadmin.globalReports.fullAnalytics")} <ArrowRight className="h-4 w-4" />
             </Link>

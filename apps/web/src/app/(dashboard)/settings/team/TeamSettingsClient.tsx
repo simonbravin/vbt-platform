@@ -75,7 +75,7 @@ export function TeamSettingsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.inviteByEmail")}</h2>
         </div>
@@ -116,7 +116,7 @@ export function TeamSettingsClient() {
         <p className="px-5 pb-4 text-xs text-gray-600 border-t border-gray-100 pt-3">{t("partner.team.rolesMatrix")}</p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{t("partner.team.members")}</h2>
         </div>

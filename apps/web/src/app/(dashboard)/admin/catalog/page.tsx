@@ -123,12 +123,13 @@ export default function CatalogPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("admin.catalog.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{pieces.length} {t("admin.catalog.pieces")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("admin.catalog.title")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{pieces.length} {t("admin.catalog.pieces")}</p>
         </div>
         <button
+          type="button"
           onClick={() => setImportDialog(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+          className="inline-flex items-center gap-2 rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
         >
           <Upload className="w-4 h-4" /> {t("admin.catalog.import")}
         </button>
@@ -137,25 +138,25 @@ export default function CatalogPage() {
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative flex-1 max-w-xs min-w-[200px]">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder={t("admin.catalog.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+            className="w-full rounded-sm border border-input bg-background py-2 pl-9 pr-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
-        <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={incompleteOnly}
             onChange={(e) => setIncompleteOnly(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
+            className="h-4 w-4 rounded border-input"
           />
           <span>{t("admin.catalog.incompleteOnly")}</span>
         </label>
-        <p className="text-xs text-gray-500 w-full sm:w-auto">{t("admin.catalog.incompleteOnlyHint")}</p>
+        <p className="w-full text-xs text-muted-foreground sm:w-auto">{t("admin.catalog.incompleteOnlyHint")}</p>
         <div
           className="flex flex-wrap items-center gap-2"
           role="group"
@@ -169,14 +170,14 @@ export default function CatalogPage() {
                 : code === "S150"
                   ? "bg-green-100 text-green-800 border-green-300"
                   : "bg-purple-100 text-purple-800 border-purple-300";
-            const offClass = "bg-white text-gray-500 border-gray-200 hover:bg-gray-50";
+            const offClass = "bg-muted/30 text-muted-foreground border-border/60 hover:bg-muted";
             return (
               <button
                 key={code}
                 type="button"
                 aria-pressed={on}
                 onClick={() => setSystemOn((prev) => ({ ...prev, [code]: !prev[code] }))}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${on ? onClass : offClass}`}
+                className={`rounded-sm border px-3 py-2 text-sm font-medium transition-colors ${on ? onClass : offClass}`}
               >
                 {SYS_LABELS[code] ?? code}
               </button>
@@ -186,37 +187,37 @@ export default function CatalogPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="overflow-hidden rounded-sm border border-border/60 bg-card ring-1 ring-border/40">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="border-b border-border/60 bg-muted/30">
               <tr>
                 {tableColumns.map((col) => (
                   <th
                     key={col.key}
-                    className={`px-3 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap ${col.align === "center" ? "text-center" : "text-left"}`}
+                    className={`whitespace-nowrap px-3 py-3 text-xs font-semibold uppercase text-muted-foreground ${col.align === "center" ? "text-center" : "text-left"}`}
                   >
                     {col.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border/40">
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{t("common.loading")}</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">{t("common.loading")}</td></tr>
               ) : CATALOG_SYSTEMS.every((c) => !systemOn[c]) ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500 text-sm">
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     {t("admin.catalog.enableOneSystem")}
                   </td>
                 </tr>
               ) : pieces.map((p) => (
-                <tr key={p.id} className={`hover:bg-gray-50 ${!p.isActive ? "opacity-50" : ""}`}>
-                  <td className="px-3 py-2.5 text-left text-gray-400 text-xs">{p.dieNumber ?? "—"}</td>
-                  <td className="px-3 py-2.5 text-left font-medium text-gray-800 max-w-xs truncate">{p.canonicalName}</td>
+                <tr key={p.id} className={`hover:bg-muted/20 ${!p.isActive ? "opacity-50" : ""}`}>
+                  <td className="px-3 py-2.5 text-left text-xs text-muted-foreground">{p.dieNumber ?? "—"}</td>
+                  <td className="max-w-xs truncate px-3 py-2.5 text-left font-medium text-foreground">{p.canonicalName}</td>
                   <td className="px-3 py-2.5 text-center">
                     {p.systemCode ? (
-                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${SYS_COLORS[p.systemCode] ?? "bg-gray-100"}`}>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${SYS_COLORS[p.systemCode] ?? "bg-muted text-foreground"}`}>
                         {SYS_LABELS[p.systemCode] ?? p.systemCode}
                       </span>
                     ) : (
@@ -232,7 +233,7 @@ export default function CatalogPage() {
                       : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${p.isActive ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" : "bg-muted text-muted-foreground"}`}>
                       {p.isActive ? t("admin.catalog.active") : t("admin.catalog.inactive")}
                     </span>
                   </td>
@@ -240,7 +241,7 @@ export default function CatalogPage() {
                     <button
                       type="button"
                       onClick={() => setEditPiece({ ...p, _costEdit: p.costs?.[0]?.pricePerM2Cored ?? 0 })}
-                      className="inline-flex p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                      className="inline-flex rounded-sm p-1.5 text-muted-foreground hover:text-foreground"
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
@@ -254,30 +255,30 @@ export default function CatalogPage() {
 
       {/* Import Dialog */}
       {importDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg m-4">
-            <h3 className="font-semibold text-lg mb-4">{t("admin.catalog.importTitle")}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="m-4 w-full max-w-lg rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("admin.catalog.importTitle")}</h3>
             <input
               ref={fileRef}
               type="file"
               accept=".xlsx,.xls,.csv"
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-vbt-blue file:text-white hover:file:bg-blue-900"
+              className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-sm file:border file:border-border/60 file:bg-muted/30 file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted"
             />
             {importResult && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg text-sm space-y-1">
+              <div className="mt-4 space-y-1 rounded-sm border border-border/60 bg-muted/20 p-4 text-sm">
                 <p className="font-medium">{importResult.dryRun ? t("admin.catalog.dryRunPreview") : t("admin.catalog.importComplete")}</p>
                 <p className="text-green-700">{t("admin.catalog.created")}: {importResult.created}</p>
                 <p className="text-blue-700">{t("admin.catalog.updated")}: {importResult.updated}</p>
-                <p className="text-gray-500">{t("admin.catalog.unchanged")}: {importResult.unchanged}</p>
-                <p className="text-gray-500">{t("admin.catalog.total")}: {importResult.total}</p>
+                <p className="text-muted-foreground">{t("admin.catalog.unchanged")}: {importResult.unchanged}</p>
+                <p className="text-muted-foreground">{t("admin.catalog.total")}: {importResult.total}</p>
               </div>
             )}
-            <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => { setImportDialog(false); setImportResult(null); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button onClick={() => handleImport(true)} disabled={importing} className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-50">
+            <div className="mt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => { setImportDialog(false); setImportResult(null); }} className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted">{t("common.cancel")}</button>
+              <button type="button" onClick={() => handleImport(true)} disabled={importing} className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50">
                 {importing ? "..." : t("admin.catalog.dryRun")}
               </button>
-              <button onClick={() => handleImport(false)} disabled={importing} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50">
+              <button type="button" onClick={() => handleImport(false)} disabled={importing} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {importing ? t("admin.catalog.importing") : t("admin.catalog.importNow")}
               </button>
             </div>
@@ -287,37 +288,37 @@ export default function CatalogPage() {
 
       {/* Edit Piece Dialog */}
       {editPiece && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-4">{t("admin.catalog.editPiece")}</h3>
-            <p className="text-gray-500 text-sm mb-4">{editPiece.canonicalName}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="m-4 w-full max-w-md rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("admin.catalog.editPiece")}</h3>
+            <p className="mb-4 text-sm text-muted-foreground">{editPiece.canonicalName}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.catalog.pricePerM")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.catalog.pricePerM")}</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={editPiece._costEdit}
                   onChange={(e) => setEditPiece((p: any) => ({ ...p, _costEdit: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.catalog.usefulWidth")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.catalog.usefulWidth")}</label>
                 <input
                   type="number"
                   min="0"
                   step="0.1"
                   value={editPiece.usefulWidthMm ?? 0}
                   onChange={(e) => setEditPiece((p: any) => ({ ...p, usefulWidthMm: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
             </div>
-            <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setEditPiece(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button onClick={saveEdit} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900">{t("common.save")}</button>
+            <div className="mt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditPiece(null)} className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted">{t("common.cancel")}</button>
+              <button type="button" onClick={saveEdit} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">{t("common.save")}</button>
             </div>
           </div>
         </div>

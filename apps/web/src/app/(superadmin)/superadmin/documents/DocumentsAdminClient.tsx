@@ -296,7 +296,7 @@ export function DocumentsAdminClient() {
           <select
             value={filters.categoryId}
             onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value }))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[160px]"
+            className="min-w-[160px] rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">{t("superadmin.documents.allCategories")}</option>
             {categories.map((c) => (
@@ -306,7 +306,7 @@ export function DocumentsAdminClient() {
           <select
             value={filters.visibility}
             onChange={(e) => setFilters((f) => ({ ...f, visibility: e.target.value }))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[140px]"
+            className="min-w-[140px] rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">{t("superadmin.documents.allVisibility")}</option>
             {VISIBILITY_OPTIONS.map((v) => (
@@ -317,7 +317,7 @@ export function DocumentsAdminClient() {
         <button
           type="button"
           onClick={openNew}
-          className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
+          className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
           {t("superadmin.documents.newDocumentButton")}
@@ -325,40 +325,40 @@ export function DocumentsAdminClient() {
       </div>
 
       {(formOpen === "new" || editingId) && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="surface-card p-6">
+          <h3 className="mb-4 text-lg font-semibold text-foreground">
             {editingId ? t("superadmin.documents.editDocument") : t("superadmin.documents.newDocument")}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
             {formError && (
-              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{formError}</p>
+              <p className="rounded-sm border border-alert-errorBorder bg-alert-error px-3 py-2 text-sm text-foreground">{formError}</p>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldTitle")}</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldTitle")}</label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="input-native"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldDescription")}</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldDescription")}</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="input-native"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldCategory")}</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldCategory")}</label>
               <select
                 value={form.categoryId}
                 onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="input-native"
               >
                 <option value="">{t("superadmin.documents.selectCategory")}</option>
                 {categories.map((c) => (
@@ -367,10 +367,10 @@ export function DocumentsAdminClient() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldFileOrUrl")}</label>
-              <p className="text-xs text-gray-500 mb-2">{t("superadmin.documents.fileOrUrlHint")}</p>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldFileOrUrl")}</label>
+              <p className="mb-2 text-xs text-muted-foreground">{t("superadmin.documents.fileOrUrlHint")}</p>
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm cursor-pointer hover:bg-gray-100">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-input bg-muted/40 px-3 py-2 text-sm hover:bg-muted/60">
                   <input type="file" className="sr-only" onChange={onPickFile} disabled={uploadingFile || saving} />
                   {uploadingFile ? t("superadmin.documents.uploading") : t("superadmin.documents.uploadFileButton")}
                 </label>
@@ -381,16 +381,16 @@ export function DocumentsAdminClient() {
                 value={form.fileUrl}
                 onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
                 placeholder={t("superadmin.documents.placeholderFileUrl")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono"
+                className="input-native font-mono"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldVisibility")}</label>
-              <p className="text-xs text-gray-500 mb-2">{t("superadmin.documents.visibilityHint")}</p>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldVisibility")}</label>
+              <p className="mb-2 text-xs text-muted-foreground">{t("superadmin.documents.visibilityHint")}</p>
               <select
                 value={form.visibility}
                 onChange={(e) => setForm((f) => ({ ...f, visibility: e.target.value as (typeof VISIBILITY_OPTIONS)[number] }))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="input-native"
               >
                 {VISIBILITY_OPTIONS.map((v) => (
                   <option key={v} value={v}>{visibilityOptionLabel(t, v)}</option>
@@ -398,21 +398,21 @@ export function DocumentsAdminClient() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldCountryScope")}</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldCountryScope")}</label>
               <input
                 type="text"
                 value={form.countryScope}
                 onChange={(e) => setForm((f) => ({ ...f, countryScope: e.target.value }))}
                 placeholder={t("superadmin.documents.countryScopePlaceholder")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="input-native"
               />
             </div>
             {isPlatformDocumentForm && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("superadmin.documents.fieldPartnerAllowlist")}</label>
-                <p className="text-xs text-gray-500 mb-2">{t("superadmin.documents.partnerAllowlistHint")}</p>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("superadmin.documents.fieldPartnerAllowlist")}</label>
+                <p className="mb-2 text-xs text-muted-foreground">{t("superadmin.documents.partnerAllowlistHint")}</p>
                 {partners.length === 0 ? (
-                  <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{t("superadmin.documents.partnersLoadEmpty")}</p>
+                  <p className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-foreground">{t("superadmin.documents.partnersLoadEmpty")}</p>
                 ) : (
                   <>
                     <select
@@ -423,7 +423,7 @@ export function DocumentsAdminClient() {
                         const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
                         setForm((f) => ({ ...f, allowedOrganizationIds: selected }));
                       }}
-                      className="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm min-h-[120px]"
+                      className="input-native min-h-[120px] px-2 py-1"
                     >
                       {partners.map((p) => (
                         <option key={p.id} value={p.id}>{p.name}</option>
@@ -433,11 +433,11 @@ export function DocumentsAdminClient() {
                       <button
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, allowedOrganizationIds: [] }))}
-                        className="text-sm text-vbt-blue hover:underline"
+                        className="text-sm text-primary hover:underline"
                       >
                         {t("superadmin.documents.clearPartnerSelection")}
                       </button>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {form.allowedOrganizationIds.length === 0
                           ? t("superadmin.documents.allPartners")
                           : t("superadmin.documents.selectedPartnersCount", { count: form.allowedOrganizationIds.length })}
@@ -448,7 +448,7 @@ export function DocumentsAdminClient() {
               </div>
             )}
             {!isPlatformDocumentForm && (
-              <p className="text-sm text-gray-500 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
+              <p className="rounded-sm border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
                 {t("superadmin.documents.partnerOwnedDocHint")}
               </p>
             )}
@@ -456,14 +456,14 @@ export function DocumentsAdminClient() {
               <button
                 type="submit"
                 disabled={saving || uploadingFile}
-                className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+                className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? t("common.saving") : editingId ? t("superadmin.documents.buttonUpdate") : t("superadmin.documents.buttonCreate")}
               </button>
               <button
                 type="button"
                 onClick={closeForm}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40"
               >
                 {t("common.cancel")}
               </button>
@@ -476,7 +476,7 @@ export function DocumentsAdminClient() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 min-w-0">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
             <input
@@ -484,12 +484,12 @@ export function DocumentsAdminClient() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("superadmin.documents.searchPlaceholder")}
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+              className="w-full rounded-sm border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
               autoComplete="off"
             />
           </div>
           <div
-            className="inline-flex shrink-0 rounded-lg border border-gray-200 bg-gray-50 p-0.5"
+            className="inline-flex shrink-0 rounded-sm border border-border/60 bg-muted/30 p-0.5 ring-1 ring-border/40"
             role="group"
             aria-label={t("superadmin.documents.layoutToggleGroup")}
           >
@@ -498,10 +498,10 @@ export function DocumentsAdminClient() {
               onClick={() => setView("table")}
               aria-pressed={viewMode === "table"}
               title={t("superadmin.documents.viewTableAria")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === "table"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutList className="h-4 w-4" />
@@ -512,10 +512,10 @@ export function DocumentsAdminClient() {
               onClick={() => setView("cards")}
               aria-pressed={viewMode === "cards"}
               title={t("superadmin.documents.viewCardsAria")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === "cards"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -525,63 +525,63 @@ export function DocumentsAdminClient() {
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         {error && (
           <div className="p-4 bg-amber-50 text-amber-800 text-sm">{error}</div>
         )}
         {loading ? (
-          <div className="p-12 text-center text-sm text-gray-500">{t("superadmin.documents.loadingDocuments")}</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.documents.loadingDocuments")}</div>
         ) : documents.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-2 text-sm font-medium text-gray-900">{t("superadmin.documents.noDocumentsYet")}</p>
-            <p className="text-sm text-gray-500 mt-1">{t("superadmin.documents.addDocumentHint")}</p>
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground/40" />
+            <p className="mt-2 text-sm font-medium text-foreground">{t("superadmin.documents.noDocumentsYet")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("superadmin.documents.addDocumentHint")}</p>
             <button
               type="button"
               onClick={openNew}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
+              className="mt-4 inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
               {t("superadmin.documents.emptyStateAddButton")}
             </button>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="p-12 text-center text-sm text-gray-500">{t("superadmin.documents.noSearchResults")}</div>
+          <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.documents.noSearchResults")}</div>
         ) : viewMode === "table" ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border/60">
+              <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.fieldTitle")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCategory")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colVisibility")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colCountry")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colPartners")}</th>
-                  <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.documents.colActions")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.fieldTitle")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.colCategory")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.colVisibility")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.colCountry")}</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.colPartners")}</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("superadmin.documents.colActions")}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {filteredDocuments.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
+                  <tr key={doc.id} className="hover:bg-muted/30">
                     <td className="px-5 py-3">
                       {doc.fileUrl?.trim() ? (
                         <a
                           href={`/api/saas/documents/${doc.id}/file`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-medium text-gray-900 hover:text-vbt-blue inline-flex items-center gap-1"
+                          className="font-medium text-foreground hover:text-primary inline-flex items-center gap-1"
                         >
                           {doc.title}
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
-                        <span className="font-medium text-gray-500">{doc.title}</span>
+                        <span className="font-medium text-muted-foreground">{doc.title}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{doc.category?.name ?? doc.categoryId}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">{visibilityOptionLabel(t, doc.visibility)}</td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{doc.countryScope ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm text-gray-600">
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{doc.category?.name ?? doc.categoryId}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{visibilityOptionLabel(t, doc.visibility)}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{doc.countryScope ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">
                       {doc.organizationId
                         ? t("superadmin.documents.oneOrganizationDoc")
                         : (doc.allowedOrganizationIds?.length ?? 0) === 0
@@ -592,7 +592,7 @@ export function DocumentsAdminClient() {
                       <button
                         type="button"
                         onClick={() => openEdit(doc)}
-                        className="text-gray-500 hover:text-vbt-blue p-1"
+                        className="text-muted-foreground hover:text-primary p-1"
                         title={t("common.edit")}
                       >
                         <Pencil className="h-4 w-4" />
@@ -608,7 +608,7 @@ export function DocumentsAdminClient() {
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="flex flex-col rounded-lg border border-gray-200 bg-gray-50/50 p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="flex flex-col rounded-sm border border-border/60 bg-muted/20 p-4 transition-colors hover:border-border"
               >
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -617,42 +617,42 @@ export function DocumentsAdminClient() {
                         href={`/api/saas/documents/${doc.id}/file`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-gray-900 hover:text-vbt-blue inline-flex items-center gap-1"
+                        className="font-medium text-foreground hover:text-primary inline-flex items-center gap-1"
                       >
                         <span className="line-clamp-2">{doc.title}</span>
                         <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                       </a>
                     ) : (
-                      <span className="font-medium text-gray-500 line-clamp-2">{doc.title}</span>
+                      <span className="font-medium text-muted-foreground line-clamp-2">{doc.title}</span>
                     )}
                     {doc.description?.trim() && (
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-600">{doc.description}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{doc.description}</p>
                     )}
                   </div>
                   <button
                     type="button"
                     onClick={() => openEdit(doc)}
-                    className="shrink-0 text-gray-500 hover:text-vbt-blue p-1"
+                    className="shrink-0 text-muted-foreground hover:text-primary p-1"
                     title={t("common.edit")}
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                 </div>
-                <dl className="mt-auto space-y-1 border-t border-gray-200 pt-3 text-xs text-gray-600">
+                <dl className="mt-auto space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">{t("superadmin.documents.colCategory")}</dt>
-                    <dd className="text-right font-medium text-gray-800">{doc.category?.name ?? doc.categoryId}</dd>
+                    <dt className="text-muted-foreground">{t("superadmin.documents.colCategory")}</dt>
+                    <dd className="text-right font-medium text-foreground">{doc.category?.name ?? doc.categoryId}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">{t("superadmin.documents.colVisibility")}</dt>
+                    <dt className="text-muted-foreground">{t("superadmin.documents.colVisibility")}</dt>
                     <dd className="text-right">{visibilityOptionLabel(t, doc.visibility)}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">{t("superadmin.documents.colCountry")}</dt>
+                    <dt className="text-muted-foreground">{t("superadmin.documents.colCountry")}</dt>
                     <dd className="text-right">{doc.countryScope ?? "—"}</dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-gray-500">{t("superadmin.documents.colPartners")}</dt>
+                    <dt className="text-muted-foreground">{t("superadmin.documents.colPartners")}</dt>
                     <dd className="text-right">
                       {doc.organizationId
                         ? t("superadmin.documents.oneOrganizationDoc")
@@ -667,7 +667,7 @@ export function DocumentsAdminClient() {
           </div>
         )}
         {!loading && documents.length > 0 && (
-          <p className="px-5 py-2 text-xs text-gray-500 border-t border-gray-100">
+          <p className="px-5 py-2 text-xs text-muted-foreground border-t border-border/60">
             {hasSearch
               ? t("superadmin.documents.searchSummary", {
                   shown: filteredDocuments.length,

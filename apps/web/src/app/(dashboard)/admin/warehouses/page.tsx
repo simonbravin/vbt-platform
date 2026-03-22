@@ -110,7 +110,7 @@ export default function WarehousesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {warehouses.map((w) => (
-          <div key={w.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div key={w.id} className="surface-card p-4">
               <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
@@ -152,36 +152,36 @@ export default function WarehousesPage() {
       </div>
 
       {showAdd && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
-            <h3 className="font-semibold text-lg mb-4">{editItem ? t("admin.warehouses.editTitle") : t("admin.warehouses.addTitle")}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="m-4 w-full max-w-sm rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{editItem ? t("admin.warehouses.editTitle") : t("admin.warehouses.addTitle")}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.nameLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.nameLabel")}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
                   placeholder={t("admin.warehouses.namePlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.locationLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.locationLabel")}</label>
                 <input
                   type="text"
                   value={form.location}
                   onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))}
                   placeholder={t("admin.warehouses.locationPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.country")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.country")}</label>
                 <select
                   value={form.countryCode}
                   onChange={(e) => setForm(p => ({ ...p, countryCode: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">—</option>
                   {countries.map((c) => (
@@ -190,49 +190,49 @@ export default function WarehousesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.address")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.address")}</label>
                 <input
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
                   placeholder={t("admin.warehouses.addressPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.managerName")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.managerName")}</label>
                 <input
                   type="text"
                   value={form.managerName}
                   onChange={(e) => setForm(p => ({ ...p, managerName: e.target.value }))}
                   placeholder={t("admin.warehouses.managerPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.contactPhone")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.contactPhone")}</label>
                 <input
                   type="text"
                   value={form.contactPhone}
                   onChange={(e) => setForm(p => ({ ...p, contactPhone: e.target.value }))}
                   placeholder={t("admin.warehouses.contactPhonePlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.warehouses.contactEmail")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.warehouses.contactEmail")}</label>
                 <input
                   type="email"
                   value={form.contactEmail}
                   onChange={(e) => setForm(p => ({ ...p, contactEmail: e.target.value }))}
                   placeholder={t("admin.warehouses.contactEmailPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
             </div>
-            <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button onClick={save} disabled={saving || !form.name} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50">
+            <div className="mt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowAdd(false)} className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted">{t("common.cancel")}</button>
+              <button type="button" onClick={save} disabled={saving || !form.name} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>

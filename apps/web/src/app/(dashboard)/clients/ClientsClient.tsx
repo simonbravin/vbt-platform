@@ -12,10 +12,12 @@ import {
   Pencil,
   Mail,
   Phone,
-  Globe,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useT } from "@/lib/i18n/context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type Country = { id: string; name: string; code: string };
 type Client = {
@@ -35,6 +37,9 @@ type Stats = {
 };
 
 const SEARCH_DEBOUNCE_MS = 350;
+
+const nativeSelectClass =
+  "flex h-10 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 const emptyForm = {
   name: "",
@@ -249,38 +254,32 @@ export function ClientsClient({
   const modalForm = (
     <div className="space-y-3 text-sm">
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.nameLabel")}</label>
-        <input
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.nameLabel")}</label>
+        <Input
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
           placeholder={t("clients.companyNamePlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.legalName")}</label>
-        <input
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.legalName")}</label>
+        <Input
           value={form.legalName}
           onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           placeholder={t("clients.legalNamePlaceholder")}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-muted-foreground mb-1">{t("clients.taxId")}</label>
-          <input
-            value={form.taxId}
-            onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
-          />
+          <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.taxId")}</label>
+          <Input value={form.taxId} onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))} />
         </div>
         <div>
-          <label className="block text-muted-foreground mb-1">{t("clients.country")}</label>
+          <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.country")}</label>
           <select
             value={form.countryId}
             onChange={(e) => setForm((f) => ({ ...f, countryId: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
+            className={nativeSelectClass}
           >
             <option value="">{t("clients.noneOption")}</option>
             {countries.map((co) => (
@@ -290,59 +289,52 @@ export function ClientsClient({
         </div>
       </div>
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.address")}</label>
-        <input
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.address")}</label>
+        <Input
           value={form.address}
           onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           placeholder={t("clients.addressPlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.city")}</label>
-        <input
-          value={form.city}
-          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
-        />
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.city")}</label>
+        <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-muted-foreground mb-1">{t("clients.phone")}</label>
-          <input
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
-          />
+          <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.phone")}</label>
+          <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
         </div>
         <div>
-          <label className="block text-muted-foreground mb-1">{t("clients.email")}</label>
-          <input
+          <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.email")}</label>
+          <Input
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.website")}</label>
-        <input
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.website")}</label>
+        <Input
           value={form.website}
           onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
           placeholder={t("clients.websitePlaceholder")}
         />
       </div>
       <div>
-        <label className="block text-muted-foreground mb-1">{t("clients.notes")}</label>
-        <textarea
+        <label className="block text-xs text-muted-foreground mb-1.5">{t("clients.notes")}</label>
+        <Textarea
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary min-h-[60px]"
+          className="min-h-[60px]"
         />
       </div>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && (
+        <p className="text-destructive text-sm border border-destructive/25 rounded-sm px-2 py-1.5 bg-destructive/5" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 
@@ -353,24 +345,20 @@ export function ClientsClient({
           <h1 className="text-2xl font-bold text-foreground">{t("clients.title")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{total} {t("clients.clientsCount")}</p>
         </div>
-        <button
-          type="button"
-          onClick={openNew}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90"
-        >
+        <Button type="button" onClick={openNew} className="gap-2 border border-primary/20">
           <Plus className="w-4 h-4" /> {t("clients.newClient")}
-        </button>
+        </Button>
       </div>
 
       {/* KPI cards */}
       {stats && (stats.topByProjects.length > 0 || stats.topBySold.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl shadow-sm border border-border p-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t("clients.kpiTopByProjects")}</h3>
+          <div className="rounded-sm border border-border/60 bg-card p-4 ring-1 ring-border/40">
+            <h3 className="text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("clients.kpiTopByProjects")}</h3>
             <ul className="space-y-1 text-sm">
               {stats.topByProjects.slice(0, 5).map((s) => (
                 <li key={s.clientId} className="flex justify-between">
-                  <Link href={`/clients/${s.clientId}`} className="text-vbt-blue hover:underline truncate mr-2">
+                  <Link href={`/clients/${s.clientId}`} className="text-primary hover:underline truncate mr-2">
                     {s.clientName}
                   </Link>
                   <span className="font-medium text-foreground">{s.projectCount}</span>
@@ -378,8 +366,8 @@ export function ClientsClient({
               ))}
             </ul>
           </div>
-          <div className="bg-card rounded-xl shadow-sm border border-border p-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{t("clients.kpiTopBySold")}</h3>
+          <div className="rounded-sm border border-border/60 bg-card p-4 ring-1 ring-border/40">
+            <h3 className="text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("clients.kpiTopBySold")}</h3>
             <ul className="space-y-1 text-sm">
               {stats.topBySold.slice(0, 5).map((s) => (
                 <li key={s.clientId} className="flex justify-between gap-2">
@@ -394,69 +382,66 @@ export function ClientsClient({
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             placeholder={t("clients.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="pl-9"
           />
         </div>
-        <button
-          type="button"
-          onClick={runSearch}
-          disabled={searching}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-        >
-          {searching ? "..." : t("common.search")}
-        </button>
-        <div className="flex rounded-lg border border-border overflow-hidden">
+        <Button type="button" onClick={runSearch} disabled={searching} className="border border-primary/20 shrink-0">
+          {searching ? "…" : t("common.search")}
+        </Button>
+        <div className="flex shrink-0 overflow-hidden rounded-sm border border-border/60 ring-1 ring-border/40">
           <button
+            type="button"
             onClick={() => setView("cards")}
             title={t("clients.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-gray-50"}`}
+            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
           >
-            <LayoutGrid className="w-4 h-4" />
+            <LayoutGrid className="h-4 w-4" />
           </button>
           <button
+            type="button"
             onClick={() => setView("table")}
             title={t("clients.tableView")}
-            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-gray-50"}`}
+            className={`border-l border-border/60 p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
           >
-            <List className="w-4 h-4" />
+            <List className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {clients.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
-          <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-muted-foreground">{t("clients.noClientsYet")}</p>
-          <p className="text-gray-400 text-sm mt-1">{t("clients.noClientsHint")}</p>
+        <div className="rounded-sm border border-border/60 bg-background p-12 text-center ring-1 ring-border/40">
+          <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/35" />
+          <p className="text-sm font-medium text-foreground">{t("clients.noClientsYet")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("clients.noClientsHint")}</p>
         </div>
       ) : view === "cards" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {clients.map((c) => (
             <div
               key={c.id}
-              className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow flex flex-col"
+              className="flex flex-col rounded-sm border border-border/60 bg-card p-5 ring-1 ring-border/40 transition-colors hover:border-border"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-600" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-border/60 bg-muted/30">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <button
                   type="button"
                   onClick={() => openEdit(c)}
-                  className="p-1.5 text-gray-400 hover:text-vbt-blue rounded"
+                  className="rounded-sm p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
                   title={t("clients.edit")}
                 >
-                  <Pencil className="w-4 h-4" />
+                  <Pencil className="h-4 w-4" />
                 </button>
               </div>
-              <Link href={`/clients/${c.id}`} className="font-semibold text-gray-800 hover:text-vbt-blue">
+              <Link href={`/clients/${c.id}`} className="font-semibold text-foreground hover:text-primary">
                 {c.name}
               </Link>
               {c.legalName && c.legalName !== c.name && (
@@ -475,7 +460,7 @@ export function ClientsClient({
                   </div>
                 )}
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-muted-foreground">
+              <div className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                 {c._count.projects}{" "}
                 {c._count.projects === 1 ? t("clients.projectSingular") : t("clients.projectPlural")}
               </div>
@@ -483,9 +468,9 @@ export function ClientsClient({
           ))}
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="overflow-hidden rounded-sm border border-border/60 bg-card ring-1 ring-border/40">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="border-b border-border/60 bg-muted/30">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("common.name")}</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.legalName")}</th>
@@ -495,11 +480,11 @@ export function ClientsClient({
                 <th className="w-10 px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border/60">
               {clients.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
+                <tr key={c.id} className="hover:bg-muted/30">
                   <td className="px-4 py-3">
-                    <Link href={`/clients/${c.id}`} className="font-medium text-vbt-blue hover:underline">
+                    <Link href={`/clients/${c.id}`} className="font-medium text-primary hover:underline">
                       {c.name}
                     </Link>
                   </td>
@@ -513,10 +498,10 @@ export function ClientsClient({
                     <button
                       type="button"
                       onClick={() => openEdit(c)}
-                      className="p-1.5 text-gray-400 hover:text-vbt-blue rounded"
+                      className="rounded-sm p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
                       title={t("clients.edit")}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
@@ -529,29 +514,23 @@ export function ClientsClient({
       {/* New client modal */}
       {newOpen &&
         createPortal(
-          <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setNewOpen(false)}>
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4"
+            onClick={() => setNewOpen(false)}
+          >
             <div
-              className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
+              className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">{t("clients.newClient")}</h2>
+              <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("clients.newClient")}</h2>
               {modalForm}
-              <div className="flex gap-2 mt-4 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setNewOpen(false)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-foreground hover:bg-gray-50"
-                >
+              <div className="mt-4 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setNewOpen(false)} className="border-border/60">
                   {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveNew}
-                  disabled={saving}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" onClick={saveNew} disabled={saving} className="border border-primary/20">
                   {saving ? t("common.saving") : t("common.save")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>,
@@ -561,29 +540,23 @@ export function ClientsClient({
       {/* Edit client modal */}
       {editId &&
         createPortal(
-          <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setEditId(null)}>
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4"
+            onClick={() => setEditId(null)}
+          >
             <div
-              className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
+              className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-foreground mb-4">{t("clients.editClientTitle")}</h2>
+              <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("clients.editClientTitle")}</h2>
               {modalForm}
-              <div className="flex gap-2 mt-4 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setEditId(null)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-foreground hover:bg-gray-50"
-                >
+              <div className="mt-4 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditId(null)} className="border-border/60">
                   {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveEdit}
-                  disabled={saving}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" onClick={saveEdit} disabled={saving} className="border border-primary/20">
                   {saving ? t("common.saving") : t("common.save")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>,

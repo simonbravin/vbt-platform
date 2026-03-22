@@ -210,24 +210,26 @@ export function StatementsClient({
       </div>
 
       {emailOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => !emailSending && setEmailOpen(false)}>
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-900 mb-3">{t("partner.sales.emailStatementsTitle")}</h3>
-            <p className="text-sm text-gray-500 mb-3">{t("partner.sales.emailStatementsHint")}</p>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4" onClick={() => !emailSending && setEmailOpen(false)}>
+          <div className="mx-4 w-full max-w-md rounded-sm border border-border/60 bg-background p-5 ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 font-semibold tracking-tight text-foreground">{t("partner.sales.emailStatementsTitle")}</h3>
+            <p className="mb-3 text-sm text-muted-foreground">{t("partner.sales.emailStatementsHint")}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.emailToLabel")}</label>
-                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder={t("partner.sales.emailToPlaceholder")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.emailToLabel")}</label>
+                <input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder={t("partner.sales.emailToPlaceholder")} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.emailMessageLabel")}</label>
-                <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder={t("partner.sales.emailMessagePlaceholder")} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.emailMessageLabel")}</label>
+                <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} placeholder={t("partner.sales.emailMessagePlaceholder")} className="w-full resize-none rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
-              {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-green-600" : "text-red-600"}`}>{emailResult.text}</p>}
+              {emailResult && <p className={`text-sm ${emailResult.type === "success" ? "text-green-600" : "text-destructive"}`}>{emailResult.text}</p>}
             </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button type="button" onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} className="px-3 py-1.5 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50">
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => !emailSending && setEmailOpen(false)} className="rounded-sm px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted">
+                {t("common.cancel")}
+              </button>
+              <button type="button" onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} className="rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {emailSending ? t("partner.sales.sending") : t("partner.sales.send")}
               </button>
             </div>
@@ -236,7 +238,7 @@ export function StatementsClient({
         document.body
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <div className="overflow-x-auto rounded-sm border border-border/60 bg-card ring-1 ring-border/40">
         {loading ? (
           <div className="p-8 text-center text-gray-500">{t("partner.sales.loading")}</div>
         ) : !data?.statements?.length ? (

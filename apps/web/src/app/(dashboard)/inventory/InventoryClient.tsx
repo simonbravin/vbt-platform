@@ -153,7 +153,7 @@ export function InventoryClient() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="surface-card p-8 text-center text-sm text-muted-foreground">
         {t("common.loading")}
       </div>
     );
@@ -162,12 +162,12 @@ export function InventoryClient() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+        <div className="rounded-sm bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
           {error}
         </div>
       )}
       {lowStockLevels.length > 0 && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           {t("partner.inventory.lowStockBanner", {
             count: lowStockLevels.length,
             threshold: lowStockThreshold,
@@ -180,12 +180,12 @@ export function InventoryClient() {
         </p>
         <Link
           href="/settings/warehouses"
-          className="inline-flex items-center gap-2 px-4 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-muted"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-input rounded-sm text-sm font-medium text-foreground hover:bg-muted"
         >
           <Settings className="w-4 h-4" /> {t("partner.settings.configureWarehouses")}
         </Link>
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="surface-card-overflow">
         {warehouses.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             <Warehouse className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
@@ -212,7 +212,7 @@ export function InventoryClient() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Package className="h-4 w-4" /> {t("admin.inventory.stockByWarehouse")}
@@ -224,13 +224,13 @@ export function InventoryClient() {
               placeholder={t("admin.inventory.filterPlaceholder")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-input bg-background text-sm"
+              className="w-full pl-9 pr-3 py-1.5 rounded-sm border border-input bg-background text-sm"
             />
           </div>
           <button
             type="button"
             onClick={() => setShowAddItemForm((v) => !v)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
           </button>
@@ -282,7 +282,7 @@ export function InventoryClient() {
       </div>
 
       {showAddItemForm && (
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="surface-card p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4" /> {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
@@ -302,7 +302,7 @@ export function InventoryClient() {
             <select
               value={txForm.warehouseId}
               onChange={(e) => setTxForm((f) => ({ ...f, warehouseId: e.target.value }))}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[140px]"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[140px]"
             >
               <option value="">—</option>
               {warehouses.map((w) => (
@@ -315,7 +315,7 @@ export function InventoryClient() {
             <select
               value={txForm.catalogPieceId}
               onChange={(e) => setTxForm((f) => ({ ...f, catalogPieceId: e.target.value }))}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[160px]"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[160px]"
             >
               <option value="">—</option>
               {catalogPieces.map((p) => (
@@ -328,7 +328,7 @@ export function InventoryClient() {
             <select
               value={txForm.type}
               onChange={(e) => setTxForm((f) => ({ ...f, type: e.target.value }))}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[140px]"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[140px]"
             >
               {txTypes.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -343,7 +343,7 @@ export function InventoryClient() {
               step="any"
               value={txForm.quantityDelta || ""}
               onChange={(e) => setTxForm((f) => ({ ...f, quantityDelta: Number(e.target.value) || 0 }))}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-20"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm w-20"
             />
           </div>
           <div>
@@ -353,7 +353,7 @@ export function InventoryClient() {
               value={txForm.referenceProjectId}
               onChange={(e) => setTxForm((f) => ({ ...f, referenceProjectId: e.target.value }))}
               placeholder={t("admin.inventory.optional")}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-36"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm w-36"
             />
           </div>
           <div>
@@ -363,14 +363,14 @@ export function InventoryClient() {
               value={txForm.notes}
               onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
               placeholder={t("admin.inventory.optional")}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
+              className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm w-32"
             />
           </div>
           <button
             type="button"
             onClick={handleCreateTransaction}
             disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-sm px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {txSaving ? t("common.saving") : t("admin.inventory.apply")}
           </button>

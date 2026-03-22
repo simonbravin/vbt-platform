@@ -100,7 +100,7 @@ export function CreatePartnerForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="surface-card max-w-2xl p-6 space-y-6">
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
           {error}
@@ -117,7 +117,7 @@ export function CreatePartnerForm() {
             required
             value={form.companyName}
             onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -129,7 +129,7 @@ export function CreatePartnerForm() {
             type="text"
             value={form.contactName}
             onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -141,7 +141,7 @@ export function CreatePartnerForm() {
             type="email"
             value={form.contactEmail}
             onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -154,7 +154,7 @@ export function CreatePartnerForm() {
             value={form.website}
             onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
             placeholder={t("superadmin.partners.websitePlaceholder")}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -168,7 +168,7 @@ export function CreatePartnerForm() {
             value={form.country}
             onChange={(e) => setForm((f) => ({ ...f, country: e.target.value.toUpperCase() }))}
             placeholder={t("superadmin.partners.countryCodePlaceholder")}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -180,7 +180,7 @@ export function CreatePartnerForm() {
             required
             value={form.partnerType}
             onChange={(e) => setForm((f) => ({ ...f, partnerType: e.target.value as "commercial_partner" | "master_partner" }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             {PARTNER_TYPES.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -197,7 +197,7 @@ export function CreatePartnerForm() {
             id="engineeringFeeMode"
             value={form.engineeringFeeMode}
             onChange={(e) => setForm((f) => ({ ...f, engineeringFeeMode: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             <option value="">—</option>
             {FEE_MODES.map((opt) => (
@@ -215,7 +215,7 @@ export function CreatePartnerForm() {
             id="status"
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             <option value="active">{t("admin.users.statusActive")}</option>
             <option value="suspended">{t("admin.users.statusSuspended")}</option>
@@ -242,14 +242,14 @@ export function CreatePartnerForm() {
         <button
           type="submit"
           disabled={saving || !form.companyName.trim()}
-          className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90 disabled:opacity-50"
+          className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {saving ? t("superadmin.partners.creating") : t("superadmin.partners.createPartner")}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="rounded-sm border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           {t("common.cancel")}
         </button>

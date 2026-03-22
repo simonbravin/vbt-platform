@@ -154,7 +154,7 @@ export function EngineeringListClient() {
         </Link>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         {error && <div className="p-4 bg-amber-50 text-amber-800 text-sm">{error}</div>}
         {loading ? (
           <div className="p-12 text-center text-sm text-gray-500">{t("common.loading")}</div>
@@ -181,7 +181,7 @@ export function EngineeringListClient() {
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("engineering.list.colCreated")}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {requests.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3">
@@ -214,7 +214,7 @@ export function EngineeringListClient() {
               <Link
                 key={r.id}
                 href={`/engineering/${r.id}`}
-                className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                className="surface-card p-5 transition-colors hover:border-border"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">

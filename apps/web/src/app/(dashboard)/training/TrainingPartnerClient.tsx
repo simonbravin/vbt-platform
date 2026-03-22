@@ -63,12 +63,12 @@ export function TrainingPartnerClient() {
     }
   };
 
-  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>;
-  if (error) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
+  if (loading) return <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
+  if (error) return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
 
   return (
     <div className="space-y-8">
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.myEnrollments")}</h2>
         </div>
@@ -92,7 +92,7 @@ export function TrainingPartnerClient() {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{t("partner.training.availablePrograms")}</h2>
         </div>
@@ -116,7 +116,7 @@ export function TrainingPartnerClient() {
                       type="button"
                       onClick={() => handleEnroll(p.id)}
                       disabled={enrollingId === p.id}
-                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-vbt-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                     >
                       <UserPlus className="h-4 w-4" />
                       {enrollingId === p.id ? t("partner.training.enrolling") : t("partner.training.enroll")}

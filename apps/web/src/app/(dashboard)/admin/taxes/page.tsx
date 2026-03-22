@@ -142,7 +142,7 @@ export default function TaxesPage() {
           <p className="text-gray-400 text-center py-8">{t("admin.taxes.noRuleSetsYet")}</p>
         )}
         {taxSets.map((ts) => (
-          <div key={ts.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div key={ts.id} className="surface-card-overflow">
             <div
               className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
               onClick={() => setExpanded(expanded === ts.id ? null : ts.id)}
@@ -202,7 +202,7 @@ export default function TaxesPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div className="surface-modal flex max-h-[90vh] w-full max-w-3xl flex-col">
             <div className="p-6 border-b border-gray-100">
               <h3 className="font-semibold text-lg">{editSet ? t("admin.taxes.editRuleSetTitle") : t("admin.taxes.addRuleSetTitle")}</h3>
               {saveError && (

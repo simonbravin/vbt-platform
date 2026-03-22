@@ -71,7 +71,7 @@ function CreateQuotePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div className="surface-card space-y-4 p-5">
         <label className="block text-sm font-medium text-gray-700">{t("quotes.selectProject")}</label>
         <select
           value={projectId}
@@ -107,9 +107,6 @@ function CreateQuotePage() {
 
       <p className="text-xs text-gray-500">
         {t("quotes.createDraftHint")}
-      </p>
-      <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-        {t("quotes.legacyImportNote")}
       </p>
     </div>
   );

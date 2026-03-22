@@ -153,7 +153,7 @@ export default function SettingsWarehousesClient() {
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="surface-card-overflow">
           {warehouses.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Warehouse className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
@@ -202,9 +202,9 @@ export default function SettingsWarehousesClient() {
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl shadow-xl max-w-md w-full p-6 border border-border">
-            <h3 className="font-semibold text-lg mb-4 text-foreground">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="w-full max-w-md rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">
               {editItem ? t("admin.warehouses.editTitle") : t("admin.warehouses.addTitle")}
             </h3>
             <div className="space-y-3">
@@ -214,7 +214,7 @@ export default function SettingsWarehousesClient() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.namePlaceholder")}
                 />
               </div>
@@ -224,7 +224,7 @@ export default function SettingsWarehousesClient() {
                   type="text"
                   value={form.location}
                   onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.locationPlaceholder")}
                 />
               </div>
@@ -233,7 +233,7 @@ export default function SettingsWarehousesClient() {
                 <select
                   value={form.countryCode}
                   onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">—</option>
                   {countries.map((c) => (
@@ -247,7 +247,7 @@ export default function SettingsWarehousesClient() {
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.addressPlaceholder")}
                 />
               </div>
@@ -257,7 +257,7 @@ export default function SettingsWarehousesClient() {
                   type="text"
                   value={form.managerName}
                   onChange={(e) => setForm((f) => ({ ...f, managerName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.managerPlaceholder")}
                 />
               </div>
@@ -267,7 +267,7 @@ export default function SettingsWarehousesClient() {
                   type="text"
                   value={form.contactPhone}
                   onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.contactPhonePlaceholder")}
                 />
               </div>
@@ -277,16 +277,16 @@ export default function SettingsWarehousesClient() {
                   type="email"
                   value={form.contactEmail}
                   onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("admin.warehouses.contactEmailPlaceholder")}
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border border-input rounded-lg text-sm font-medium text-foreground hover:bg-muted">
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowAdd(false)} className="rounded-sm border border-border/60 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
                 {t("common.cancel")}
               </button>
-              <button type="button" onClick={save} disabled={saving || !form.name.trim()} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+              <button type="button" onClick={save} disabled={saving || !form.name.trim()} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>

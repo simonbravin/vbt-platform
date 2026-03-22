@@ -43,10 +43,11 @@ export default function CountriesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t("admin.countries.title")}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("admin.countries.title")}</h1>
         <button
+          type="button"
           onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900"
+          className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           <Plus className="w-4 h-4" /> {t("admin.countries.add")}
         </button>
@@ -54,20 +55,23 @@ export default function CountriesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {countries.map((c) => (
-          <div key={c.id} className={`bg-white rounded-xl p-4 shadow-sm border ${c.isActive ? "border-gray-100" : "border-gray-200 opacity-60"}`}>
+          <div
+            key={c.id}
+            className={`surface-card p-4 ${c.isActive ? "" : "border-border/50 opacity-70"}`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-blue-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10">
+                  <Globe className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{c.name}</p>
-                  <p className="text-gray-400 text-sm">{c.code} · {c.currency}</p>
+                  <p className="font-semibold text-foreground">{c.name}</p>
+                  <p className="text-sm text-muted-foreground">{c.code} · {c.currency}</p>
                 </div>
               </div>
               <button
                 onClick={() => toggle(c.id, c.isActive)}
-                className={`px-2 py-1 rounded text-xs font-medium ${c.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                className={`rounded-sm px-2 py-1 text-xs font-medium ${c.isActive ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" : "bg-muted text-muted-foreground"}`}
               >
                 {c.isActive ? t("admin.countries.active") : t("admin.countries.inactive")}
               </button>
@@ -78,34 +82,36 @@ export default function CountriesPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
+          <div className="surface-modal m-4 w-full max-w-sm p-6">
             <h3 className="font-semibold text-lg mb-4">{t("admin.countries.modalTitle")}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.countries.code")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.countries.code")}</label>
                 <input
                   type="text"
                   maxLength={2}
                   value={newForm.code}
                   onChange={(e) => setNewForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
                   placeholder={t("admin.countries.codePlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="input-native"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.countries.countryName")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.countries.countryName")}</label>
                 <input
                   type="text"
                   value={newForm.name}
                   onChange={(e) => setNewForm(p => ({ ...p, name: e.target.value }))}
                   placeholder={t("admin.countries.namePlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="input-native"
                 />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button onClick={addCountry} disabled={adding} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm">
+              <button type="button" onClick={() => setShowAdd(false)} className="rounded-sm border border-border bg-background px-4 py-2 text-sm text-foreground hover:bg-muted/40">
+                {t("common.cancel")}
+              </button>
+              <button type="button" onClick={addCountry} disabled={adding} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {adding ? t("admin.countries.adding") : t("common.add")}
               </button>
             </div>

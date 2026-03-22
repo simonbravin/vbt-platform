@@ -378,7 +378,7 @@ export function SaleDetailClient({
         </span>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="surface-card p-6">
         <h1 className="text-xl font-bold text-gray-900">{sale.saleNumber ?? sale.id}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           {t("partner.sales.detail.client")}: <Link href={`/clients/${sale.clientId}`} className="text-vbt-blue hover:underline">{sale.client.name}</Link>
@@ -399,7 +399,7 @@ export function SaleDetailClient({
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="surface-card p-6">
           <h2 className="font-semibold text-gray-800 mb-4">{t("partner.sales.detail.financialSummary")}</h2>
           <div className="space-y-2 text-sm">
             {[
@@ -422,7 +422,7 @@ export function SaleDetailClient({
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="surface-card p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
               {sale.status !== "CANCELLED" && (
@@ -485,7 +485,7 @@ export function SaleDetailClient({
             )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="surface-card p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-800">{t("partner.sales.detail.payments")}</h2>
               {sale.status !== "CANCELLED" && (
@@ -536,17 +536,17 @@ export function SaleDetailClient({
       </div>
 
       {paymentOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && setPaymentOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">{t("partner.sales.detail.addPaymentTitle")}</h3>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4" onClick={(e) => e.target === e.currentTarget && setPaymentOpen(false)}>
+          <div className="w-full max-w-md rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-4 font-semibold tracking-tight text-foreground">{t("partner.sales.detail.addPaymentTitle")}</h3>
             <form onSubmit={handleAddPayment} className="space-y-4">
-              {payError && <p className="text-sm text-red-600">{payError}</p>}
+              {payError && <p className="text-sm text-destructive">{payError}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.entityRequired")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.entityRequired")}</label>
                 <select
                   value={payEntityId}
                   onChange={(e) => setPayEntityId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 >
                   <option value="">{t("partner.sales.new.selectEntity")}</option>
@@ -562,62 +562,62 @@ export function SaleDetailClient({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountUsdRequired")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.amountUsdRequired")}</label>
                 <input
                   type="number"
                   min="0.01"
                   step="0.01"
                   value={payAmountUsd}
                   onChange={(e) => setPayAmountUsd(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountLocalLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.amountLocalLabel")}</label>
                 <input
                   type="number"
                   step="0.01"
                   value={payAmountLocal}
                   onChange={(e) => setPayAmountLocal(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("partner.sales.payment.amountLocalPlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.exchangeRateLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.exchangeRateLabel")}</label>
                 <input
                   type="number"
                   step="0.01"
                   value={payExchangeRate}
                   onChange={(e) => setPayExchangeRate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder={t("partner.sales.payment.exchangeRatePlaceholder")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.dateLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.dateLabel")}</label>
                 <input
                   type="datetime-local"
                   value={payPaidAt}
                   onChange={(e) => setPayPaidAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("common.notes")}</label>
                 <input
                   type="text"
                   value={payNotes}
                   onChange={(e) => setPayNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={submitting} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                   {submitting ? t("common.saving") : t("common.save")}
                 </button>
-                <button type="button" onClick={() => { setPaymentOpen(false); setPayError(null); }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
+                <button type="button" onClick={() => { setPaymentOpen(false); setPayError(null); }} className="rounded-sm border border-border/60 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
                   {t("common.cancel")}
                 </button>
               </div>
@@ -656,12 +656,12 @@ export function SaleDetailClient({
       />
 
       {invoiceModalMode && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" onClick={(e) => e.target === e.currentTarget && !invSubmitting && setInvoiceModalMode(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4" onClick={(e) => e.target === e.currentTarget && !invSubmitting && setInvoiceModalMode(null)}>
+          <div className="w-full max-w-md rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-4 font-semibold tracking-tight text-foreground">
               {invoiceModalMode === "add" ? t("partner.sales.detail.invoiceModalAdd") : t("partner.sales.detail.invoiceModalEdit")}
             </h3>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="mb-3 text-xs text-muted-foreground">
               {sale &&
                 t("partner.sales.detail.invoiceModalCapHint", {
                   amount: formatCurrency(getInvoicedAmount(sale)),
@@ -669,10 +669,10 @@ export function SaleDetailClient({
                 })}
             </p>
             <form onSubmit={handleSaveInvoice} className="space-y-4">
-              {invError && <p className="text-sm text-red-600">{invError}</p>}
+              {invError && <p className="text-sm text-destructive">{invError}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.entityRequired")}</label>
-                <select value={invEntityId} onChange={(e) => setInvEntityId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.entityRequired")}</label>
+                <select value={invEntityId} onChange={(e) => setInvEntityId(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required>
                   <option value="">{t("partner.sales.new.selectEntity")}</option>
                   {entities.filter((e) => e.isActive !== false).map((ent) => (
                     <option key={ent.id} value={ent.id}>{ent.name}</option>
@@ -680,30 +680,30 @@ export function SaleDetailClient({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.payment.amountUsdRequired")}</label>
-                <input type="number" min="0" step="0.01" value={invAmountUsd} onChange={(e) => setInvAmountUsd(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.payment.amountUsdRequired")}</label>
+                <input type="number" min="0" step="0.01" value={invAmountUsd} onChange={(e) => setInvAmountUsd(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.new.dueDate")}</label>
-                <input type="date" value={invDueDate} onChange={(e) => setInvDueDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.new.dueDate")}</label>
+                <input type="date" value={invDueDate} onChange={(e) => setInvDueDate(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.detail.sequenceLabel")}</label>
-                <input type="number" min={1} value={invSequence} onChange={(e) => setInvSequence(parseInt(e.target.value, 10) || 1)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.detail.sequenceLabel")}</label>
+                <input type="number" min={1} value={invSequence} onChange={(e) => setInvSequence(parseInt(e.target.value, 10) || 1)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.sales.detail.referenceNumber")}</label>
-                <input type="text" value={invReferenceNumber} onChange={(e) => setInvReferenceNumber(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder={t("partner.sales.new.externalInvoicePlaceholder")} />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.sales.detail.referenceNumber")}</label>
+                <input type="text" value={invReferenceNumber} onChange={(e) => setInvReferenceNumber(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" placeholder={t("partner.sales.new.externalInvoicePlaceholder")} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("common.notes")}</label>
-                <input type="text" value={invNotes} onChange={(e) => setInvNotes(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("common.notes")}</label>
+                <input type="text" value={invNotes} onChange={(e) => setInvNotes(e.target.value)} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={invSubmitting} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={invSubmitting} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                   {invSubmitting ? t("common.saving") : t("common.save")}
                 </button>
-                <button type="button" onClick={() => { setInvoiceModalMode(null); setInvError(null); }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
+                <button type="button" onClick={() => { setInvoiceModalMode(null); setInvError(null); }} className="rounded-sm border border-border/60 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
                   {t("common.cancel")}
                 </button>
               </div>

@@ -220,10 +220,10 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
   };
 
   if (loading) {
-    return <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
+    return <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
   }
   if (error && !request) {
-    return <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-6 text-sm text-foreground">{error}</div>;
+    return <div className="rounded-sm border border-amber-500/50 bg-amber-500/10 p-6 text-sm text-foreground">{error}</div>;
   }
   if (!request) return null;
 
@@ -235,7 +235,7 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground">{error}</div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="surface-card-overflow">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
@@ -309,7 +309,7 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="surface-card-overflow">
         <div className="border-b border-border px-5 py-3">
           <h2 className="text-base font-semibold text-foreground">{t("superadmin.engineeringDetail.partnerFilesTitle")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("superadmin.engineeringDetail.partnerFilesHelp")}</p>
@@ -336,7 +336,7 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="surface-card-overflow">
         <div className="border-b border-border px-5 py-3">
           <h2 className="text-base font-semibold text-foreground">{t("superadmin.engineeringDetail.revisionsTitle")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("superadmin.engineeringDetail.revisionsHelp")}</p>
@@ -413,7 +413,7 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="surface-card-overflow">
         <div className="border-b border-border px-5 py-3">
           <h2 className="text-base font-semibold text-foreground">{t("superadmin.engineeringDetail.timeline")}</h2>
         </div>
@@ -458,7 +458,7 @@ export function SuperadminEngineeringDetailClient({ requestId }: { requestId: st
         </ul>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="overflow-hidden surface-card p-5">
         <h2 className="text-base font-semibold text-foreground">{t("superadmin.engineeringDetail.addNote")}</h2>
         <textarea
           value={noteBody}

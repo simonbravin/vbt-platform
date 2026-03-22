@@ -177,8 +177,8 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
     }
   };
 
-  if (loading) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">{t("common.loading")}</div>;
-  if (error || !request) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error ?? t("partner.engineering.notFound")}</div>;
+  if (loading) return <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>;
+  if (error || !request) return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error ?? t("partner.engineering.notFound")}</div>;
 
   const requestTypeLabel =
     request.requestType && ["new_design", "revision", "technical_support", "other"].includes(request.requestType)
@@ -198,7 +198,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
   return (
     <div className="space-y-6">
       {attachBanner && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-2">
+        <div className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-2">
           <span>{t("partner.engineering.attachmentsUploadFailed")}</span>
           <button
             type="button"
@@ -209,12 +209,12 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
           </button>
         </div>
       )}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="surface-card-overflow">
+        <div className="px-5 py-4 border-b border-border/60 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-900">{request.requestNumber}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{request.requestNumber}</h2>
             {request.updatedAt && (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("partner.engineering.lastUpdated")}:{" "}
                 {new Date(request.updatedAt).toLocaleString(dateLocale, {
                   dateStyle: "medium",
@@ -222,71 +222,71 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
                 })}
               </p>
             )}
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               {t(`partner.engineering.statusHint.${request.status}`)}
             </p>
           </div>
-          <span className="inline-flex shrink-0 self-start rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex shrink-0 self-start rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted text-foreground">
             {t(`partner.engineering.status.${request.status}`)}
           </span>
         </div>
         <div className="p-5 space-y-4">
           {request.project && (
             <p className="text-sm">
-              <span className="text-gray-500">{t("partner.engineering.project")}: </span>
-              <Link href={`/projects/${request.projectId}`} className="text-vbt-blue hover:underline flex items-center gap-1">
+              <span className="text-muted-foreground">{t("partner.engineering.project")}: </span>
+              <Link href={`/projects/${request.projectId}`} className="text-primary hover:underline flex items-center gap-1">
                 <FolderOpen className="h-3.5 w-3.5" />
                 {request.project.projectName}
               </Link>
             </p>
           )}
           {requestTypeLabel && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.requestTypeLabel")}:</span> {requestTypeLabel}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.requestTypeLabel")}:</span> {requestTypeLabel}
             </p>
           )}
           {request.wallAreaM2 != null && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.wallAreaM2")}:</span> {request.wallAreaM2}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.wallAreaM2")}:</span> {request.wallAreaM2}
             </p>
           )}
           {systemTypeLabels.length > 0 && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.systemType")}:</span>{" "}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.systemType")}:</span>{" "}
               {systemTypeLabels.map((s) => (
-                <span key={s.code} className="inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 mr-1">
+                <span key={s.code} className="inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-muted text-foreground mr-1">
                   {s.label}
                 </span>
               ))}
             </p>
           )}
           {request.targetDeliveryDate && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.targetDelivery")}:</span>{" "}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.targetDelivery")}:</span>{" "}
               {new Date(request.targetDeliveryDate).toLocaleDateString(dateLocale)}
             </p>
           )}
           {request.requestedByUser?.fullName && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.requestedBy")}:</span> {request.requestedByUser.fullName}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.requestedBy")}:</span> {request.requestedByUser.fullName}
             </p>
           )}
           {request.assignedToUser?.fullName && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.assignedTo")}:</span> {request.assignedToUser.fullName}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.assignedTo")}:</span> {request.assignedToUser.fullName}
             </p>
           )}
           {request.notes && (
-            <p className="text-sm text-gray-600">
-              <span className="text-gray-500">{t("partner.engineering.notes")}:</span> {request.notes}
+            <p className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground">{t("partner.engineering.notes")}:</span> {request.notes}
             </p>
           )}
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
-          <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.files")}</h3>
+      <div className="surface-card-overflow">
+        <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between flex-wrap gap-2">
+          <h3 className="text-lg font-semibold text-foreground">{t("partner.engineering.files")}</h3>
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -300,7 +300,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading || !canUploadFiles}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border/60 bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
               {uploading ? t("partner.engineering.uploading") : t("partner.engineering.uploadFile")}
@@ -308,7 +308,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
           </div>
         </div>
         {!canUploadFiles && (
-          <p className="border-b border-gray-100 px-5 py-2 text-xs text-gray-500">{t("partner.engineering.uploadLockedHint")}</p>
+          <p className="border-b border-border/60 px-5 py-2 text-xs text-muted-foreground">{t("partner.engineering.uploadLockedHint")}</p>
         )}
         {uploadError && <p className="px-5 py-2 text-sm text-red-600">{uploadError}</p>}
         {request.files && request.files.length > 0 ? (
@@ -316,26 +316,26 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
             {request.files.map((f) => (
               <li key={f.id}>
                 {f.fileUrl ? (
-                  <a href={f.fileUrl ? `/api/saas/engineering/${requestId}/files/${f.id}/file` : "#"} target="_blank" rel="noopener noreferrer" className="text-sm text-vbt-blue hover:underline flex items-center gap-1">
+                  <a href={f.fileUrl ? `/api/saas/engineering/${requestId}/files/${f.id}/file` : "#"} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
                     <FileText className="h-4 w-4" />
                     {f.fileName}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
-                  <span className="text-sm text-gray-600 flex items-center gap-1"><FileText className="h-4 w-4" /> {f.fileName}</span>
+                  <span className="text-sm text-muted-foreground flex items-center gap-1"><FileText className="h-4 w-4" /> {f.fileName}</span>
                 )}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="p-5 text-sm text-gray-500">{t("partner.engineering.noFiles")}</p>
+          <p className="p-5 text-sm text-muted-foreground">{t("partner.engineering.noFiles")}</p>
         )}
       </div>
 
       {request.deliverables && request.deliverables.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.deliverablesTitle")}</h3>
+        <div className="surface-card-overflow">
+          <div className="px-5 py-4 border-b border-border/60">
+            <h3 className="text-lg font-semibold text-foreground">{t("partner.engineering.deliverablesTitle")}</h3>
           </div>
           <ul className="p-5 space-y-2">
             {request.deliverables.map((d) => (
@@ -344,12 +344,12 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
                   href={`/api/saas/engineering/${requestId}/deliverables/${d.id}/file`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-vbt-blue hover:underline flex flex-wrap items-center gap-x-1 gap-y-0.5"
+                  className="text-sm text-primary hover:underline flex flex-wrap items-center gap-x-1 gap-y-0.5"
                 >
                   <FileText className="h-4 w-4 shrink-0" />
                   <span>{d.title?.trim() || d.fileName || t("partner.engineering.deliverableFallback")}</span>
                   {d.version != null && (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({t("partner.engineering.deliverableVersion", { version: d.version })})
                     </span>
                   )}
@@ -361,19 +361,19 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-5 py-4">
-          <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.timelineTitle")}</h3>
+      <div className="overflow-hidden surface-card">
+        <div className="border-b border-border/60 px-5 py-4">
+          <h3 className="text-lg font-semibold text-foreground">{t("partner.engineering.timelineTitle")}</h3>
         </div>
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-border/60">
           {(request.reviewEvents ?? []).length === 0 ? (
-            <li className="px-5 py-8 text-center text-sm text-gray-500">{t("superadmin.engineeringDetail.noEvents")}</li>
+            <li className="px-5 py-8 text-center text-sm text-muted-foreground">{t("superadmin.engineeringDetail.noEvents")}</li>
           ) : (
             (request.reviewEvents ?? []).map((ev) => {
               const systemEntry = parseEngineeringTimelineEvent(ev.body);
               return (
                 <li key={ev.id} className="px-5 py-4">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{new Date(ev.createdAt).toLocaleString(dateLocale)}</span>
                     {systemEntry && (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
@@ -383,14 +383,14 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
                   </div>
                   <div className="mt-2">{renderEngineeringTimelineBody(ev.body, t, "partner")}</div>
                   {!systemEntry && (ev.fromStatus || ev.toStatus) && (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {ev.fromStatus && `${t("superadmin.engineeringDetail.from")}: ${t(`partner.engineering.status.${ev.fromStatus}`)}`}
                       {ev.fromStatus && ev.toStatus ? " → " : ""}
                       {ev.toStatus && `${t("superadmin.engineeringDetail.to")}: ${t(`partner.engineering.status.${ev.toStatus}`)}`}
                     </p>
                   )}
                   {ev.authorUser?.fullName && (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {t("superadmin.engineeringDetail.by")} {ev.authorUser.fullName}
                     </p>
                   )}
@@ -401,23 +401,23 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
         </ul>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm p-5">
-        <h3 className="text-lg font-semibold text-gray-900">{t("partner.engineering.addPartnerNote")}</h3>
+      <div className="overflow-hidden surface-card p-5">
+        <h3 className="text-lg font-semibold text-foreground">{t("partner.engineering.addPartnerNote")}</h3>
         {noteError && <p className="mt-2 text-sm text-red-600">{noteError}</p>}
         <textarea
           value={noteBody}
           onChange={(e) => setNoteBody(e.target.value)}
           rows={4}
-          className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+          className="input-native mt-3"
           placeholder={t("partner.engineering.notePlaceholder")}
         />
         {canResubmit && (
-          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"
               checked={resubmit}
               onChange={(e) => setResubmit(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-input"
             />
             {t("partner.engineering.resubmitLabel")}
           </label>
@@ -426,7 +426,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
           type="button"
           onClick={() => void postPartnerNote()}
           disabled={postingNote || !noteBody.trim()}
-          className="mt-4 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+          className="mt-4 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {postingNote ? t("common.loading") : t("partner.engineering.publishNote")}
         </button>

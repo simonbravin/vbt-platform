@@ -47,51 +47,51 @@ export function ProjectLogsClient() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="surface-card-overflow">
       {loading ? (
-        <div className="p-8 text-center text-gray-500">{t("common.loading")}</div>
+        <div className="p-8 text-center text-muted-foreground">{t("common.loading")}</div>
       ) : logs.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">{t("projects.noLogsYet")}</div>
+        <div className="p-8 text-center text-muted-foreground">{t("projects.noLogsYet")}</div>
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="border-b border-border/60 bg-muted/30">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsDate")}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsAction")}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.project")}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("projects.logsUser")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("projects.logsDate")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("projects.logsAction")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("projects.project")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("projects.logsUser")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-border/40">
                 {logs.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                  <tr key={entry.id} className="hover:bg-muted/20">
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       {new Date(entry.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-gray-800">{formatAction(entry)}</td>
+                    <td className="px-4 py-3 text-foreground">{formatAction(entry)}</td>
                     <td className="px-4 py-3">
                       {entry.entityId ? (
                         <Link
                           href={`/projects/${entry.entityId}`}
-                          className="text-vbt-blue hover:underline"
+                          className="text-primary hover:underline"
                         >
                           {(entry.meta as { projectName?: string })?.projectName ?? entry.entityId.slice(0, 8)}
                         </Link>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground/60">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{entry.userName ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{entry.userName ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           {total > limit && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
+            <div className="flex items-center justify-between border-t border-border/60 px-4 py-3">
+              <p className="text-xs text-muted-foreground">
                 Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
               </p>
               <div className="flex gap-2">
@@ -99,7 +99,7 @@ export function ProjectLogsClient() {
                   type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                  className="rounded-sm border border-border bg-background px-3 py-1 text-sm text-foreground hover:bg-muted/40 disabled:opacity-50"
                 >
                   Previous
                 </button>
@@ -107,7 +107,7 @@ export function ProjectLogsClient() {
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page * limit >= total}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                  className="rounded-sm border border-border bg-background px-3 py-1 text-sm text-foreground hover:bg-muted/40 disabled:opacity-50"
                 >
                   Next
                 </button>

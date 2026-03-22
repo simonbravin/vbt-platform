@@ -128,7 +128,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
   if (loading) return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;
   if (error || !quote) {
     return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 font-medium text-foreground">
+      <div className="rounded-sm border border-destructive/30 bg-destructive/10 p-6 font-medium text-foreground">
         {error ?? t("superadmin.quoteDetail.notFound")}
       </div>
     );
@@ -139,7 +139,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="surface-card p-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.quoteDataTitle")}</h2>
         <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
@@ -198,14 +198,14 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="surface-card p-6">
         <h2 className="text-lg font-semibold text-foreground mb-2">{t("superadmin.quoteDetail.commentTitle")}</h2>
         <p className="text-sm text-muted-foreground mb-2">{t("superadmin.quoteDetail.commentHelp")}</p>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder={t("superadmin.quotes.commentForPartnerPlaceholder")}
-          className="w-full min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          className="w-full min-h-[80px] rounded-sm border border-input bg-background px-3 py-2 text-sm"
           rows={3}
         />
       </div>
@@ -216,7 +216,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             type="button"
             onClick={handleApprove}
             disabled={!!actionLoading}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="rounded-sm bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
             {actionLoading ? "…" : t("superadmin.quoteDetail.approve")}
           </button>
@@ -227,7 +227,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             onClick={handleReject}
             disabled={!!actionLoading}
             title={!comment.trim() ? t("superadmin.quoteDetail.commentRequiredToReject") : undefined}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
             {actionLoading ? "…" : t("superadmin.quoteDetail.reject")}
           </button>
@@ -236,7 +236,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
           <button
             type="button"
             onClick={() => setModifyOpen(!modifyOpen)}
-            className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
+            className="rounded-sm bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
           >
             {modifyOpen ? t("superadmin.quoteDetail.cancelModify") : t("superadmin.quoteDetail.modify")}
           </button>
@@ -244,7 +244,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       </div>
 
       {modifyOpen && (
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.modifyTitle")}</h2>
           <div className="grid gap-4 sm:grid-cols-1 max-w-md">
             <div>
@@ -253,7 +253,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
                 type="number"
                 value={modifyVisionLatamPct}
                 onChange={(e) => setModifyVisionLatamPct(e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm"
                 step="0.01"
                 min="0"
                 max="100"
@@ -268,7 +268,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
             type="button"
             onClick={handleModifySubmit}
             disabled={!!actionLoading}
-            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="mt-4 rounded-sm bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {actionLoading ? t("superadmin.quoteDetail.saving") : t("superadmin.quoteDetail.saveChanges")}
           </button>
@@ -276,7 +276,7 @@ export function SuperadminQuoteDetailClient({ quoteId }: { quoteId: string }) {
       )}
 
       {quote.items && quote.items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">{t("superadmin.quoteDetail.itemsTitle")}</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-border text-sm">

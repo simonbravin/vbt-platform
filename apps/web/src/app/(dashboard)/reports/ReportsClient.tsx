@@ -252,7 +252,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="surface-card p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">{t("partner.reports.filtersTitle")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div>
@@ -260,7 +260,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             <select
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              className="input-native"
             >
               <option value="">{t("partner.reports.all")}</option>
               {PIPELINE_STATUS_VALUES.map((v) => (
@@ -273,7 +273,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             <select
               value={countryId}
               onChange={(e) => { setCountryId(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              className="input-native"
             >
               <option value="">{t("partner.reports.all")}</option>
               {countries.map((c) => (
@@ -286,7 +286,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             <select
               value={clientId}
               onChange={(e) => { setClientId(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              className="input-native"
             >
               <option value="">{t("partner.reports.all")}</option>
               {clients.map((c) => (
@@ -300,7 +300,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               type="date"
               value={soldFrom}
               onChange={(e) => { setSoldFrom(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              className="input-native"
             />
           </div>
           <div>
@@ -309,7 +309,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               type="date"
               value={soldTo}
               onChange={(e) => { setSoldTo(e.target.value); setPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+              className="input-native"
             />
           </div>
         </div>
@@ -320,12 +320,12 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (setPage(1), fetchReport())}
-            className="flex-1 min-w-[200px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:border-transparent"
+            className="input-native min-w-[200px] flex-1"
           />
           <button
             type="button"
             onClick={() => { setPage(1); fetchReport(); }}
-            className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-vbt-blue/90 focus:outline-none focus:ring-2 focus:ring-vbt-blue focus:ring-offset-2"
+            className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             {t("partner.reports.apply")}
           </button>
@@ -334,7 +334,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
 
       {/* Sales KPIs */}
       {salesSummary && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="surface-card p-4">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" /> {t("partner.reports.salesSection")}
@@ -343,7 +343,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               <button
                 type="button"
                 onClick={handleSalesExport}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center gap-1 rounded-sm border border-border/60 px-2 py-1 text-sm text-foreground hover:bg-muted"
               >
                 <Download className="w-4 h-4" /> {t("partner.reports.exportCsv")}
               </button>
@@ -394,33 +394,33 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {/* KPIs */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <BarChart3 className="w-4 h-4" /> {t("partner.reports.kpiTotalQuoted")}
             </div>
             <p className="text-2xl font-bold text-gray-900 mt-1">{summary.totalQuoted}</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiInProgress")}</div>
             <p className="text-2xl font-bold text-blue-600 mt-1">{summary.inProgress}</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiSold")}</div>
             <p className="text-2xl font-bold text-green-600 mt-1">{summary.sold}</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiArchived")}</div>
             <p className="text-2xl font-bold text-gray-600 mt-1">{summary.archived}</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiWinRate")}</div>
             <p className="text-2xl font-bold text-gray-900 mt-1">{summary.conversionRate}%</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueQuotedFob")}</div>
             <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(summary.totalValueQuoted)}</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="surface-card p-4">
             <div className="text-gray-500 text-sm">{t("partner.reports.kpiTotalValueSold")}</div>
             <p className="text-lg font-bold text-green-700 mt-1">{formatCurrency(summary.totalValueSold)}</p>
           </div>
@@ -430,7 +430,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       {/* Piece analytics */}
       {pieces && (pieces.byQty.length > 0 || pieces.byKg.length > 0 || pieces.byM2.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="surface-card-overflow">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
               <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopQty")}</h3>
@@ -454,7 +454,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               </table>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="surface-card-overflow">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
               <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopKg")}</h3>
@@ -478,7 +478,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               </table>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="surface-card-overflow">
             <div className="p-3 border-b border-gray-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-gray-500" />
               <h3 className="font-semibold text-gray-800 text-sm">{t("partner.reports.piecesTopM2")}</h3>
@@ -506,7 +506,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
       )}
 
       {/* Table + Export */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">{t("partner.reports.projectsSection")}</h2>
           <div className="flex items-center gap-2">
@@ -514,7 +514,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
               <button
                 type="button"
                 onClick={() => setEmailOpen(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-sm border border-border/60 px-3 py-2 text-sm text-foreground hover:bg-muted"
               >
                 <Mail className="w-4 h-4" /> {t("partner.reports.emailReport")}
               </button>
@@ -522,14 +522,14 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
             <button
               type="button"
               onClick={handleExportCsv}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-sm border border-border/60 px-3 py-2 text-sm text-foreground hover:bg-muted"
             >
               <Download className="w-4 h-4" /> {t("partner.reports.exportCsv")}
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-sm border border-border/60 px-3 py-2 text-sm text-foreground hover:bg-muted"
             >
               <Download className="w-4 h-4" /> {t("partner.reports.exportExcel")}
             </button>
@@ -609,7 +609,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                     type="button"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="px-2 py-1 border border-gray-300 rounded disabled:opacity-50"
+                    className="rounded-sm border border-border/60 px-2 py-1 disabled:opacity-50"
                   >
                     {t("partner.sales.previous")}
                   </button>
@@ -617,7 +617,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                     type="button"
                     disabled={page * limit >= total}
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-2 py-1 border border-gray-300 rounded disabled:opacity-50"
+                    className="rounded-sm border border-border/60 px-2 py-1 disabled:opacity-50"
                   >
                     {t("partner.sales.next")}
                   </button>
@@ -630,40 +630,40 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
 
       {/* Email report modal */}
       {emailOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm m-4">
-            <h3 className="font-semibold text-lg mb-4">{t("partner.reports.emailModalTitle")}</h3>
-            <p className="text-gray-500 text-sm mb-4">{t("partner.reports.emailModalDescription")}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="m-4 w-full max-w-sm rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("partner.reports.emailModalTitle")}</h3>
+            <p className="mb-4 text-sm text-muted-foreground">{t("partner.reports.emailModalDescription")}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.reports.emailAddressLabel")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.reports.emailAddressLabel")}</label>
                 <input
                   type="email"
                   value={emailTo}
                   onChange={(e) => setEmailTo(e.target.value)}
                   placeholder={t("partner.reports.emailAddressPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("partner.reports.subjectOptional")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("partner.reports.subjectOptional")}</label>
                 <input
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
                   placeholder={t("partner.reports.subjectPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                  className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
               {emailMessage && (
-                <p className={`text-sm ${emailMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>{emailMessage.text}</p>
+                <p className={`text-sm ${emailMessage.type === "success" ? "text-green-600" : "text-destructive"}`}>{emailMessage.text}</p>
               )}
             </div>
-            <div className="flex gap-3 justify-end mt-4">
+            <div className="mt-4 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => { setEmailOpen(false); setEmailMessage(null); }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted"
               >
                 {t("common.cancel")}
               </button>
@@ -671,7 +671,7 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                 type="button"
                 onClick={handleEmailReport}
                 disabled={emailSending || !emailTo.trim()}
-                className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {emailSending ? t("partner.sales.sending") : t("partner.sales.send")}
               </button>

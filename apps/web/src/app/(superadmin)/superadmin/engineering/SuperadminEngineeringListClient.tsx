@@ -226,7 +226,7 @@ export function SuperadminEngineeringListClient() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="surface-card-overflow">
         {loading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.engineeringList.loading")}</div>
         ) : rows.length === 0 ? (
@@ -292,7 +292,7 @@ export function SuperadminEngineeringListClient() {
         ) : (
           <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((r) => (
-              <div key={r.id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+              <div key={r.id} className="surface-card p-5 transition-colors hover:border-border">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
                     <Wrench className="h-5 w-5 text-slate-600 dark:text-slate-300" />

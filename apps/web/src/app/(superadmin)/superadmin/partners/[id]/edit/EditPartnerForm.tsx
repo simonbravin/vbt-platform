@@ -111,7 +111,7 @@ export function EditPartnerForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6 max-w-2xl"
+      className="surface-card max-w-2xl p-6 space-y-6"
     >
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
@@ -134,7 +134,7 @@ export function EditPartnerForm({
             required
             value={form.companyName}
             onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -146,7 +146,7 @@ export function EditPartnerForm({
             type="text"
             value={form.contactName}
             onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -158,7 +158,7 @@ export function EditPartnerForm({
             type="email"
             value={form.contactEmail}
             onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -170,7 +170,7 @@ export function EditPartnerForm({
             type="url"
             value={form.website}
             onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -183,7 +183,7 @@ export function EditPartnerForm({
             maxLength={2}
             value={form.country}
             onChange={(e) => setForm((f) => ({ ...f, country: e.target.value.toUpperCase() }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div>
@@ -197,7 +197,7 @@ export function EditPartnerForm({
             onChange={(e) =>
               setForm((f) => ({ ...f, partnerType: e.target.value as "commercial_partner" | "master_partner" }))
             }
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             {PARTNER_TYPES.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -214,7 +214,7 @@ export function EditPartnerForm({
             id="engineeringFeeMode"
             value={form.engineeringFeeMode}
             onChange={(e) => setForm((f) => ({ ...f, engineeringFeeMode: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             <option value="">—</option>
             {FEE_MODES.map((opt) => (
@@ -246,7 +246,7 @@ export function EditPartnerForm({
             id="status"
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           >
             <option value="active">{t("admin.users.statusActive")}</option>
             <option value="suspended">{t("admin.users.statusSuspended")}</option>
@@ -266,7 +266,7 @@ export function EditPartnerForm({
             placeholder={t("superadmin.partner.commissionPctPlaceholder")}
             value={form.visionLatamCommissionPct}
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionPct: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
           <p className="mt-0.5 text-xs text-gray-500">{t("superadmin.partner.commissionPctHelp")}</p>
         </div>
@@ -282,7 +282,7 @@ export function EditPartnerForm({
             placeholder={t("admin.inventory.optional")}
             value={form.visionLatamCommissionFixedUsd}
             onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionFixedUsd: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+            className="input-native mt-1"
           />
         </div>
         <div className="sm:col-span-2">
@@ -327,14 +327,14 @@ export function EditPartnerForm({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90 disabled:opacity-50"
+          className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {saving ? t("common.saving") : t("common.saveChanges")}
         </button>
         <button
           type="button"
           onClick={() => router.push(`/superadmin/partners/${partnerId}`)}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="rounded-sm border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           {t("common.cancel")}
         </button>

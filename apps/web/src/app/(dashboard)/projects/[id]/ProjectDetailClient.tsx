@@ -273,7 +273,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       />
 
       {/* Project info */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="surface-card p-5">
         <h2 className="font-semibold text-gray-800 mb-4">{t("projects.projectDetails")}</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           {(project.client?.name ?? (project as any).clientRecord?.name) && (
@@ -334,7 +334,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       </div>
 
       {/* Quotes */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="surface-card">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">{t("projects.quotesWithCount", { count: project.quotes.length })}</h2>
           <Link
@@ -373,7 +373,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       </div>
 
       {/* Sales */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="surface-card">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">{t("projects.salesWithCount", { count: sales.length })}</h2>
           <Link
@@ -408,7 +408,7 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       </div>
 
       {/* Activity / Change log */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="surface-card">
         <div className="p-5 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800">{t("projects.activity")}</h2>
           <p className="text-gray-500 text-xs mt-0.5">{t("projects.changesAndWho")}</p>
@@ -434,29 +434,29 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
 
       {/* Edit modal (portal so overlay covers full viewport including sidebar/header) */}
       {editOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-lg mb-4">{t("projects.editProject")}</h3>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("projects.editProject")}</h3>
             <div className="space-y-3 text-sm">
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.projectNameLabel")}</label>
-                <input value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.projectNameLabel")}</label>
+                <input value={form.projectName} onChange={(e) => setForm((f) => ({ ...f, projectName: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("common.status")}</label>
-                <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+                <label className="mb-1 block text-xs text-muted-foreground">{t("common.status")}</label>
+                <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   {PIPELINE_STATUSES.map((v) => (
                     <option key={v} value={v}>{t(`partner.reports.status.${v}`)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.client")}</label>
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.client")}</label>
                 <div className="flex gap-2">
                   <select
                     value={form.clientId}
                     onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-white"
+                    className="flex-1 rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <option value="">{t("projects.noneOption")}</option>
                     {clients.map((c) => (
@@ -466,43 +466,43 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
                   <button
                     type="button"
                     onClick={() => setNewClientOpen(true)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1 rounded-sm border border-border/60 px-3 py-2 text-sm text-foreground hover:bg-muted"
                   >
                     <Plus className="w-4 h-4" /> {t("projects.addClientButton")}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.countryCodeLabel")}</label>
-                <select value={form.countryCode} onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white">
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.countryCodeLabel")}</label>
+                <select value={form.countryCode} onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   <option value="">{t("projects.selectShort")}</option>
                   {countries.map((c) => <option key={c.id} value={c.code ?? c.id}>{c.name} ({c.code})</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.city")}</label>
-                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.city")} />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.city")}</label>
+                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" placeholder={t("projects.city")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.address")}</label>
-                <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.addressPlaceholder")} />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.address")}</label>
+                <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" placeholder={t("projects.addressPlaceholder")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.estTotalAreaM2Label")}</label>
-                <input type="number" min={0} step="0.01" value={form.estimatedTotalAreaM2} onChange={(e) => setForm((f) => ({ ...f, estimatedTotalAreaM2: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder={t("projects.areaPlaceholder")} />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.estTotalAreaM2Label")}</label>
+                <input type="number" min={0} step="0.01" value={form.estimatedTotalAreaM2} onChange={(e) => setForm((f) => ({ ...f, estimatedTotalAreaM2: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" placeholder={t("projects.areaPlaceholder")} />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.expectedCloseDateLabel")}</label>
-                <input type="date" value={form.expectedCloseDate} onChange={(e) => setForm((f) => ({ ...f, expectedCloseDate: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.expectedCloseDateLabel")}</label>
+                <input type="date" value={form.expectedCloseDate} onChange={(e) => setForm((f) => ({ ...f, expectedCloseDate: e.target.value }))} className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">{t("projects.description")}</label>
-                <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none" />
+                <label className="mb-1 block text-xs text-muted-foreground">{t("projects.description")}</label>
+                <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full resize-none rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">{t("common.cancel")}</button>
-              <button type="button" onClick={saveEdit} disabled={saving || !form.projectName?.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm hover:bg-blue-900 disabled:opacity-50">{saving ? t("common.saving") : t("common.save")}</button>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setEditOpen(false)} className="rounded-sm border border-border/60 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">{t("common.cancel")}</button>
+              <button type="button" onClick={saveEdit} disabled={saving || !form.projectName?.trim()} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">{saving ? t("common.saving") : t("common.save")}</button>
             </div>
           </div>
         </div>,
@@ -510,60 +510,60 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
       )}
 
       {newClientOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4" onClick={() => setNewClientOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-lg text-gray-900">{t("projects.newClientModalTitle")}</h3>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/65 p-4" onClick={() => setNewClientOpen(false)}>
+          <div className="w-full max-w-md space-y-3 rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">{t("projects.newClientModalTitle")}</h3>
             {newClientError && (
-              <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{newClientError}</div>
+              <div className="rounded-sm border border-destructive/25 bg-destructive/5 p-2 text-sm text-destructive">{newClientError}</div>
             )}
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{t("clients.nameLabel")}</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("clients.nameLabel")}</label>
               <input
                 value={newClientForm.name}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 placeholder={t("projects.companyNamePlaceholder")}
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{t("projects.legalName")}</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("projects.legalName")}</label>
               <input
                 value={newClientForm.legalName}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, legalName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{t("common.country")}</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("common.country")}</label>
               <select
                 value={newClientForm.countryId}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, countryId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue bg-white"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="">{t("projects.noneOption")}</option>
                 {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{t("auth.email")}</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("auth.email")}</label>
               <input
                 type="email"
                 value={newClientForm.email}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{t("common.phone")}</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t("common.phone")}</label>
               <input
                 value={newClientForm.phone}
                 onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
-            <div className="flex gap-2 pt-2 justify-end">
-              <button type="button" onClick={() => setNewClientOpen(false)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">{t("common.cancel")}</button>
-              <button type="button" onClick={saveNewClient} disabled={savingClient || !newClientForm.name.trim()} className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50">{savingClient ? t("common.saving") : t("projects.createClient")}</button>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setNewClientOpen(false)} className="rounded-sm border border-border/60 px-3 py-2 text-sm text-foreground hover:bg-muted">{t("common.cancel")}</button>
+              <button type="button" onClick={saveNewClient} disabled={savingClient || !newClientForm.name.trim()} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">{savingClient ? t("common.saving") : t("projects.createClient")}</button>
             </div>
           </div>
         </div>,

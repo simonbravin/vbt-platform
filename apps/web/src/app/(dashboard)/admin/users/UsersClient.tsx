@@ -93,7 +93,7 @@ export function UsersClient({ canChangeRole }: { canChangeRole: boolean }) {
         <p className="text-gray-500 text-sm mt-0.5">{users.filter(u => u.status === "PENDING").length} {t("admin.users.pending")}</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="surface-card-overflow">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>

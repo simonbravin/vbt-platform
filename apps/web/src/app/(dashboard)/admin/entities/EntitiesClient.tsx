@@ -127,17 +127,17 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">{t("common.loading")}</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground">{t("common.loading")}</div>;
 
   return (
     <div className="space-y-6">
       {scope === "platform" && (
         <div className="max-w-md">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.partnerLabel")}</label>
+          <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.partnerLabel")}</label>
           <select
             value={organizationId}
             onChange={(e) => setOrganizationId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            className="input-native"
           >
             <option value="">{t("admin.entities.selectPartner")}</option>
             {partners.map((p) => (
@@ -146,49 +146,49 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">{t("admin.entities.partnerHint")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("admin.entities.partnerHint")}</p>
         </div>
       )}
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("admin.entities.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{t("admin.entities.subtitle")}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("admin.entities.title")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t("admin.entities.subtitle")}</p>
         </div>
         <button
           type="button"
           disabled={scope === "platform" && !organizationId}
           onClick={() => { setAddOpen(true); setError(null); }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 disabled:pointer-events-none"
+          className="inline-flex items-center gap-2 rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:pointer-events-none disabled:opacity-50"
         >
           <Plus className="w-4 h-4" /> {t("admin.entities.addEntity")}
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="surface-card-overflow">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="border-b border-border/60 bg-muted/30">
             <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("admin.entities.name")}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("admin.entities.slug")}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("admin.entities.status")}</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t("admin.entities.actions")}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("admin.entities.name")}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("admin.entities.slug")}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">{t("admin.entities.status")}</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">{t("admin.entities.actions")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-border/40">
             {entities.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
                   {t("admin.entities.noEntitiesYet")}
                 </td>
               </tr>
             ) : (
               entities.map((e) => (
                 <tr key={e.id}>
-                  <td className="px-4 py-3 font-medium text-gray-800">{e.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{e.slug}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{e.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{e.slug}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${e.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.isActive ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" : "bg-muted text-muted-foreground"}`}>
                       {e.isActive ? t("admin.countries.active") : t("admin.countries.inactive")}
                     </span>
                   </td>
@@ -196,7 +196,7 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
                     <button
                       type="button"
                       onClick={() => setEditId(e.id)}
-                      className="p-2 text-gray-400 hover:text-vbt-orange"
+                      className="p-2 text-muted-foreground hover:text-orange-600"
                       title={t("admin.entities.editTitle")}
                     >
                       <Pencil className="w-4 h-4" />
@@ -211,38 +211,38 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
 
       {addOpen && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => !saving && setAddOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">{t("admin.entities.addEntityTitle")}</h3>
+          <div className="surface-modal max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-4 font-semibold text-foreground">{t("admin.entities.addEntityTitle")}</h3>
             <form onSubmit={handleAdd} className="space-y-4">
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.nameLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.nameLabel")}</label>
                 <input
                   type="text"
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
                   placeholder={t("admin.entities.namePlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="input-native"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.slugLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.slugLabel")}</label>
                 <input
                   type="text"
                   value={addSlug}
                   onChange={(e) => setAddSlug(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
                   placeholder={t("admin.entities.slugPlaceholder")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="input-native font-mono"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-0.5">{t("admin.entities.slugHint")}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t("admin.entities.slugHint")}</p>
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50">
                   {saving ? t("common.saving") : t("common.save")}
                 </button>
-                <button type="button" onClick={() => !saving && setAddOpen(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
+                <button type="button" onClick={() => !saving && setAddOpen(false)} className="rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40">
                   {t("common.cancel")}
                 </button>
               </div>
@@ -253,27 +253,27 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
 
       {editId && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => !saving && setEditId(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-semibold text-gray-800 mb-4">{t("admin.entities.editEntityTitle")}</h3>
+          <div className="surface-modal max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-4 font-semibold text-foreground">{t("admin.entities.editEntityTitle")}</h3>
             <form onSubmit={handleUpdate} className="space-y-4">
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.nameLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.nameLabel")}</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="input-native"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.entities.slugLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-foreground">{t("admin.entities.slugLabel")}</label>
                 <input
                   type="text"
                   value={editSlug}
                   onChange={(e) => setEditSlug(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="input-native font-mono"
                   required
                 />
               </div>
@@ -283,15 +283,15 @@ export function EntitiesClient({ scope = "tenant" }: { scope?: "tenant" | "platf
                   id="edit-active"
                   checked={editActive}
                   onChange={(e) => setEditActive(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded border-input"
                 />
-                <label htmlFor="edit-active" className="text-sm text-gray-700">{t("admin.entities.activeInDropdowns")}</label>
+                <label htmlFor="edit-active" className="text-sm text-foreground">{t("admin.entities.activeInDropdowns")}</label>
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-sm border border-orange-600/30 bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50">
                   {saving ? t("common.saving") : t("common.save")}
                 </button>
-                <button type="button" onClick={() => !saving && setEditId(null)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium">
+                <button type="button" onClick={() => !saving && setEditId(null)} className="rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40">
                   {t("common.cancel")}
                 </button>
               </div>

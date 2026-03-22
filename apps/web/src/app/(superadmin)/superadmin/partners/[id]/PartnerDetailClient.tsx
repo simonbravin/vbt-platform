@@ -226,7 +226,7 @@ export function PartnerDetailClient({
       </div>
 
       {inviteSent && !dismissInviteBanner && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
+        <div className="rounded-sm bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 flex items-center justify-between">
           <span>
             {inviteSent === "new"
               ? t("superadmin.partner.inviteBannerNewAccount")
@@ -244,13 +244,13 @@ export function PartnerDetailClient({
       )}
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-sm bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
           {error}
         </div>
       )}
 
       {activeTab === "overview" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
+        <div className="surface-card p-6 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-gray-500">{t("superadmin.partner.detail.company")}</p>
@@ -320,7 +320,7 @@ export function PartnerDetailClient({
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-100 bg-amber-50/50 p-4">
+          <div className="rounded-sm border border-border/60 bg-amber-500/10 p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900">{t("superadmin.partner.commissionSectionTitle")}</h3>
               <Link
@@ -352,7 +352,7 @@ export function PartnerDetailClient({
           </div>
 
           {/* Annual goals (read-only); edit in Parameters tab */}
-          <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+          <div className="rounded-sm border border-border/60 bg-muted/30 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-indigo-600" />
@@ -388,7 +388,7 @@ export function PartnerDetailClient({
 
           <Link
             href={`/superadmin/partners/${partnerId}/edit`}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-sm border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
           >
             <Settings className="h-4 w-4" />
             {t("superadmin.partner.editPartner")}
@@ -413,7 +413,7 @@ export function PartnerDetailClient({
       )}
 
       {activeTab === "onboarding" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+        <div className="surface-card p-6">
           <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.onboardingState")}</h3>
           <p className="mt-1 text-sm text-gray-500">
             {t("superadmin.partner.onboardingHelp")}
@@ -423,7 +423,7 @@ export function PartnerDetailClient({
               value={onboardingState}
               onChange={(e) => handleUpdateOnboarding(e.target.value)}
               disabled={saving}
-              className="block w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+              className="input-native mt-1 max-w-xs"
             >
               <option value="">{t("superadmin.partner.onboardingNotSet")}</option>
               {ONBOARDING_STATES.map((s) => (
@@ -517,13 +517,13 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
+    <div className="surface-card p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.team")}</h3>
         <button
           type="button"
           onClick={() => setInviteOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90"
+          className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           <UserPlus className="h-4 w-4" />
           {t("partner.team.inviteByEmail")}
@@ -531,7 +531,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
       </div>
 
       {inviteOpen && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div className="rounded-sm border border-border/60 bg-muted/30 p-4 space-y-3">
           <p className="text-sm font-medium text-gray-700">
             {t("superadmin.partner.inviteMemberTo", { partner: partnerName })}
           </p>
@@ -550,7 +550,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder={t("superadmin.partner.detail.inviteEmailPlaceholder")}
-                className="mt-1 block w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+                className="input-native mt-1 max-w-[14rem]"
               />
             </div>
             <div>
@@ -558,7 +558,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
-                className="mt-1 block rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+                className="input-native mt-1"
               >
                 {TEAM_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
@@ -570,14 +570,14 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+              className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? t("partner.team.inviting") : t("partner.team.invite")}
             </button>
             <button
               type="button"
               onClick={() => { setInviteOpen(false); setInviteError(null); }}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-sm border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               {t("common.cancel")}
             </button>
@@ -589,7 +589,7 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
       )}
 
       {inviteSuccess && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
+        <div className="rounded-sm bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
           {inviteSuccess}
         </div>
       )}
@@ -707,14 +707,14 @@ function TerritoriesSection({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
+    <div className="surface-card p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.territories")}</h3>
         {!adding ? (
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-vbt-blue/90"
+            className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             {t("superadmin.partner.addTerritory")}
           </button>
@@ -722,7 +722,7 @@ function TerritoriesSection({
       </div>
 
       {adding && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div className="rounded-sm border border-border/60 bg-muted/30 p-4 space-y-3">
           {err && <p className="text-sm text-red-600">{err}</p>}
           <div className="flex flex-wrap gap-3 items-end">
             <div>
@@ -760,14 +760,14 @@ function TerritoriesSection({
               type="button"
               onClick={handleAdd}
               disabled={submitting}
-              className="rounded-lg bg-vbt-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50"
+              className="rounded-sm border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? t("superadmin.partner.adding") : t("superadmin.partner.add")}
             </button>
             <button
               type="button"
               onClick={() => { setAdding(false); setErr(null); }}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-sm border border-border/60 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               {t("common.cancel")}
             </button>
@@ -924,14 +924,14 @@ function ParametersSection({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
+    <div className="surface-card p-6 space-y-6">
       <h3 className="text-lg font-medium text-gray-900">{t("superadmin.partner.detail.parametersTitle")}</h3>
       <p className="text-sm text-gray-500">
         {t("superadmin.partner.parametersIntro")}
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {successMessage && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+        <div className="rounded-sm border border-green-200 bg-green-50 p-3 text-sm text-green-800">
           {successMessage}
         </div>
       )}
@@ -948,7 +948,7 @@ function ParametersSection({
                   </span>
                 )}
               </label>
-              <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">
@@ -959,15 +959,15 @@ function ParametersSection({
                   </span>
                 )}
               </label>
-              <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.materialCreditUsd")}</label>
-              <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
-              <select value={engineeringFeeMode} onChange={(e) => setEngineeringFeeMode(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <select value={engineeringFeeMode} onChange={(e) => setEngineeringFeeMode(e.target.value)} className="input-native mt-1">
                 <option value="">{t("superadmin.partner.onboardingNotSet")}</option>
                 {ENGINEERING_FEE_MODES.map((m) => (
                   <option key={m.value} value={m.value}>{t(m.labelKey)}</option>
@@ -976,7 +976,7 @@ function ParametersSection({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
-              <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")} />
+              <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")} />
             </div>
           </div>
         </div>
@@ -992,7 +992,7 @@ function ParametersSection({
                   </span>
                 )}
               </label>
-              <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">
@@ -1003,11 +1003,11 @@ function ParametersSection({
                   </span>
                 )}
               </label>
-              <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="input-native mt-1" />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
-              <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")} />
+              <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")} />
             </div>
           </div>
         </div>
@@ -1016,11 +1016,11 @@ function ParametersSection({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetUsd")}</label>
-              <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.annualTargetM2")}</label>
-              <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="input-native mt-1" />
             </div>
           </div>
         </div>
@@ -1029,15 +1029,15 @@ function ParametersSection({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.startDate")}</label>
-              <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.endDate")}</label>
-              <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="input-native mt-1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500">{t("superadmin.partner.detail.status")}</label>
-              <select value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <select value={agreementStatus} onChange={(e) => setAgreementStatus(e.target.value)} className="input-native mt-1">
                 {AGREEMENT_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value || "_empty"} value={opt.value}>{t(opt.labelKey)}</option>
                 ))}
@@ -1046,7 +1046,7 @@ function ParametersSection({
           </div>
         </div>
         <div className="flex justify-end">
-          <button type="submit" disabled={saving} className="rounded-lg bg-vbt-blue px-4 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
             {saving ? t("common.saving") : t("superadmin.partner.saveParameters")}
           </button>
         </div>

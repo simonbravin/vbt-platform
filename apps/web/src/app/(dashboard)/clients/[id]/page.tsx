@@ -52,46 +52,46 @@ export default async function ClientDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href="/clients"
-            className="text-gray-400 hover:text-gray-600"
+            className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{client.name}</h1>
             {client.clientType && (
-              <p className="text-gray-500 text-sm">{client.clientType}</p>
+              <p className="text-sm text-muted-foreground">{client.clientType}</p>
             )}
           </div>
         </div>
         <ClientDetailActions client={client} countries={countries} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">Client details</h2>
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <div className="rounded-sm border border-border/60 bg-card p-5 ring-1 ring-border/40">
+        <h2 className="mb-4 font-semibold text-foreground">Client details</h2>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
           {client.countryCode && (
             <>
-              <dt className="text-gray-500">Country</dt>
-              <dd className="text-gray-900">{client.countryCode}</dd>
+              <dt className="text-muted-foreground">Country</dt>
+              <dd className="text-foreground">{client.countryCode}</dd>
             </>
           )}
           {client.city && (
             <>
-              <dt className="text-gray-500">City</dt>
-              <dd className="text-gray-900">{client.city}</dd>
+              <dt className="text-muted-foreground">City</dt>
+              <dd className="text-foreground">{client.city}</dd>
             </>
           )}
           {client.phone && (
             <>
-              <dt className="text-gray-500">Phone</dt>
-              <dd className="text-gray-900">{client.phone}</dd>
+              <dt className="text-muted-foreground">Phone</dt>
+              <dd className="text-foreground">{client.phone}</dd>
             </>
           )}
           {client.email && (
             <>
-              <dt className="text-gray-500">Email</dt>
-              <dd className="text-gray-900">
-                <a href={`mailto:${client.email}`} className="text-vbt-blue hover:underline">
+              <dt className="text-muted-foreground">Email</dt>
+              <dd className="text-foreground">
+                <a href={`mailto:${client.email}`} className="text-primary hover:underline">
                   {client.email}
                 </a>
               </dd>
@@ -99,13 +99,13 @@ export default async function ClientDetailPage({
           )}
           {client.website && (
             <>
-              <dt className="text-gray-500">Website</dt>
-              <dd className="text-gray-900">
+              <dt className="text-muted-foreground">Website</dt>
+              <dd className="text-foreground">
                 <a
                   href={client.website.startsWith("http") ? client.website : `https://${client.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-vbt-blue hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {client.website}
                 </a>
@@ -114,26 +114,26 @@ export default async function ClientDetailPage({
           )}
           {client.notes && (
             <>
-              <dt className="text-gray-500 sm:col-span-1">Notes</dt>
-              <dd className="text-gray-900 sm:col-span-2">{client.notes}</dd>
+              <dt className="text-muted-foreground sm:col-span-1">Notes</dt>
+              <dd className="text-foreground sm:col-span-2">{client.notes}</dd>
             </>
           )}
         </dl>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">
+      <div className="rounded-sm border border-border/60 bg-card p-5 ring-1 ring-border/40">
+        <h2 className="mb-4 font-semibold text-foreground">
           Projects ({client.projects.length})
         </h2>
         {client.projects.length === 0 ? (
-          <p className="text-gray-500 text-sm">No projects linked to this client.</p>
+          <p className="text-sm text-muted-foreground">No projects linked to this client.</p>
         ) : (
           <ul className="space-y-2">
             {client.projects.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/projects/${p.id}`}
-                  className="text-vbt-blue hover:underline font-medium"
+                  className="font-medium text-primary hover:underline"
                 >
                   {(p as { projectName: string }).projectName}
                 </Link>

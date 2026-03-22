@@ -70,7 +70,7 @@ export default async function DashboardLayout({
         />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-border/60">
           <TopBar user={safeUser} activeOrgName={safeUser.activeOrgName} />
-          <main className="flex-1 overflow-y-auto p-6 blueprint-canvas bg-background">{children}</main>
+          <main className="app-main-scroll flex-1 overflow-y-auto blueprint-canvas bg-background">{children}</main>
         </div>
       </div>
     );

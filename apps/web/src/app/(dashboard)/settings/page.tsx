@@ -26,9 +26,9 @@ export default async function SettingsHubPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/settings/team"
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-vbt-blue/30 hover:shadow-md transition-all flex items-start gap-4"
+          className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
-          <div className="rounded-lg bg-vbt-blue/10 p-2">
+          <div className="rounded-sm bg-primary/10 p-2">
             <Users className="h-6 w-6 text-vbt-blue" />
           </div>
           <div>
@@ -40,9 +40,9 @@ export default async function SettingsHubPage() {
 
         <Link
           href="/settings/warehouses"
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-vbt-blue/30 hover:shadow-md transition-all flex items-start gap-4"
+          className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
-          <div className="rounded-lg bg-vbt-blue/10 p-2">
+          <div className="rounded-sm bg-primary/10 p-2">
             <Warehouse className="h-6 w-6 text-vbt-blue" />
           </div>
           <div>
@@ -54,9 +54,9 @@ export default async function SettingsHubPage() {
 
         <Link
           href="/settings/freight"
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-vbt-blue/30 hover:shadow-md transition-all flex items-start gap-4"
+          className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
-          <div className="rounded-lg bg-vbt-blue/10 p-2">
+          <div className="rounded-sm bg-primary/10 p-2">
             <Truck className="h-6 w-6 text-vbt-blue" />
           </div>
           <div>
@@ -68,9 +68,9 @@ export default async function SettingsHubPage() {
 
         <Link
           href="/settings/taxes"
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-vbt-blue/30 hover:shadow-md transition-all flex items-start gap-4"
+          className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
         >
-          <div className="rounded-lg bg-vbt-blue/10 p-2">
+          <div className="rounded-sm bg-primary/10 p-2">
             <TrendingUp className="h-6 w-6 text-vbt-blue" />
           </div>
           <div>

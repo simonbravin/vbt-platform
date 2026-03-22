@@ -108,7 +108,7 @@ export default function FreightPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="surface-card-overflow">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
@@ -163,39 +163,39 @@ export default function FreightPage() {
       </div>
 
       {showAdd && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
-            <h3 className="font-semibold text-lg mb-4">{editItem ? t("admin.freight.editTitle") : t("admin.freight.addTitle")}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="m-4 w-full max-w-md rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60">
+            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{editItem ? t("admin.freight.editTitle") : t("admin.freight.addTitle")}</h3>
             {saveError && (
-              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+              <div className="mb-4 rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 {saveError}
               </div>
             )}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.taxes.nameLabel")}</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.taxes.nameLabel")}</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
                     placeholder={t("admin.freight.namePlaceholder")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                    className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.taxes.countryLabel")}</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.taxes.countryLabel")}</label>
                   <select
                     value={form.countryId}
                     onChange={(e) => setForm(p => ({ ...p, countryId: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                    className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <option value="">{t("admin.taxes.selectOption")}</option>
                     {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.freight.costPerContainerUsd")}</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.freight.costPerContainerUsd")}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
                     <input
@@ -204,28 +204,28 @@ export default function FreightPage() {
                       step="100"
                       value={form.freightPerContainer || ""}
                       onChange={(e) => setForm(p => ({ ...p, freightPerContainer: parseFloat(e.target.value) || 0 }))}
-                      className="w-full pl-6 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                      className="w-full rounded-sm border border-input bg-background py-2 pl-6 pr-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.freight.expiryDate")}</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.freight.expiryDate")}</label>
                   <input
                     type="date"
                     value={form.expiryDate}
                     onChange={(e) => setForm(p => ({ ...p, expiryDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                    className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                   <p className="text-xs text-gray-500 mt-0.5">{t("admin.freight.carrierValidity")}</p>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.freight.notesLabel")}</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("admin.freight.notesLabel")}</label>
                   <input
                     type="text"
                     value={form.notes}
                     onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
                     placeholder={t("admin.freight.notesPlaceholder")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-vbt-blue"
+                    className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
@@ -234,18 +234,19 @@ export default function FreightPage() {
                     id="isDefault"
                     checked={form.isDefault}
                     onChange={(e) => setForm(p => ({ ...p, isDefault: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    className="rounded-sm border-input"
                   />
-                  <label htmlFor="isDefault" className="text-sm text-gray-700">{t("admin.freight.setDefault")}</label>
+                  <label htmlFor="isDefault" className="text-sm text-muted-foreground">{t("admin.freight.setDefault")}</label>
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 justify-end mt-4">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{t("common.cancel")}</button>
+            <div className="mt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowAdd(false)} className="rounded-sm border border-border/60 px-4 py-2 text-sm text-foreground hover:bg-muted">{t("common.cancel")}</button>
               <button
+                type="button"
                 onClick={save}
                 disabled={saving || !form.name || !form.countryId}
-                className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm disabled:opacity-50"
+                className="rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? t("common.saving") : t("common.save")}
               </button>

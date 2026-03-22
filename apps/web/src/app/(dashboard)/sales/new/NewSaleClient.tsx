@@ -225,7 +225,7 @@ export function NewSaleClient({
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionDetails")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -308,7 +308,7 @@ export function NewSaleClient({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionFinancials")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(
@@ -361,7 +361,7 @@ export function NewSaleClient({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">{t("partner.sales.new.sectionInvoices")}</h2>
           <button

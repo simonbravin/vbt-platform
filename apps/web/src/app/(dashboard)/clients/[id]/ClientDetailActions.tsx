@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Pencil } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+const nativeSelectClass =
+  "flex h-10 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 type Country = { id: string; name: string; code: string };
 type Client = {
@@ -106,36 +112,24 @@ export function ClientDetailActions({
   const modalForm = (
     <div className="space-y-3 text-sm">
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.nameLabel")}</label>
-        <input
-          value={form.name}
-          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.nameLabel")}</label>
+        <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.legalName")}</label>
-        <input
-          value={form.legalName}
-          onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.legalName")}</label>
+        <Input value={form.legalName} onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">{t("clients.taxId")}</label>
-          <input
-            value={form.taxId}
-            onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          />
+          <label className="mb-1 block text-xs text-muted-foreground">{t("clients.taxId")}</label>
+          <Input value={form.taxId} onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))} />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">{t("clients.country")}</label>
+          <label className="mb-1 block text-xs text-muted-foreground">{t("clients.country")}</label>
           <select
             value={form.countryId}
             onChange={(e) => setForm((f) => ({ ...f, countryId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
+            className={nativeSelectClass}
           >
             <option value="">{t("clients.noneOption")}</option>
             {countries.map((co) => (
@@ -145,97 +139,63 @@ export function ClientDetailActions({
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.address")}</label>
-        <input
-          value={form.address}
-          onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.address")}</label>
+        <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.city")}</label>
-        <input
-          value={form.city}
-          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.city")}</label>
+        <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-gray-600 mb-1">{t("clients.phone")}</label>
-          <input
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          />
+          <label className="mb-1 block text-xs text-muted-foreground">{t("clients.phone")}</label>
+          <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
         </div>
         <div>
-          <label className="block text-gray-600 mb-1">{t("clients.email")}</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-          />
+          <label className="mb-1 block text-xs text-muted-foreground">{t("clients.email")}</label>
+          <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </div>
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.website")}</label>
-        <input
-          value={form.website}
-          onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.website")}</label>
+        <Input value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} />
       </div>
       <div>
-        <label className="block text-gray-600 mb-1">{t("clients.notes")}</label>
-        <textarea
-          value={form.notes}
-          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-vbt-blue min-h-[60px]"
-        />
+        <label className="mb-1 block text-xs text-muted-foreground">{t("clients.notes")}</label>
+        <Textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="min-h-[60px]" />
       </div>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && (
+        <p className="rounded-sm border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openEdit}
-        className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-      >
-        <Pencil className="w-4 h-4" /> {t("common.edit")}
-      </button>
+      <Button type="button" variant="outline" onClick={openEdit} className="gap-2 border-border/60">
+        <Pencil className="h-4 w-4" /> {t("common.edit")}
+      </Button>
       {editOpen &&
         createPortal(
           <div
-            className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4"
             onClick={() => setEditOpen(false)}
           >
             <div
-              className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6"
+              className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-sm border border-border/60 bg-background p-6 ring-1 ring-border/60"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit client</h2>
+              <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Edit client</h2>
               {modalForm}
-              <div className="flex gap-2 mt-4 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(false)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                >
+              <div className="mt-4 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="border-border/60">
                   {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveEdit}
-                  disabled={saving}
-                  className="px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-blue-900 disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" onClick={saveEdit} disabled={saving} className="border border-primary/20">
                   {saving ? t("common.saving") : t("common.save")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>,

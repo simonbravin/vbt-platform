@@ -135,19 +135,19 @@ export function SalesClient() {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/sales/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-orange text-white rounded-sm text-sm font-medium hover:bg-orange-600"
           >
             <Plus className="w-4 h-4" /> {t("partner.sales.newSaleButton")}
           </Link>
           <Link
             href="/sales/statements"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted"
           >
             {t("partner.sales.statementsLink")}
           </Link>
           <a
             href={`/api/sales/export?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(status && { status }), ...(clientId && { clientId }), ...(projectId && { projectId }) }).toString()}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -156,7 +156,7 @@ export function SalesClient() {
           {dueCount > 0 && (
             <Link
               href="/sales/statements"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-sm text-sm font-medium"
             >
               <Bell className="w-4 h-4" /> {t("partner.sales.paymentsDue", { count: dueCount })}
             </Link>
@@ -170,12 +170,12 @@ export function SalesClient() {
           placeholder={t("partner.sales.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm w-56"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm w-56"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm"
         >
           <option value="">{t("partner.sales.allStatuses")}</option>
           {statusOptions.map(({ value: v, label: l }) => (
@@ -185,7 +185,7 @@ export function SalesClient() {
         <select
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm min-w-[140px]"
         >
           <option value="">{t("partner.sales.allClients")}</option>
           {clients.map((c) => (
@@ -195,7 +195,7 @@ export function SalesClient() {
         <select
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="px-3 py-1.5 border border-border rounded-lg text-sm min-w-[140px]"
+          className="px-3 py-1.5 border border-border rounded-sm text-sm min-w-[140px]"
         >
           <option value="">{t("partner.sales.allProjects")}</option>
           {projects.map((p) => (
@@ -204,11 +204,11 @@ export function SalesClient() {
             </option>
           ))}
         </select>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" aria-label={t("partner.sales.dateFrom")} title={t("partner.sales.dateFrom")} />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm" aria-label={t("partner.sales.dateTo")} title={t("partner.sales.dateTo")} />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-1.5 border border-border rounded-sm text-sm" aria-label={t("partner.sales.dateFrom")} title={t("partner.sales.dateFrom")} />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-1.5 border border-border rounded-sm text-sm" aria-label={t("partner.sales.dateTo")} title={t("partner.sales.dateTo")} />
       </div>
 
-      <div className="bg-card rounded-xl shadow-sm border border-border overflow-x-auto">
+      <div className="surface-card overflow-x-auto">
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>
         ) : sales.length === 0 ? (
@@ -283,7 +283,7 @@ export function SalesClient() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-sm text-sm disabled:opacity-50"
           >
             {t("partner.sales.previous")}
           </button>
@@ -294,7 +294,7 @@ export function SalesClient() {
             type="button"
             disabled={page >= Math.ceil(total / limit)}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50"
+            className="px-3 py-1.5 border border-border rounded-sm text-sm disabled:opacity-50"
           >
             {t("partner.sales.next")}
           </button>

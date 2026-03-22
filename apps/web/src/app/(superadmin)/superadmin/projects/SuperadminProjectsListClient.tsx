@@ -170,7 +170,7 @@ export function SuperadminProjectsListClient() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         {loading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.projectsList.loading")}</div>
         ) : projects.length === 0 ? (
@@ -255,7 +255,7 @@ export function SuperadminProjectsListClient() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                className="surface-card p-5 transition-colors hover:border-border"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">

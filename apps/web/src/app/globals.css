@@ -103,6 +103,33 @@
       );
     background-size: 22px 22px;
   }
+
+  /**
+   * Scrollable main column (partner dashboard + superadmin).
+   * Slightly less top padding than sides/bottom so content sits closer under the top bar.
+   */
+  .app-main-scroll {
+    @apply px-6 pb-6 pt-4;
+  }
+
+  /**
+   * Content surfaces — border-first engineering UI (partner + superadmin).
+   * Prefer these over ad-hoc bg-white / rounded-xl / shadow-sm.
+   */
+  .surface-card {
+    @apply rounded-sm border border-border/60 bg-card text-card-foreground shadow-none ring-1 ring-border/40;
+  }
+  .surface-card-overflow {
+    @apply rounded-sm border border-border/60 bg-card text-card-foreground shadow-none ring-1 ring-border/40 overflow-hidden;
+  }
+  /** Modal / dialog panel (overlays) */
+  .surface-modal {
+    @apply rounded-sm border border-border/60 bg-background text-foreground shadow-none ring-1 ring-border/60;
+  }
+  /** Native inputs outside shadcn Input (forms, admin) */
+  .input-native {
+    @apply w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
 }
 
 /* Staggered reveal — high-impact sections (class-only, no JS) */

@@ -63,7 +63,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
   const statuses = ["draft", "sent", "accepted", "rejected", "expired", "archived"];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {dataLoadError && quotes.length > 0 && (
         <div className="bg-amber-500/15 border border-amber-500/40 rounded-sm px-4 py-3 text-sm flex items-center justify-between gap-4 flex-wrap">
           <p className="text-foreground">
@@ -75,22 +75,19 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           </Link>
         </div>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-border/60 pb-8">
+      <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{t("quotes.title")}</h1>
           <p className="text-muted-foreground mt-1 font-mono text-[11px] tabular-nums uppercase tracking-wider">
             {t("quotes.quotesCount", { count: quotes.length })}
           </p>
         </div>
-        <div className="flex flex-col items-stretch sm:items-end gap-1">
-          <Link
-            href="/quotes/create"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-vbt-orange text-white rounded-sm text-sm font-semibold hover:brightness-110 border border-orange-600/30"
-          >
-            <Plus className="w-4 h-4 shrink-0" /> {t("quotes.newQuote")}
-          </Link>
-          <p className="text-xs text-muted-foreground max-w-xs text-right hidden sm:block">{t("quotes.legacyImportNote")}</p>
-        </div>
+        <Link
+          href="/quotes/create"
+          className="inline-flex shrink-0 items-center justify-center gap-2 self-start border border-orange-600/30 bg-vbt-orange px-4 py-2.5 text-sm font-semibold text-white rounded-sm hover:brightness-110 sm:self-auto"
+        >
+          <Plus className="h-4 w-4 shrink-0" /> {t("quotes.newQuote")}
+        </Link>
       </div>
 
       {/* Filter tabs */}

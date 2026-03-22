@@ -116,29 +116,29 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 border border-border rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
         <button
           type="button"
           onClick={runSearch}
           disabled={searching}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-sm text-sm font-medium hover:bg-primary/90 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
           {searching ? t("projects.searching") : t("projects.search")}
         </button>
-        <div className="flex rounded-lg border border-border overflow-hidden">
+        <div className="flex rounded-sm border border-border overflow-hidden">
           <button
             onClick={() => setView("cards")}
             title={t("projects.cardView")}
-            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-muted"}`}
+            className={`p-2 transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setView("table")}
             title={t("projects.tableView")}
-            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground hover:bg-muted"}`}
+            className={`p-2 transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
           >
             <List className="w-4 h-4" />
           </button>
@@ -146,7 +146,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
       </div>
 
       {projects.length === 0 ? (
-        <div className="bg-card rounded-xl p-12 text-center shadow-sm border border-border">
+        <div className="surface-card p-12 text-center">
           <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
           <p className="text-muted-foreground">
             {search.trim() ? t("projects.noSearchResults") : t("projects.noProjects")}
@@ -163,10 +163,10 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
             <Link
               key={p.id}
               href={`/projects/${p.id}`}
-              className="bg-card rounded-xl shadow-sm border border-border p-5 hover:shadow-md transition-shadow"
+              className="surface-card p-5 transition-colors hover:border-border"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-blue-50 rounded-sm flex items-center justify-center">
                   <FolderOpen className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
           ))}
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="surface-card-overflow">
           <table className="w-full text-sm">
             <thead className="bg-muted border-b border-border">
               <tr>

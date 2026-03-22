@@ -38,7 +38,7 @@ export default async function SuperadminLayout({
       <SuperadminSidebar userDisplayName={safeUser.name?.trim() || safeUser.email?.trim() || null} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-border/60">
         <TopBar user={safeUser} showContextSwitcher />
-        <main className="flex-1 overflow-y-auto p-6 bg-background">{children}</main>
+        <main className="app-main-scroll flex-1 overflow-y-auto bg-background">{children}</main>
       </div>
     </div>
   );

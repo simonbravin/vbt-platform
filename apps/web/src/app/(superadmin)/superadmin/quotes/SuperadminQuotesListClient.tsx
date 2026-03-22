@@ -96,7 +96,7 @@ export function SuperadminQuotesListClient() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
+        <div className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-foreground flex items-center justify-between gap-2 flex-wrap">
           <span>
             {error}
             {quotes.length === 0 && t("superadmin.quotesList.emptyListHint")}
@@ -104,7 +104,7 @@ export function SuperadminQuotesListClient() {
           <button
             type="button"
             onClick={() => fetchQuotes()}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
+            className="rounded-sm px-3 py-1.5 text-sm font-medium bg-amber-600 text-white hover:bg-amber-700"
           >
             {t("superadmin.quotesList.retry")}
           </button>
@@ -114,7 +114,7 @@ export function SuperadminQuotesListClient() {
         <select
           value={organizationId}
           onChange={(e) => setOrganizationId(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[180px]"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[180px]"
         >
           <option value="">{t("superadmin.quotesList.allCompanies")}</option>
           {partners.map((p) => (
@@ -127,16 +127,16 @@ export function SuperadminQuotesListClient() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
+          className="rounded-sm border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
         />
         <button
           type="button"
           onClick={() => setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+          className="rounded-sm px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
         >
           {t("superadmin.quotesList.search")}
         </button>
-        <div className="flex overflow-hidden rounded-lg border border-border">
+        <div className="flex overflow-hidden rounded-sm border border-border">
           <button
             type="button"
             onClick={() => setView("table")}
@@ -157,7 +157,7 @@ export function SuperadminQuotesListClient() {
         <button
           type="button"
           onClick={() => setStatusFilter("")}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+          className={`rounded-sm px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
         >
           {t("superadmin.quotesList.all")}
         </button>
@@ -166,14 +166,14 @@ export function SuperadminQuotesListClient() {
             key={s}
             type="button"
             onClick={() => setStatusFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            className={`rounded-sm px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
           >
             {t(STATUS_KEYS[s] ?? s)}
           </button>
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         {loading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">{t("superadmin.quotesList.loading")}</div>
         ) : quotes.length === 0 ? (
@@ -270,10 +270,10 @@ export function SuperadminQuotesListClient() {
               return (
                 <div
                   key={q.id}
-                  className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                  className="surface-card p-5 transition-colors hover:border-border"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-orange-50 dark:bg-orange-950/40">
                       <FileText className="h-5 w-5 text-vbt-orange" />
                     </div>
                     <span

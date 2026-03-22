@@ -85,13 +85,13 @@ export function DocumentsPartnerClient() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+      <div className="surface-card p-8 text-center text-sm text-muted-foreground">
         {t("common.loading")}
       </div>
     );
   }
   if (error) {
-    return <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
+    return <div className="rounded-sm border border-amber-200 bg-amber-50 p-6 text-amber-800">{error}</div>;
   }
 
   return (
@@ -108,12 +108,12 @@ export function DocumentsPartnerClient() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("partner.documents.searchPlaceholder")}
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-vbt-blue focus:ring-1 focus:ring-vbt-blue"
+              className="w-full rounded-sm border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
               autoComplete="off"
             />
           </div>
           <div
-            className="inline-flex shrink-0 rounded-lg border border-gray-200 bg-gray-50 p-0.5"
+            className="inline-flex shrink-0 rounded-sm border border-border/60 bg-muted/30 p-0.5 ring-1 ring-border/40"
             role="group"
             aria-label={t("partner.documents.layoutToggleGroup")}
           >
@@ -122,10 +122,10 @@ export function DocumentsPartnerClient() {
               onClick={() => setView("table")}
               aria-pressed={viewMode === "table"}
               title={t("partner.documents.viewTableAria")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === "table"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutList className="h-4 w-4" />
@@ -136,10 +136,10 @@ export function DocumentsPartnerClient() {
               onClick={() => setView("cards")}
               aria-pressed={viewMode === "cards"}
               title={t("partner.documents.viewCardsAria")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === "cards"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function DocumentsPartnerClient() {
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         {documents.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="mx-auto h-12 w-12 text-gray-300" />
@@ -173,7 +173,7 @@ export function DocumentsPartnerClient() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {filteredDocuments.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3">
@@ -189,7 +189,7 @@ export function DocumentsPartnerClient() {
                           href={`/api/saas/documents/${doc.id}/file`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-vbt-blue hover:underline"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                         >
                           {t("partner.documents.openFile")}
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -208,7 +208,7 @@ export function DocumentsPartnerClient() {
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="flex flex-col rounded-lg border border-gray-200 bg-gray-50/50 p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="flex flex-col rounded-sm border border-border/60 bg-muted/20 p-4 transition-colors hover:border-border"
               >
                 <div className="mb-2 flex items-start gap-2">
                   <FileText className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
@@ -228,7 +228,7 @@ export function DocumentsPartnerClient() {
                       href={`/api/saas/documents/${doc.id}/file`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-vbt-blue px-3 py-2 text-sm font-medium text-white hover:bg-vbt-blue/90"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                     >
                       {t("partner.documents.openFile")}
                       <ExternalLink className="h-3.5 w-3.5" />

@@ -96,12 +96,12 @@ export function TrainingAdminClient() {
   return (
     <div className="space-y-8">
       {error && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+        <div className="rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           {error}
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-gray-500" />
           <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.programs")}</h2>
@@ -121,7 +121,7 @@ export function TrainingAdminClient() {
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colEnrollments")}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {programs.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3">
@@ -141,7 +141,7 @@ export function TrainingAdminClient() {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="surface-card-overflow">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <Users className="h-5 w-5 text-gray-500" />
           <h2 className="text-lg font-semibold text-gray-900">{t("superadmin.training.enrollments")}</h2>
@@ -162,7 +162,7 @@ export function TrainingAdminClient() {
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("superadmin.training.colProgress")}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {enrollments.map((e) => (
                   <tr key={e.id} className="hover:bg-gray-50">
                     <td className="px-5 py-3 text-sm text-gray-900">

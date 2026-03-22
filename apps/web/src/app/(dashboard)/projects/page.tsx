@@ -45,31 +45,31 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-6">
       {dataLoadError && (projects.length > 0 || total > 0) && (
-        <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-amber-500/15 border border-amber-500/40 rounded-sm px-4 py-3 text-sm flex items-center justify-between gap-4 flex-wrap">
           <p className="text-foreground">
             <span className="font-medium">{t("dashboard.errorLoad")}</span>
             <span className="text-muted-foreground ml-1">{t("dashboard.errorHelp")}</span>
           </p>
-          <Link href="/projects" className="shrink-0 px-3 py-1.5 bg-muted text-foreground rounded-lg text-sm font-medium hover:bg-muted/80">
+          <Link href="/projects" className="shrink-0 rounded-sm bg-muted px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/80">
             {t("common.retry")}
           </Link>
         </div>
       )}
       <div className="flex flex-col sm:flex-row justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("projects.title")}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{t("projects.projectsCount", { count: total })}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("projects.title")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t("projects.projectsCount", { count: total })}</p>
         </div>
         <div className="flex gap-2">
           <Link
             href="/projects/logs"
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-sm border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40"
           >
             <History className="w-4 h-4" /> {t("projects.logs")}
           </Link>
           <Link
             href="/projects/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vbt-blue text-white rounded-lg text-sm font-medium hover:bg-vbt-blue/90"
+            className="inline-flex items-center gap-2 rounded-sm border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             <Plus className="w-4 h-4" /> {t("projects.newProject")}
           </Link>
