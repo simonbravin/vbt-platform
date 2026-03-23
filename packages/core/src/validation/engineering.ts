@@ -1,16 +1,6 @@
 import { z } from "zod";
 
-export const engineeringStatusEnum = z.enum([
-  "draft",
-  "submitted",
-  "in_review",
-  "pending_info",
-  "needs_info",
-  "in_progress",
-  "completed",
-  "delivered",
-  "rejected",
-]);
+export const engineeringStatusEnum = z.enum(["draft", "in_review", "completed"]);
 
 export const createEngineeringRequestSchema = z.object({
   projectId: z.string().min(1),

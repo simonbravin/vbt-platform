@@ -7,17 +7,7 @@ import { parseEngineeringTimelineEvent } from "@vbt/core";
 import { useT } from "@/lib/i18n/context";
 import { renderEngineeringTimelineBody } from "@/lib/engineering-timeline-ui";
 
-const ENGINEERING_STATUSES = [
-  "draft",
-  "submitted",
-  "in_review",
-  "pending_info",
-  "needs_info",
-  "in_progress",
-  "completed",
-  "delivered",
-  "rejected",
-] as const;
+const ENGINEERING_STATUSES = ["draft", "in_review", "completed"] as const;
 
 type ReviewEvent = {
   id: string;

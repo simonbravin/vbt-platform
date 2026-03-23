@@ -16,7 +16,7 @@ import {
   QuoteTaxResolutionError,
   resolvePartnerPricingConfig,
   resolveSaaSQuotePricingForCreate,
-  projectHasDeliveredEngineering,
+  projectHasCompletedEngineering,
   assertEngineeringRequestForQuote,
 } from "@vbt/core";
 import type { Prisma } from "@vbt/db";
@@ -99,12 +99,12 @@ async function postHandler(req: Request) {
     select: { requireDeliveredEngineeringForQuotes: true },
   });
   if (partnerProfile?.requireDeliveredEngineeringForQuotes) {
-    const ok = await projectHasDeliveredEngineering(prisma, orgId, data.projectId);
+    const ok = await projectHasCompletedEngineering(prisma, orgId, data.projectId);
     if (!ok) {
       return NextResponse.json(
         {
           error:
-            "This partner requires at least one delivered engineering request for the project before creating quotes.",
+            "This partner requires at least one completed engineering request for the project before creating quotes.",
           code: "ENGINEERING_NOT_DELIVERED",
         },
         { status: 400 }

@@ -143,7 +143,7 @@ export type UpdatePartnerInput = {
   enabledSystems?: string[] | null;
   /** Deep-merge into `partner_profiles.quote_defaults` (SaaS pricing defaults + country overrides). */
   quotePricingDefaults?: Partial<PartnerQuoteDefaultsJson> | null;
-  /** When true, creating a SaaS quote requires at least one delivered engineering request on the project. */
+  /** When true, creating a SaaS quote requires at least one completed engineering request on the project. */
   requireDeliveredEngineeringForQuotes?: boolean;
 };
 

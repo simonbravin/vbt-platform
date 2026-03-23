@@ -7,7 +7,7 @@ import { createEngineeringRequestSchema } from "@vbt/core/validation";
 import { createActivityLog } from "@/lib/audit";
 import { withSaaSHandler } from "@/lib/saas-handler";
 
-const ENGINEERING_STATUSES = ["draft", "submitted", "in_review", "pending_info", "needs_info", "in_progress", "completed", "delivered", "rejected"] as const;
+const ENGINEERING_STATUSES = ["draft", "in_review", "completed"] as const;
 
 async function getHandler(req: Request) {
   const ctx = await getTenantContext();

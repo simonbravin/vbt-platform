@@ -263,13 +263,14 @@ export async function updateEngineeringRequestStatus(
   });
 }
 
-export async function projectHasDeliveredEngineering(
+/** True if the project has at least one engineering request closed as completed (partner quote gating). */
+export async function projectHasCompletedEngineering(
   prisma: PrismaClient,
   organizationId: string,
   projectId: string
 ): Promise<boolean> {
   const n = await prisma.engineeringRequest.count({
-    where: { organizationId, projectId, status: "delivered" },
+    where: { organizationId, projectId, status: "completed" },
   });
   return n > 0;
 }
@@ -296,7 +297,7 @@ export type AddEngineeringReviewEventInput = {
 
 /**
  * Creates a timeline event; optionally updates request status in the same transaction.
- * Partners may only use visibility `partner` and toStatus `submitted` when resubmitting from draft / needs_info / pending_info.
+ * Partners may only use visibility `partner` and toStatus `in_review` when submitting from draft.
  */
 export async function addEngineeringReviewEvent(
   prisma: PrismaClient,
@@ -318,13 +319,11 @@ export async function addEngineeringReviewEvent(
       throw new Error("Forbidden");
     }
     if (input.toStatus != null) {
-      if (input.toStatus !== "submitted") {
+      if (input.toStatus !== "in_review") {
         throw new Error("Invalid status transition for partner");
       }
-      const from = existing.status;
-      const canSubmit = from === "draft" || from === "needs_info" || from === "pending_info";
-      if (!canSubmit) {
-        throw new Error("Cannot resubmit from current status");
+      if (existing.status !== "draft") {
+        throw new Error("Cannot submit from current status");
       }
     }
   }
@@ -361,12 +360,7 @@ export type EngineeringTimelineEventPayload =
   | { k: "platform_revision"; label: string; version: number };
 
 /** Partner may attach files only in these statuses (API + UI). */
-export const ENGINEERING_PARTNER_FILE_UPLOAD_STATUSES = [
-  "draft",
-  "submitted",
-  "needs_info",
-  "pending_info",
-] as const;
+export const ENGINEERING_PARTNER_FILE_UPLOAD_STATUSES = ["draft", "in_review"] as const;
 
 export type EngineeringPartnerFileUploadStatus = (typeof ENGINEERING_PARTNER_FILE_UPLOAD_STATUSES)[number];
 

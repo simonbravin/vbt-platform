@@ -141,8 +141,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
     }
   };
 
-  const canResubmit =
-    request?.status === "draft" || request?.status === "needs_info" || request?.status === "pending_info";
+  const canSubmitForReview = request?.status === "draft";
 
   const canUploadFiles =
     !!request && isEngineeringStatusAllowingPartnerUpload(request.status);
@@ -156,7 +155,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
         body: noteBody.trim(),
         visibility: "partner",
       };
-      if (resubmit && canResubmit) body.toStatus = "submitted";
+      if (resubmit && canSubmitForReview) body.toStatus = "in_review";
       const res = await fetch(`/api/saas/engineering/${requestId}/review-events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -411,7 +410,7 @@ export function EngineeringDetailClient({ requestId, initialRequest }: Props) {
           className="input-native mt-3"
           placeholder={t("partner.engineering.notePlaceholder")}
         />
-        {canResubmit && (
+        {canSubmitForReview && (
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"

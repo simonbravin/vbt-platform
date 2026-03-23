@@ -6,7 +6,7 @@ import { createActivityLog } from "@/lib/audit";
 import { sendEngineeringAssigneeEmail, sendPartnerEngineeringEventEmail } from "@/lib/engineering-email";
 import { z } from "zod";
 
-const ENGINEERING_STATUSES = ["draft", "submitted", "in_review", "pending_info", "needs_info", "in_progress", "completed", "delivered", "rejected"] as const;
+const ENGINEERING_STATUSES = ["draft", "in_review", "completed"] as const;
 
 const patchSchema = z.object({
   status: z.enum(ENGINEERING_STATUSES).optional(),
@@ -121,18 +121,12 @@ export async function PATCH(
 
     if (before?.organizationId && data.status != null && data.status !== before.status) {
       const oid = before.organizationId;
-      if (data.status === "needs_info" || data.status === "pending_info") {
-        void sendPartnerEngineeringEventEmail({
-          organizationId: oid,
-          event: "needs_info",
-          requestId: params.id,
-        }).catch((err) => console.warn("[engineering email] needs_info", err));
-      } else if (data.status === "delivered") {
+      if (data.status === "completed") {
         void sendPartnerEngineeringEventEmail({
           organizationId: oid,
           event: "delivered",
           requestId: params.id,
-        }).catch((err) => console.warn("[engineering email] delivered", err));
+        }).catch((err) => console.warn("[engineering email] completed", err));
       }
     }
     if (

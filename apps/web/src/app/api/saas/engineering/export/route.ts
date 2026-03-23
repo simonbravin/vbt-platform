@@ -5,17 +5,7 @@ import { listEngineeringRequests } from "@vbt/core";
 import { withSaaSHandler } from "@/lib/saas-handler";
 import { rowsToCsv } from "@/lib/csv-export";
 
-const ENGINEERING_STATUSES = [
-  "draft",
-  "submitted",
-  "in_review",
-  "pending_info",
-  "needs_info",
-  "in_progress",
-  "completed",
-  "delivered",
-  "rejected",
-] as const;
+const ENGINEERING_STATUSES = ["draft", "in_review", "completed"] as const;
 
 async function getHandler(req: Request) {
   const ctx = await getTenantContext();

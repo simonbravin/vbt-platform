@@ -15,7 +15,7 @@ type RequestRow = {
   createdAt: string;
 };
 
-const STATUS_OPTIONS = ["draft", "submitted", "in_review", "pending_info", "needs_info", "in_progress", "completed", "delivered", "rejected"];
+const STATUS_OPTIONS = ["draft", "in_review", "completed"] as const;
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-engineering-view";

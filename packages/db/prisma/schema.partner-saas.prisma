@@ -89,12 +89,9 @@ enum QuoteItemType {
 }
 
 enum EngineeringRequestStatus {
-  submitted
+  draft
   in_review
-  pending_info
-  in_progress
   completed
-  delivered
 }
 
 enum DocumentVisibility {
@@ -436,7 +433,7 @@ model EngineeringRequest {
   organizationId       String                    @map("organization_id")
   projectId            String                    @map("project_id")
   requestNumber        String                    @map("request_number")
-  status               EngineeringRequestStatus  @default(submitted)
+  status               EngineeringRequestStatus  @default(draft)
   requestedByUserId    String?                   @map("requested_by_user_id")
   assignedToUserId     String?                   @map("assigned_to_user_id")
   requestType          String?                   @map("request_type")

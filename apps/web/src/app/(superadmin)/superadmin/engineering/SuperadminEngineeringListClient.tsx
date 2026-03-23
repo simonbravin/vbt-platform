@@ -6,17 +6,7 @@ import { Wrench, ChevronRight, Search, Download } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 
-const ENGINEERING_STATUSES = [
-  "draft",
-  "submitted",
-  "in_review",
-  "pending_info",
-  "needs_info",
-  "in_progress",
-  "completed",
-  "delivered",
-  "rejected",
-] as const;
+const ENGINEERING_STATUSES = ["draft", "in_review", "completed"] as const;
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-superadmin-engineering-view";
