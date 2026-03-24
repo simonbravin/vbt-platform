@@ -1,6 +1,67 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Image, pdf } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image, pdf, Svg, Line } from "@react-pdf/renderer";
 import { CERTIFICATE_AUTHORIZED_BY, CERTIFICATE_ISSUED_BY } from "@/lib/certificate-signers";
+
+/** A4 apaisado en pt (~297×210 mm), alineado a la cuadrícula HTML (mayor ~24 mm, menor ~6 mm). */
+const PAGE_W = 842;
+const PAGE_H = 595;
+const GRID_MINOR_PT = 17;
+const GRID_MAJOR_EVERY = 4;
+
+function CertificateBlueprintGrid() {
+  const vert: React.ReactNode[] = [];
+  for (let i = 1; i * GRID_MINOR_PT < PAGE_W; i++) {
+    const x = i * GRID_MINOR_PT;
+    const major = i % GRID_MAJOR_EVERY === 0;
+    vert.push(
+      <Line
+        key={`gv${i}`}
+        x1={x}
+        y1={0}
+        x2={x}
+        y2={PAGE_H}
+        stroke="#0f172a"
+        strokeOpacity={major ? 0.07 : 0.035}
+        strokeWidth={0.35}
+      />
+    );
+  }
+  const horiz: React.ReactNode[] = [];
+  for (let j = 1; j * GRID_MINOR_PT < PAGE_H; j++) {
+    const y = j * GRID_MINOR_PT;
+    const major = j % GRID_MAJOR_EVERY === 0;
+    horiz.push(
+      <Line
+        key={`gh${j}`}
+        x1={0}
+        y1={y}
+        x2={PAGE_W}
+        y2={y}
+        stroke="#0f172a"
+        strokeOpacity={major ? 0.07 : 0.035}
+        strokeWidth={0.35}
+      />
+    );
+  }
+  return (
+    <View style={gridStyles.wrap}>
+      <Svg width={PAGE_W} height={PAGE_H} viewBox={`0 0 ${PAGE_W} ${PAGE_H}`}>
+        {vert}
+        {horiz}
+      </Svg>
+    </View>
+  );
+}
+
+const gridStyles = StyleSheet.create({
+  wrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: PAGE_W,
+    height: PAGE_H,
+  },
+});
 
 const styles = StyleSheet.create({
   page: {
@@ -9,6 +70,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#0f172a",
     backgroundColor: "#ffffff",
+    position: "relative",
   },
   header: {
     flexDirection: "row",
@@ -20,24 +82,15 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   brandBlock: { flexDirection: "row", alignItems: "center" },
-  /** Panel negro: el PNG oficial "just VISION" trae fondo negro; así queda deliberado en hoja blanca. */
-  logoPanel: {
-    backgroundColor: "#000000",
-    padding: 5,
-    width: 58,
-    height: 66,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logo: { width: 48, height: 56, objectFit: "contain" },
-  logoPlaceholder: { width: 48, height: 56, borderWidth: 1, borderColor: "#0c4a6e" },
+  logo: { width: 56, height: 64, objectFit: "contain" },
+  logoPlaceholder: { width: 56, height: 64, borderWidth: 1, borderColor: "#0c4a6e" },
   brandText: { marginLeft: 10, maxWidth: 200 },
   brandSmall: { fontSize: 7, letterSpacing: 1.2, textTransform: "uppercase", color: "#475569" },
   brandName: { fontSize: 10, fontFamily: "Helvetica-Bold", marginTop: 2 },
   titleBlock: { alignItems: "flex-end", flex: 1 },
   docTitle: {
     fontSize: 15,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Times-Bold",
     letterSpacing: 0.5,
     color: "#0c4a6e",
     textAlign: "right",
@@ -59,7 +112,7 @@ const styles = StyleSheet.create({
   },
   recipientName: {
     fontSize: 22,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Times-Bold",
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 2,
@@ -132,12 +185,11 @@ function CertificateDoc(props: TrainingCertificatePdfInput) {
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
+        <CertificateBlueprintGrid />
         <View style={styles.header}>
           <View style={styles.brandBlock}>
             {props.logoDataUrl ? (
-              <View style={styles.logoPanel}>
-                <Image src={props.logoDataUrl} style={styles.logo} />
-              </View>
+              <Image src={props.logoDataUrl} style={styles.logo} />
             ) : (
               <View style={styles.logoPlaceholder} />
             )}

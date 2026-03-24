@@ -13,9 +13,13 @@ function publicAppBaseUrl(): string {
 }
 
 function loadLogoDataUrl(): string | null {
+  const candidates = [
+    path.join(process.cwd(), "public", "brand", "vision-logo.png"),
+    path.join(process.cwd(), "apps", "web", "public", "brand", "vision-logo.png"),
+  ];
   try {
-    const logoPath = path.join(process.cwd(), "public", "brand", "vision-logo.png");
-    if (!fs.existsSync(logoPath)) return null;
+    const logoPath = candidates.find((p) => fs.existsSync(p));
+    if (!logoPath) return null;
     const b64 = fs.readFileSync(logoPath).toString("base64");
     return `data:image/png;base64,${b64}`;
   } catch {
