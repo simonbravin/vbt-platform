@@ -13,11 +13,14 @@ En **Vercel** el proyecto ya tiene definidas (nombres exactos; **no** documentar
 | `NEXT_PUBLIC_APP_URL` | URL pública de la app (enlaces, QR de certificados, etc.) |
 | `RESEND_API_KEY` | Envío de correo (Resend) |
 | `RESEND_FROM_EMAIL` | Remitente verificado |
+| `SEND_ENGINEERING_EVENT_EMAILS` | `1` / `true` / `yes`: habilita correos transaccionales de eventos de ingeniería (además de `RESEND_API_KEY`) |
 | `SUPERADMIN_EMAIL` | Bootstrap / acceso superadmin |
 | `SUPERADMIN_PASSWORD` | Bootstrap / acceso superadmin |
+| `CRON_SECRET` | Bearer para rutas cron (p. ej. `api/cron/sales-due-reminders`) salvo invocación con header `x-vercel-cron` en Vercel |
+| `NEXT_PUBLIC_INVENTORY_LOW_STOCK_THRESHOLD` | Umbral de stock bajo en UI de inventario (cliente) |
 | `R2_ACCOUNT_ID` | Cloudflare R2 |
 | `R2_ACCESS_KEY_ID` | Credencial R2 |
-| `R2_SECRET_ACCESS_KEY` | Secreto R2 (requerido por `r2-client.ts` junto con bucket) |
-| `R2_BUCKET_NAME` | Bucket de objetos |
+| `R2_SECRET_ACCESS_KEY` | Secreto R2 (`r2-client.ts`) |
+| `R2_BUCKET_NAME` | Bucket de objetos R2 |
 
 Si el usuario pide aplicar migraciones contra producción, puede hacerlo con `DATABASE_URL` apuntando a Neon (p. ej. `pnpm --filter @vbt/db migrate:deploy` desde `packages/db` con la URL cargada en el entorno).
