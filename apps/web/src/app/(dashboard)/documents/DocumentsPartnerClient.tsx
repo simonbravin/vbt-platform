@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { FileText, ExternalLink, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
@@ -19,7 +20,11 @@ type Doc = {
 
 type ViewMode = "table" | "cards";
 
-export function DocumentsPartnerClient() {
+export function DocumentsPartnerClient({
+  initialCategoryCode = null,
+}: {
+  initialCategoryCode?: string | null;
+}) {
   const t = useT();
   const [documents, setDocuments] = useState<Doc[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,6 +32,7 @@ export function DocumentsPartnerClient() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [categoryCode, setCategoryCode] = useState<string | null>(initialCategoryCode?.trim() || null);
 
   useEffect(() => {
     try {
@@ -47,10 +53,18 @@ export function DocumentsPartnerClient() {
   };
 
   useEffect(() => {
+    const next = initialCategoryCode?.trim() || null;
+    setCategoryCode(next);
+  }, [initialCategoryCode]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fetch("/api/saas/documents?limit=100");
+        const qs = new URLSearchParams();
+        qs.set("limit", "100");
+        if (categoryCode) qs.set("categoryCode", categoryCode);
+        const r = await fetch(`/api/saas/documents?${qs.toString()}`);
         if (cancelled) return;
         if (!r.ok) {
           setError(t("partner.documents.failedToLoad"));
@@ -69,7 +83,7 @@ export function DocumentsPartnerClient() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, categoryCode]);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) =>
@@ -84,19 +98,38 @@ export function DocumentsPartnerClient() {
 
   const hasSearch = searchQuery.trim().length > 0;
 
+  const filterBanner =
+    categoryCode ? (
+      <div className="rounded-sm border border-border/60 bg-muted/30 px-4 py-2 text-sm flex flex-wrap items-center justify-between gap-2">
+        <span className="text-muted-foreground">
+          {t("partner.documents.filteredByCategory", { code: categoryCode })}
+        </span>
+        <Link href="/documents" className="font-medium text-primary hover:underline shrink-0">
+          {t("partner.documents.clearCategoryFilter")}
+        </Link>
+      </div>
+    ) : null;
+
   if (loading) {
     return (
-      <div className="surface-card p-8 text-center text-sm text-muted-foreground">
-        {t("common.loading")}
+      <div className="space-y-4">
+        {filterBanner}
+        <div className="surface-card p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
   if (error) {
-    return <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">{error}</div>;
+    return (
+      <div className="space-y-4">
+        {filterBanner}
+        <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-6 text-foreground">{error}</div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {filterBanner}
       {documents.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 min-w-0">

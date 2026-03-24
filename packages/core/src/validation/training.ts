@@ -24,3 +24,39 @@ export const updateOrgMemberSchema = z.object({
   role: orgMemberRoleEnum.optional(),
   status: z.enum(["active", "inactive", "invited", "suspended"]).optional(),
 });
+
+export const trainingProgramVisibilityEnum = z.enum(["all_partners", "selected_partners"]);
+
+export const createTrainingProgramSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  level: z.string().nullable().optional(),
+  status: z.string().optional(),
+  durationHours: z.number().nullable().optional(),
+  visibility: trainingProgramVisibilityEnum.optional(),
+  publishedAt: z.union([z.string().datetime(), z.null()]).optional(),
+  allowedOrganizationIds: z.array(z.string()).optional(),
+});
+
+export const updateTrainingProgramSchema = createTrainingProgramSchema.partial();
+
+export const trainingLiveSessionStatusEnum = z.enum(["scheduled", "cancelled", "completed"]);
+
+export const createLiveSessionSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  startsAt: z.string().datetime(),
+  endsAt: z.union([z.string().datetime(), z.null()]).optional(),
+  meetingUrl: z.string().nullable().optional(),
+  status: trainingLiveSessionStatusEnum.optional(),
+});
+
+export const updateLiveSessionSchema = createLiveSessionSchema.partial();
+
+export const enrollLiveSessionSchema = z.object({
+  userId: z.string().optional(),
+});
+
+export const sessionAttendanceSchema = z.object({
+  status: z.enum(["attended", "no_show"]),
+});

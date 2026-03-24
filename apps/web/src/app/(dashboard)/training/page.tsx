@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAuth } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -20,6 +21,12 @@ export default async function TrainingPage() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">{t("partner.training.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("partner.training.subtitle")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          <Link href="/documents?categoryCode=training" className="font-medium text-primary hover:underline">
+            {t("nav.documents")}
+          </Link>{" "}
+          {t("partner.training.documentsStudySuffix")}
+        </p>
       </div>
       <TrainingPartnerClient />
     </div>

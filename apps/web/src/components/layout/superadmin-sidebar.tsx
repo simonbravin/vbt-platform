@@ -26,6 +26,8 @@ import {
   FolderOpen,
   Wrench,
   ShoppingCart,
+  Brain,
+  Award,
 } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
@@ -52,6 +54,8 @@ const superadminNavigation: NavItem[] = [
     children: [
       { labelKey: "nav.superadmin.documents", href: "/superadmin/documents", icon: FileText },
       { labelKey: "nav.superadmin.training", href: "/superadmin/training", icon: BookOpen },
+      { labelKey: "nav.superadmin.trainingCertificates", href: "/superadmin/training/certificates", icon: Award },
+      { labelKey: "nav.superadmin.quizzes", href: "/superadmin/quizzes", icon: Brain },
     ],
   },
   { labelKey: "nav.superadmin.analytics", href: "/superadmin/analytics", icon: BarChart3 },

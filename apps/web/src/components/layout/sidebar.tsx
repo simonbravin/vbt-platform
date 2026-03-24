@@ -63,9 +63,11 @@ interface SidebarProps {
   role: string;
   /** Shown under the nav (name or email). */
   userDisplayName?: string | null;
+  /** When false, hides Capacitación (module visibility). Defaults true. */
+  showTrainingNav?: boolean;
 }
 
-export function Sidebar({ role, userDisplayName }: SidebarProps) {
+export function Sidebar({ role, userDisplayName, showTrainingNav = true }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -106,7 +108,10 @@ export function Sidebar({ role, userDisplayName }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
-        {navigation.filter(canSee).map((item) => {
+        {navigation
+          .filter(canSee)
+          .filter((item) => showTrainingNav || item.href !== "/training")
+          .map((item) => {
           if (item.children) {
             const isOpen = expanded.includes(item.labelKey);
             const hasActiveChild = item.children.some(

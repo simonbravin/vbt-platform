@@ -4,4 +4,5 @@ export * from "./engineering";
 export * from "./partners";
 export * from "./documents";
 export * from "./training";
+export * from "./quizzes";
 export * from "./analytics";

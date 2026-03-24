@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@vbt/db";
+import { resolveTrainingModuleVisible } from "@vbt/core";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/topbar";
 
@@ -62,11 +63,14 @@ export default async function DashboardLayout({
       activeOrgName,
     };
 
+    const showTrainingModule = await resolveTrainingModuleVisible(prisma, effectiveOrgId);
+
     return (
       <div className="flex h-screen bg-muted overflow-hidden">
         <Sidebar
           role={safeUser.role}
           userDisplayName={safeUser.name?.trim() || safeUser.email?.trim() || null}
+          showTrainingNav={showTrainingModule}
         />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-border/60">
           <TopBar user={safeUser} activeOrgName={safeUser.activeOrgName} />

@@ -130,6 +130,41 @@ enum TrainingEnrollmentStatus {
   completed
 }
 
+/// Who may see a training program (partner-facing). Empty allowedOrganizations = all partner orgs when all_partners.
+enum TrainingProgramVisibility {
+  all_partners
+  selected_partners
+}
+
+enum TrainingLiveSessionStatus {
+  scheduled
+  cancelled
+  completed
+}
+
+enum TrainingSessionEnrollmentStatus {
+  registered
+  cancelled
+  attended
+  no_show
+}
+
+enum QuizQuestionStatus {
+  draft
+  published
+}
+
+enum QuizDefinitionStatus {
+  draft
+  published
+  archived
+}
+
+enum TrainingCertificateType {
+  live_session
+  quiz
+}
+
 enum SaleOrderStatus {
   DRAFT
   CONFIRMED
@@ -173,7 +208,11 @@ model User {
   engineeringFiles        EngineeringFile[]
   engineeringDeliverables EngineeringDeliverable[]
   documentsCreated        Document[]              @relation("DocumentCreatedBy")
-  trainingEnrollments     TrainingEnrollment[]
+  trainingEnrollments            TrainingEnrollment[]
+  trainingSessionEnrollments     TrainingSessionEnrollment[] @relation("TrainingSessionEnrollmentUser")
+  sessionAttendanceMarked        TrainingSessionEnrollment[] @relation("TrainingSessionAttendanceMarker")
+  quizAttempts                   QuizAttempt[]
+  trainingCertificates           TrainingCertificate[]
   activityLogs            ActivityLog[]
   invitedOrgMembers       OrgMember[]             @relation("InvitedBy")
   approvedProjectClaims   ProjectClaim[]
@@ -226,7 +265,12 @@ model Organization {
   projectClaims       ProjectClaim[]           @relation("ClaimingOrganization")
   quotes              Quote[]
   engineeringRequests EngineeringRequest[]
-  trainingEnrollments  TrainingEnrollment[]
+  trainingEnrollments           TrainingEnrollment[]
+  trainingProgramAllowances     TrainingProgramAllowedOrganization[]
+  trainingSessionEnrollments    TrainingSessionEnrollment[]
+  trainingCertificates          TrainingCertificate[]
+  quizAttempts                  QuizAttempt[]
+  quizAllowances                QuizQuizAllowedOrganization[]
   activityLogs        ActivityLog[]
   warehouses          Warehouse[]
   freightProfiles     FreightProfile[]
@@ -885,13 +929,78 @@ model TrainingProgram {
   level         String?
   status        String   @default("active")
   durationHours Float?   @map("duration_hours")
+  visibility    TrainingProgramVisibility @default(all_partners) @map("visibility")
+  publishedAt   DateTime? @map("published_at")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  modules    TrainingModule[]
-  enrollments TrainingEnrollment[]
+  modules              TrainingModule[]
+  enrollments          TrainingEnrollment[]
+  allowedOrganizations TrainingProgramAllowedOrganization[]
+  liveSessions         TrainingLiveSession[]
 
+  @@index([visibility])
+  @@index([publishedAt])
   @@map("training_programs")
+}
+
+/// When visibility is selected_partners, only these orgs see the program. Ignored when all_partners.
+model TrainingProgramAllowedOrganization {
+  id             String   @id @default(cuid())
+  trainingProgramId String @map("training_program_id")
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingProgramId, organizationId])
+  @@index([organizationId])
+  @@map("training_program_allowed_organizations")
+}
+
+model TrainingLiveSession {
+  id                String                   @id @default(cuid())
+  trainingProgramId String                   @map("training_program_id")
+  title             String
+  description       String?
+  startsAt          DateTime                 @map("starts_at")
+  endsAt            DateTime?                @map("ends_at")
+  meetingUrl        String?                  @map("meeting_url")
+  status            TrainingLiveSessionStatus @default(scheduled)
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+
+  trainingProgram TrainingProgram             @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  enrollments     TrainingSessionEnrollment[]
+  certificates    TrainingCertificate[]
+
+  @@index([trainingProgramId])
+  @@index([startsAt])
+  @@map("training_live_sessions")
+}
+
+model TrainingSessionEnrollment {
+  id                     String                         @id @default(cuid())
+  liveSessionId          String                         @map("live_session_id")
+  organizationId       String                         @map("organization_id")
+  userId                 String                         @map("user_id")
+  status                 TrainingSessionEnrollmentStatus @default(registered)
+  attendanceMarkedAt     DateTime?                      @map("attendance_marked_at")
+  attendanceMarkedByUserId String?                    @map("attendance_marked_by_user_id")
+  createdAt              DateTime                      @default(now()) @map("created_at")
+  updatedAt              DateTime                      @updatedAt @map("updated_at")
+
+  liveSession            TrainingLiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  organization           Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                   User                @relation("TrainingSessionEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  attendanceMarkedByUser User?               @relation("TrainingSessionAttendanceMarker", fields: [attendanceMarkedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId, liveSessionId])
+  @@index([liveSessionId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("training_session_enrollments")
 }
 
 model TrainingModule {
@@ -931,6 +1040,173 @@ model TrainingEnrollment {
   @@index([userId])
   @@index([trainingProgramId])
   @@map("training_enrollments")
+}
+
+// ─── Quizzes (platform content + per-attempt snapshots) ─────────────────────
+
+model QuizTopic {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?  @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  questions       QuizQuestion[]
+  definitionRules QuizDefinitionTopicRule[]
+
+  @@map("quiz_topics")
+}
+
+model QuizQuestion {
+  id        String            @id @default(cuid())
+  topicId   String            @map("topic_id")
+  stem      String
+  status    QuizQuestionStatus @default(draft)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  topic   QuizTopic           @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  options QuizQuestionOption[]
+
+  @@index([topicId])
+  @@index([status])
+  @@map("quiz_questions")
+}
+
+model QuizQuestionOption {
+  id         String   @id @default(cuid())
+  questionId String   @map("question_id")
+  label      String
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("quiz_question_options")
+}
+
+model QuizDefinition {
+  id               String              @id @default(cuid())
+  title            String
+  description      String?
+  passingScorePct  Float               @map("passing_score_pct")
+  status           QuizDefinitionStatus @default(draft)
+  publishedAt      DateTime?           @map("published_at")
+  visibility       TrainingProgramVisibility @default(all_partners) @map("visibility")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  topicRules       QuizDefinitionTopicRule[]
+  allowedOrganizations QuizQuizAllowedOrganization[]
+  attempts         QuizAttempt[]
+
+  @@index([status])
+  @@index([visibility])
+  @@map("quiz_definitions")
+}
+
+/// How many questions to draw from each topic for one attempt.
+model QuizDefinitionTopicRule {
+  id               String   @id @default(cuid())
+  quizDefinitionId String   @map("quiz_definition_id")
+  topicId          String   @map("topic_id")
+  pickCount        Int      @map("pick_count")
+
+  quizDefinition QuizDefinition @relation(fields: [quizDefinitionId], references: [id], onDelete: Cascade)
+  topic          QuizTopic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([quizDefinitionId, topicId])
+  @@index([topicId])
+  @@map("quiz_definition_topic_rules")
+}
+
+model QuizQuizAllowedOrganization {
+  id               String   @id @default(cuid())
+  quizDefinitionId String   @map("quiz_definition_id")
+  organizationId   String   @map("organization_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  quizDefinition QuizDefinition @relation(fields: [quizDefinitionId], references: [id], onDelete: Cascade)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([quizDefinitionId, organizationId])
+  @@index([organizationId])
+  @@map("quiz_allowed_organizations")
+}
+
+model QuizAttempt {
+  id               String    @id @default(cuid())
+  quizDefinitionId String    @map("quiz_definition_id")
+  organizationId   String    @map("organization_id")
+  userId           String    @map("user_id")
+  startedAt        DateTime  @default(now()) @map("started_at")
+  submittedAt      DateTime? @map("submitted_at")
+  scorePct         Float?    @map("score_pct")
+  passed           Boolean?
+  randomSeed       String?   @map("random_seed")
+  /// Full per-attempt question/option snapshot for grading integrity (includes correct flags server-side only).
+  snapshotJson     Json      @map("snapshot_json")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  quizDefinition QuizDefinition     @relation(fields: [quizDefinitionId], references: [id], onDelete: Restrict)
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers        QuizAttemptAnswer[]
+  certificate    TrainingCertificate?
+
+  @@index([quizDefinitionId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([submittedAt])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id                String   @id @default(cuid())
+  attemptId         String   @map("attempt_id")
+  questionKey       String   @map("question_key")
+  selectedOptionKey String?  @map("selected_option_key")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  attempt QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionKey])
+  @@index([attemptId])
+  @@map("quiz_attempt_answers")
+}
+
+model TrainingCertificate {
+  id                        String                 @id @default(cuid())
+  type                      TrainingCertificateType @map("type")
+  userId                    String                 @map("user_id")
+  organizationId            String                 @map("organization_id")
+  liveSessionId             String?                @map("live_session_id")
+  quizAttemptId             String?                @unique @map("quiz_attempt_id")
+  titleSnapshot             String                 @map("title_snapshot")
+  participantNameSnapshot   String                 @map("participant_name_snapshot")
+  orgNameSnapshot           String                 @map("org_name_snapshot")
+  issuedAt                  DateTime               @default(now()) @map("issued_at")
+  metadataJson              Json?                  @map("metadata_json")
+  pdfUrl                    String?                @map("pdf_url")
+  /// Stable idempotency key: e.g. live:{sessionId}:{userId} or quiz:{attemptId}
+  dedupeKey                 String                 @unique @map("dedupe_key")
+  createdAt                 DateTime               @default(now()) @map("created_at")
+  updatedAt                 DateTime               @updatedAt @map("updated_at")
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  liveSession  TrainingLiveSession? @relation(fields: [liveSessionId], references: [id], onDelete: SetNull)
+  quizAttempt  QuizAttempt?       @relation(fields: [quizAttemptId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([liveSessionId])
+  @@map("training_certificates")
 }
 
 // ─── Activity Logs ───────────────────────────────────────────────────────────
