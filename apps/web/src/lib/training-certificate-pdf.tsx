@@ -2,9 +2,13 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image, pdf, Svg, Line } from "@react-pdf/renderer";
 import { CERTIFICATE_AUTHORIZED_BY, CERTIFICATE_ISSUED_BY } from "@/lib/certificate-signers";
 
-/** A4 apaisado en pt (~297×210 mm), alineado a la cuadrícula HTML (mayor ~24 mm, menor ~6 mm). */
-const PAGE_W = 842;
-const PAGE_H = 595;
+/**
+ * Coordenadas del viewBox SVG (unidades lógicas). Debe coincidir con el aspecto A4 apaisado
+ * para que la cuadrícula estire bien con preserveAspectRatio="none".
+ * ~297×210 mm → 841.89×595.28 pt (ISO).
+ */
+const PAGE_W = 841.89;
+const PAGE_H = 595.28;
 const GRID_MINOR_PT = 17;
 const GRID_MAJOR_EVERY = 4;
 
@@ -43,9 +47,18 @@ function CertificateBlueprintGrid() {
       />
     );
   }
+  /**
+   * `fixed` saca el nodo del flujo de yoga: si no, un View de ~595pt de alto + el contenido
+   * supera la hoja y react-pdf abre una segunda página. El SVG al 100% cubre todo el box de la página.
+   */
   return (
-    <View style={gridStyles.wrap}>
-      <Svg width={PAGE_W} height={PAGE_H} viewBox={`0 0 ${PAGE_W} ${PAGE_H}`}>
+    <View style={gridStyles.wrap} fixed>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${PAGE_W} ${PAGE_H}`}
+        preserveAspectRatio="none"
+      >
         {vert}
         {horiz}
       </Svg>
@@ -58,8 +71,8 @@ const gridStyles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    width: PAGE_W,
-    height: PAGE_H,
+    right: 0,
+    bottom: 0,
   },
 });
 
@@ -70,7 +83,11 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#0f172a",
     backgroundColor: "#ffffff",
-    position: "relative",
+    flexDirection: "column",
+  },
+  pageBody: {
+    flexGrow: 1,
+    flexDirection: "column",
   },
   header: {
     flexDirection: "row",
@@ -119,12 +136,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#0c4a6e",
     maxWidth: "85%",
   },
-  statement: { fontSize: 10, color: "#334155", marginBottom: 6, lineHeight: 1.45 },
-  statement2: { fontSize: 9, color: "#64748b", marginBottom: 16, lineHeight: 1.45 },
+  statement: { fontSize: 10, color: "#334155", marginBottom: 6, lineHeight: 1.35 },
+  statement2: { fontSize: 9, color: "#64748b", marginBottom: 12, lineHeight: 1.35 },
   grid: {
     borderWidth: 1,
     borderColor: "#94a3b8",
-    marginBottom: 20,
+    marginBottom: 14,
   },
   gridRow: { flexDirection: "row" },
   cell: {
@@ -153,13 +170,13 @@ const styles = StyleSheet.create({
     borderTopColor: "#64748b",
     paddingTop: 12,
   },
-  sigRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
+  sigRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
   sigCol: { width: "38%" },
-  sigLine: { borderBottomWidth: 1, borderBottomColor: "#0f172a", height: 28, marginBottom: 4 },
+  sigLine: { borderBottomWidth: 1, borderBottomColor: "#0f172a", height: 22, marginBottom: 4 },
   sigName: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#0f172a", marginBottom: 2 },
   sigTitle: { fontSize: 8, color: "#475569", marginBottom: 4 },
   sigLabel: { fontSize: 7, letterSpacing: 0.8, textTransform: "uppercase", color: "#64748b" },
-  legal: { fontSize: 7, letterSpacing: 1, textTransform: "uppercase", color: "#64748b", textAlign: "center", marginBottom: 10 },
+  legal: { fontSize: 7, letterSpacing: 1, textTransform: "uppercase", color: "#64748b", textAlign: "center", marginBottom: 6 },
   metaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   certCodes: { fontSize: 7, fontFamily: "Courier", color: "#64748b", maxWidth: "70%" },
   qr: { width: 64, height: 64 },
@@ -184,77 +201,79 @@ function CertificateDoc(props: TrainingCertificatePdfInput) {
   const { statementSecondary } = props;
   return (
     <Document>
-      <Page size="A4" orientation="landscape" style={styles.page}>
+      <Page wrap={false} size="A4" orientation="landscape" style={styles.page}>
         <CertificateBlueprintGrid />
-        <View style={styles.header}>
-          <View style={styles.brandBlock}>
-            {props.logoDataUrl ? (
-              <Image src={props.logoDataUrl} style={styles.logo} />
-            ) : (
-              <View style={styles.logoPlaceholder} />
-            )}
-            <View style={styles.brandText}>
-              <Text style={styles.brandSmall}>Vision Building Technologies</Text>
-              <Text style={styles.brandName}>VBT</Text>
+        <View style={styles.pageBody}>
+          <View style={styles.header}>
+            <View style={styles.brandBlock}>
+              {props.logoDataUrl ? (
+                <Image src={props.logoDataUrl} style={styles.logo} />
+              ) : (
+                <View style={styles.logoPlaceholder} />
+              )}
+              <View style={styles.brandText}>
+                <Text style={styles.brandSmall}>Vision Building Technologies</Text>
+                <Text style={styles.brandName}>VBT</Text>
+              </View>
+            </View>
+            <View style={styles.titleBlock}>
+              <Text style={styles.docTitle}>CERTIFICADO DE FINALIZACIÓN</Text>
+              <Text style={styles.docSub}>Registro técnico de capacitación</Text>
             </View>
           </View>
-          <View style={styles.titleBlock}>
-            <Text style={styles.docTitle}>CERTIFICADO DE FINALIZACIÓN</Text>
-            <Text style={styles.docSub}>Registro técnico de capacitación</Text>
-          </View>
-        </View>
 
-        <Text style={styles.recipientLabel}>Destinatario</Text>
-        <Text style={styles.recipientName}>{props.participantName}</Text>
-        <Text style={styles.statement}>{props.statementPrimary}</Text>
-        {statementSecondary ? <Text style={styles.statement2}>{statementSecondary}</Text> : null}
+          <Text style={styles.recipientLabel}>Destinatario</Text>
+          <Text style={styles.recipientName}>{props.participantName}</Text>
+          <Text style={styles.statement}>{props.statementPrimary}</Text>
+          {statementSecondary ? <Text style={styles.statement2}>{statementSecondary}</Text> : null}
 
-        <View style={styles.grid}>
-          <View style={styles.gridRow}>
-            <View style={styles.cell}>
-              <Text style={styles.cellLabel}>Programa / Evaluación</Text>
-              <Text style={styles.cellValue}>{props.programTitle}</Text>
+          <View style={styles.grid}>
+            <View style={styles.gridRow}>
+              <View style={styles.cell}>
+                <Text style={styles.cellLabel}>Programa / Evaluación</Text>
+                <Text style={styles.cellValue}>{props.programTitle}</Text>
+              </View>
+              <View style={[styles.cell, styles.cellTopRight]}>
+                <Text style={styles.cellLabel}>Puntuación</Text>
+                <Text style={styles.cellValueMono}>{props.scoreLabel}</Text>
+              </View>
             </View>
-            <View style={[styles.cell, styles.cellTopRight]}>
-              <Text style={styles.cellLabel}>Puntuación</Text>
-              <Text style={styles.cellValueMono}>{props.scoreLabel}</Text>
+            <View style={styles.gridRow}>
+              <View style={[styles.cell, styles.cellBottomLeft]}>
+                <Text style={styles.cellLabel}>Fecha de emisión</Text>
+                <Text style={styles.cellValueMono}>{props.issuedAtLabel}</Text>
+              </View>
+              <View style={[styles.cell, styles.cellBottomRight]}>
+                <Text style={styles.cellLabel}>Organización</Text>
+                <Text style={styles.cellValue}>{props.organizationName}</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.gridRow}>
-            <View style={[styles.cell, styles.cellBottomLeft]}>
-              <Text style={styles.cellLabel}>Fecha de emisión</Text>
-              <Text style={styles.cellValueMono}>{props.issuedAtLabel}</Text>
-            </View>
-            <View style={[styles.cell, styles.cellBottomRight]}>
-              <Text style={styles.cellLabel}>Organización</Text>
-              <Text style={styles.cellValue}>{props.organizationName}</Text>
-            </View>
-          </View>
-        </View>
 
-        <View style={styles.footer}>
-          <View style={styles.sigRow}>
-            <View style={styles.sigCol}>
-              <View style={styles.sigLine} />
-              <Text style={styles.sigName}>{CERTIFICATE_ISSUED_BY.name}</Text>
-              <Text style={styles.sigTitle}>{CERTIFICATE_ISSUED_BY.title}</Text>
-              <Text style={styles.sigLabel}>Emitido por</Text>
+          <View style={styles.footer}>
+            <View style={styles.sigRow}>
+              <View style={styles.sigCol}>
+                <View style={styles.sigLine} />
+                <Text style={styles.sigName}>{CERTIFICATE_ISSUED_BY.name}</Text>
+                <Text style={styles.sigTitle}>{CERTIFICATE_ISSUED_BY.title}</Text>
+                <Text style={styles.sigLabel}>Emitido por</Text>
+              </View>
+              <View style={styles.sigCol}>
+                <View style={styles.sigLine} />
+                <Text style={styles.sigName}>{CERTIFICATE_AUTHORIZED_BY.name}</Text>
+                <Text style={styles.sigTitle}>{CERTIFICATE_AUTHORIZED_BY.title}</Text>
+                <Text style={styles.sigLabel}>Autorizado por</Text>
+              </View>
             </View>
-            <View style={styles.sigCol}>
-              <View style={styles.sigLine} />
-              <Text style={styles.sigName}>{CERTIFICATE_AUTHORIZED_BY.name}</Text>
-              <Text style={styles.sigTitle}>{CERTIFICATE_AUTHORIZED_BY.title}</Text>
-              <Text style={styles.sigLabel}>Autorizado por</Text>
+            <Text style={styles.legal}>Vision Building Technologies</Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.certCodes}>
+                Código de verificación: {props.verifyPublicCode}
+                {"\n"}
+                ID de registro (interno): {props.internalId}
+              </Text>
+              {props.qrDataUrl ? <Image src={props.qrDataUrl} style={styles.qr} /> : null}
             </View>
-          </View>
-          <Text style={styles.legal}>Vision Building Technologies</Text>
-          <View style={styles.metaRow}>
-            <Text style={styles.certCodes}>
-              Código de verificación: {props.verifyPublicCode}
-              {"\n"}
-              ID de registro (interno): {props.internalId}
-            </Text>
-            {props.qrDataUrl ? <Image src={props.qrDataUrl} style={styles.qr} /> : null}
           </View>
         </View>
       </Page>
