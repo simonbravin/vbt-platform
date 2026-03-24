@@ -41,7 +41,11 @@ export async function POST(
 
   const quote = await prisma.quote.findFirst({
     where: scoped.where,
-    include: { project: { include: { client: { select: { name: true } } } }, preparedByUser: { select: { fullName: true } } },
+    include: {
+      project: { include: { client: { select: { name: true } } } },
+      preparedByUser: { select: { fullName: true } },
+      organization: { select: { name: true } },
+    },
   });
 
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
@@ -78,6 +82,8 @@ export async function POST(
   const projectName = (quote.project as { projectName?: string; name?: string }).projectName ?? (quote.project as { name?: string }).name ?? "";
   const clientName = (quote.project as { client?: { name: string } }).client?.name ?? "";
   const totalPrice = (quote as { totalPrice?: number }).totalPrice ?? 0;
+  const organizationName = (quote as { organization?: { name?: string } }).organization?.name ?? "Vision Building Technologies";
+  const quoteUrl = `${appUrl.replace(/\/$/, "")}/quotes/${params.id}`;
 
   const senderId = (user as { id?: string; userId?: string }).id ?? (user as { userId?: string }).userId;
   const senderPrefs = senderId
@@ -96,7 +102,9 @@ export async function POST(
     quotedByName,
     projectName,
     clientName,
+    organizationName,
     totalPrice,
+    quoteUrl,
     optionalMessage: parsed.data.message,
     hasPdfAttachment: Boolean(pdfBuffer),
   });

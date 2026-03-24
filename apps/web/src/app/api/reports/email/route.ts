@@ -167,12 +167,20 @@ export async function POST(req: Request) {
 
   const senderPrefs = await prisma.user.findUnique({
     where: { id: (user as { id: string }).id },
-    select: { emailLocale: true },
+    select: { emailLocale: true, fullName: true },
+  });
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { name: true },
   });
   const reportMailLocale = parseEmailLocale(body.locale ?? senderPrefs?.emailLocale);
   const subject = body.subject?.trim() || emailSubjectReport(reportMailLocale);
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://app.visionlatam.com").replace(/\/$/, "");
   const htmlBody = buildProjectsReportEmailHtml(reportMailLocale, {
     rowCount: rows.length,
+    organizationName: org?.name ?? "Vision Building Technologies",
+    generatedByName: senderPrefs?.fullName ?? undefined,
+    reportsUrl: `${baseUrl}/reports`,
     filterParts: {
       status: body.status ?? null,
       countryCode,
