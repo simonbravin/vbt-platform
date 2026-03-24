@@ -6,6 +6,21 @@ import { BookOpen, CheckCircle, UserPlus, Video, ClipboardList, Award } from "lu
 import { useT } from "@/lib/i18n/context";
 import { format } from "date-fns";
 
+function apiErrorString(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const o = body as { error?: unknown };
+  if (typeof o.error === "string") return o.error;
+  if (
+    o.error &&
+    typeof o.error === "object" &&
+    "message" in o.error &&
+    typeof (o.error as { message: unknown }).message === "string"
+  ) {
+    return (o.error as { message: string }).message;
+  }
+  return undefined;
+}
+
 type Program = {
   id: string;
   title: string;
@@ -200,7 +215,12 @@ export function TrainingPartnerClient() {
     const res = await fetch(`/api/saas/quizzes/definitions/${quizId}/start`, { method: "POST" });
     const data = res.ok ? await res.json() : await res.json().catch(() => ({}));
     if (!res.ok) {
-      setActionError((data as { error?: string })?.error ?? t("partner.training.quizCouldNotStart"));
+      const code = (data as { code?: string }).code;
+      setActionError(
+        code === "QUIZ_INSUFFICIENT_PUBLISHED_QUESTIONS"
+          ? t("partner.training.quizInsufficientPublished")
+          : apiErrorString(data) ?? t("partner.training.quizCouldNotStart")
+      );
       return;
     }
     setActiveQuiz({
@@ -225,7 +245,7 @@ export function TrainingPartnerClient() {
     });
     const attempt = res.ok ? await res.json() : await res.json().catch(() => ({}));
     if (!res.ok) {
-      setActionError((attempt as { error?: string })?.error ?? t("partner.training.quizSubmitError"));
+      setActionError(apiErrorString(attempt) ?? t("partner.training.quizSubmitError"));
       return;
     }
     setQuizResult({ scorePct: attempt.scorePct ?? 0, passed: !!attempt.passed });

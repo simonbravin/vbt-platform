@@ -8,8 +8,9 @@ import {
   resolveTrainingModuleVisible,
 } from "@vbt/core";
 import { createQuizDefinitionSchema } from "@vbt/core/validation";
+import { withSaaSHandler } from "@/lib/saas-handler";
 
-export async function GET() {
+async function getHandler(_req: Request) {
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (ctx.isPlatformSuperadmin) {
@@ -25,7 +26,7 @@ export async function GET() {
   return NextResponse.json(defs);
 }
 
-export async function POST(req: Request) {
+async function postHandler(req: Request) {
   await requirePlatformSuperadmin();
   const body = await req.json();
   const parsed = createQuizDefinitionSchema.safeParse(body);
@@ -50,3 +51,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
+
+export const GET = withSaaSHandler({ rateLimitTier: "read" }, getHandler);
+export const POST = withSaaSHandler({ rateLimitTier: "create_update" }, postHandler);

@@ -14,17 +14,18 @@ export type SaaSHandlerOptions = {
   skipRateLimit?: boolean;
 };
 
-type Handler = (req: Request) => Promise<NextResponse>;
+type Handler = (req: Request, routeContext?: unknown) => Promise<NextResponse>;
 
 /**
  * Wraps an API handler with rate limiting, optional caching, error handling, and structured logging.
  * Use for all /api/saas/* routes.
+ * Passes the App Router second argument (e.g. `{ params }`) through as `routeContext` when present.
  */
 export function withSaaSHandler(
   options: SaaSHandlerOptions,
   handler: Handler
-): (req: Request) => Promise<NextResponse> {
-  return async (req: Request): Promise<NextResponse> => {
+): (req: Request, routeContext?: unknown) => Promise<NextResponse> {
+  return async (req: Request, routeContext?: unknown): Promise<NextResponse> => {
     const start = Date.now();
     const url = new URL(req.url);
     const pathname = url.pathname;
@@ -59,7 +60,7 @@ export function withSaaSHandler(
         }
       }
 
-      const res = await handler(req);
+      const res = await handler(req, routeContext);
       status = res.status;
 
       if (options.cacheTtl && method === "GET" && res.ok && res.status === 200) {

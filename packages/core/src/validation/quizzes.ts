@@ -25,10 +25,20 @@ export const createQuizQuestionSchema = z.object({
   options: z.array(quizOptionSchema).min(2),
 });
 
-export const updateQuizQuestionSchema = z.object({
-  stem: z.string().min(1).optional(),
-  status: quizQuestionStatusEnum.optional(),
-  options: z.array(quizOptionSchema).min(2).optional(),
+export const updateQuizQuestionSchema = z
+  .object({
+    stem: z.string().min(1).optional(),
+    status: quizQuestionStatusEnum.optional(),
+    options: z.array(quizOptionSchema).min(2).optional(),
+  })
+  .refine((d) => d.stem !== undefined || d.status !== undefined || d.options !== undefined, {
+    message: "At least one of stem, status, or options is required",
+  });
+
+/** Set draft/published for many (or all) questions in a topic (superadmin). */
+export const bulkQuizTopicQuestionStatusSchema = z.object({
+  status: quizQuestionStatusEnum,
+  questionIds: z.array(z.string().min(1)).optional(),
 });
 
 export const quizTopicRuleSchema = z.object({

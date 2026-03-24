@@ -4,11 +4,13 @@ import { getTenantContext } from "@/lib/tenant";
 import { issueQuizCertificate } from "@vbt/core";
 import { submitQuizAttempt } from "@vbt/core/quiz-attempts";
 import { submitQuizAttemptSchema } from "@vbt/core/validation";
+import { withSaaSHandler } from "@/lib/saas-handler";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+type Ctx = { params: Promise<{ id: string }> | { id: string } };
+
+async function postHandler(req: Request, routeContext?: unknown) {
+  const { params } = routeContext as Ctx;
+  const { id } = params instanceof Promise ? await params : params;
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!ctx.activeOrgId) {
@@ -25,7 +27,7 @@ export async function POST(
     isPlatformSuperadmin: ctx.isPlatformSuperadmin,
   };
   try {
-    const attempt = await submitQuizAttempt(prisma, tenantCtx, params.id, parsed.data.answers);
+    const attempt = await submitQuizAttempt(prisma, tenantCtx, id, parsed.data.answers);
     if (attempt.passed) {
       const userRow = await prisma.user.findUnique({
         where: { id: attempt.userId },
@@ -52,3 +54,5 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
+
+export const POST = withSaaSHandler({ rateLimitTier: "create_update" }, postHandler);

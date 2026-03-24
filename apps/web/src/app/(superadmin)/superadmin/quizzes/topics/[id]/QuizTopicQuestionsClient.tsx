@@ -44,6 +44,9 @@ export function QuizTopicQuestionsClient({ topicId }: { topicId: string }) {
   const [editStatus, setEditStatus] = useState<"draft" | "published">("draft");
   const [editOptions, setEditOptions] = useState<Option[]>([]);
 
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [rowStatusBusyId, setRowStatusBusyId] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     const [tq, qq] = await Promise.all([
       fetch("/api/saas/quizzes/topics").then((r) => (r.ok ? r.json() : [])),
@@ -152,6 +155,73 @@ export function QuizTopicQuestionsClient({ topicId }: { topicId: string }) {
     toast({ title: t("superadmin.quizzes.questions.updated") });
   }
 
+  async function bulkSetStatus(status: "draft" | "published") {
+    setBulkLoading(true);
+    try {
+      const r = await fetch(`/api/saas/quizzes/topics/${topicId}/questions`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const desc =
+          typeof (j as { error?: unknown }).error === "string"
+            ? ((j as { error: string }).error as string)
+            : (j as { error?: { message?: string } })?.error &&
+                typeof (j as { error: { message?: string } }).error.message === "string"
+              ? (j as { error: { message: string } }).error.message
+              : undefined;
+        toast({
+          title: t("superadmin.quizzes.questions.bulkFail"),
+          description: desc,
+          variant: "destructive",
+        });
+        return;
+      }
+      await load();
+      const count = (j as { updated?: number }).updated ?? 0;
+      toast({ title: t("superadmin.quizzes.questions.bulkSuccess", { count: String(count) }) });
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function quickSetRowStatus(
+    questionId: string,
+    next: "draft" | "published",
+    previous: "draft" | "published"
+  ) {
+    if (next === previous) return;
+    setRowStatusBusyId(questionId);
+    try {
+      const r = await fetch(`/api/saas/quizzes/questions/${questionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const desc =
+          typeof (j as { error?: unknown }).error === "string"
+            ? ((j as { error: string }).error as string)
+            : (j as { error?: { message?: string } })?.error &&
+                typeof (j as { error: { message?: string } }).error.message === "string"
+              ? (j as { error: { message: string } }).error.message
+              : undefined;
+        toast({
+          title: t("superadmin.quizzes.questions.saveError"),
+          description: desc,
+          variant: "destructive",
+        });
+        return;
+      }
+      await load();
+    } finally {
+      setRowStatusBusyId(null);
+    }
+  }
+
   function startEdit(q: Question) {
     setEditingId(q.id);
     setEditStem(q.stem);
@@ -255,8 +325,29 @@ export function QuizTopicQuestionsClient({ topicId }: { topicId: string }) {
       </form>
 
       <div className="surface-card-overflow">
-        <div className="px-5 py-4 border-b border-border/60">
-          <h3 className="text-lg font-semibold">{t("superadmin.quizzes.questions.listHeading")}</h3>
+        <div className="px-5 py-4 border-b border-border/60 space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h3 className="text-lg font-semibold">{t("superadmin.quizzes.questions.listHeading")}</h3>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <button
+                type="button"
+                disabled={bulkLoading || questions.length === 0}
+                className="rounded-sm border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground disabled:opacity-50"
+                onClick={() => void bulkSetStatus("published")}
+              >
+                {t("superadmin.quizzes.questions.bulkPublishAll")}
+              </button>
+              <button
+                type="button"
+                disabled={bulkLoading || questions.length === 0}
+                className="rounded-sm border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground disabled:opacity-50"
+                onClick={() => void bulkSetStatus("draft")}
+              >
+                {t("superadmin.quizzes.questions.bulkDraftAll")}
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("superadmin.quizzes.questions.statusQuickHint")}</p>
         </div>
         {questions.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">{t("superadmin.quizzes.questions.empty")}</div>
@@ -294,20 +385,40 @@ export function QuizTopicQuestionsClient({ topicId }: { topicId: string }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                    <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-foreground">{q.stem}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 sm:hidden">
                         {t("superadmin.quizzes.colStatus")}: {questionStatusLabel(t, q.status)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary self-start"
-                      onClick={() => startEdit(q)}
-                    >
-                      {t("common.edit")}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          {t("superadmin.quizzes.questions.rowStatusLabel")}
+                        </span>
+                        <select
+                          className="input-native text-sm min-w-[9rem]"
+                          value={q.status === "published" ? "published" : "draft"}
+                          disabled={rowStatusBusyId === q.id}
+                          onChange={(e) => {
+                            const v = e.target.value as "draft" | "published";
+                            void quickSetRowStatus(q.id, v, q.status === "published" ? "published" : "draft");
+                          }}
+                          aria-label={t("superadmin.quizzes.questions.rowStatusLabel")}
+                        >
+                          <option value="draft">{t("superadmin.quizzes.status.draft")}</option>
+                          <option value="published">{t("superadmin.quizzes.status.published")}</option>
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-primary"
+                        onClick={() => startEdit(q)}
+                      >
+                        {t("common.edit")}
+                      </button>
+                    </div>
                   </div>
                 )}
               </li>

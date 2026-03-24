@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext } from "@/lib/tenant";
 import { listQuizAttemptsForUser } from "@vbt/core/quiz-attempts";
+import { withSaaSHandler } from "@/lib/saas-handler";
 
-export async function GET(req: Request) {
+async function getHandler(req: Request) {
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!ctx.activeOrgId && !ctx.isPlatformSuperadmin) {
@@ -22,3 +23,5 @@ export async function GET(req: Request) {
   });
   return NextResponse.json(result);
 }
+
+export const GET = withSaaSHandler({ rateLimitTier: "read" }, getHandler);

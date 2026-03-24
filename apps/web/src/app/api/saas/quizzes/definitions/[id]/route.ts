@@ -3,15 +3,17 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import { getQuizDefinitionById, updateQuizDefinition, resolveTrainingModuleVisible } from "@vbt/core";
 import { updateQuizDefinitionSchema } from "@vbt/core/validation";
+import { withSaaSHandler } from "@/lib/saas-handler";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+type Ctx = { params: Promise<{ id: string }> | { id: string } };
+
+async function getHandler(_req: Request, routeContext?: unknown) {
+  const { params } = routeContext as Ctx;
+  const { id } = params instanceof Promise ? await params : params;
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (ctx.isPlatformSuperadmin) {
-    const d = await getQuizDefinitionById(prisma, params.id, { admin: true });
+    const d = await getQuizDefinitionById(prisma, id, { admin: true });
     if (!d) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(d);
   }
@@ -20,15 +22,14 @@ export async function GET(
   }
   const moduleOk = await resolveTrainingModuleVisible(prisma, ctx.activeOrgId);
   if (!moduleOk) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const d = await getQuizDefinitionById(prisma, params.id, { partnerOrganizationId: ctx.activeOrgId });
+  const d = await getQuizDefinitionById(prisma, id, { partnerOrganizationId: ctx.activeOrgId });
   if (!d) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(d);
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+async function patchHandler(req: Request, routeContext?: unknown) {
+  const { params } = routeContext as Ctx;
+  const { id } = params instanceof Promise ? await params : params;
   await requirePlatformSuperadmin();
   const body = await req.json();
   const parsed = updateQuizDefinitionSchema.safeParse(body);
@@ -37,7 +38,7 @@ export async function PATCH(
   }
   const d = parsed.data;
   try {
-    const def = await updateQuizDefinition(prisma, params.id, {
+    const def = await updateQuizDefinition(prisma, id, {
       title: d.title,
       description: d.description,
       passingScorePct: d.passingScorePct,
@@ -58,3 +59,6 @@ export async function PATCH(
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
+
+export const GET = withSaaSHandler({ rateLimitTier: "read" }, getHandler);
+export const PATCH = withSaaSHandler({ rateLimitTier: "create_update" }, patchHandler);

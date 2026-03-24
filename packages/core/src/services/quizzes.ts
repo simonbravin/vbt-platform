@@ -120,6 +120,20 @@ export async function updateQuizQuestion(
   });
 }
 
+export async function bulkUpdateQuizQuestionStatusForTopic(
+  prisma: PrismaClient,
+  topicId: string,
+  status: "draft" | "published",
+  questionIds?: string[]
+): Promise<{ updated: number }> {
+  const where =
+    questionIds && questionIds.length > 0
+      ? { topicId, id: { in: questionIds } }
+      : { topicId };
+  const result = await prisma.quizQuestion.updateMany({ where, data: { status } });
+  return { updated: result.count };
+}
+
 export type QuizTopicRuleInput = { topicId: string; pickCount: number };
 
 export type CreateQuizDefinitionInput = {
