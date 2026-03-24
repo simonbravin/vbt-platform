@@ -89,6 +89,19 @@ export function normalizeApiError(error: unknown): { status: number; payload: Ap
   const prismaError = error as { code?: string; meta?: unknown; message?: string };
   if (prismaError && typeof prismaError === "object" && "code" in prismaError) {
     const code = prismaError.code as string;
+    if (code === "P2021" || code === "P2022") {
+      return {
+        status: 503,
+        payload: {
+          error: {
+            code: "DB_SCHEMA_OUT_OF_DATE",
+            message:
+              "The database is missing tables or columns required by this feature. Apply pending Prisma migrations on this environment (for example: pnpm exec prisma migrate deploy).",
+            details: [],
+          },
+        },
+      };
+    }
     const status = code === "P2002" ? 409 : code === "P2025" ? 404 : 400;
     const message =
       code === "P2002"

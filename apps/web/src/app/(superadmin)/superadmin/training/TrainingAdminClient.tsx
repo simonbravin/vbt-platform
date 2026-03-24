@@ -50,20 +50,45 @@ export function TrainingAdminClient() {
   const [enrollmentsTotal, setEnrollmentsTotal] = useState(0);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [loadingEnrollments, setLoadingEnrollments] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [programsError, setProgramsError] = useState<string | null>(null);
+  const [enrollmentsError, setEnrollmentsError] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  async function readApiErrorMessage(res: Response): Promise<string> {
+    try {
+      const j = (await res.json()) as { error?: string | { message?: string } };
+      if (typeof j.error === "string") return j.error;
+      if (j.error && typeof j.error === "object" && typeof j.error.message === "string") {
+        return j.error.message;
+      }
+    } catch {
+      /* ignore */
+    }
+    return `HTTP ${res.status}`;
+  }
 
   useEffect(() => {
     let cancelled = false;
     async function fetchPrograms() {
       try {
         const res = await fetch("/api/saas/training/programs");
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (!cancelled) {
+            const msg = await readApiErrorMessage(res);
+            setProgramsError(`${t("superadmin.training.failedToLoadPrograms")}: ${msg}`);
+            setPrograms([]);
+          }
+          return;
+        }
         const data = await res.json();
-        if (!cancelled) setPrograms(Array.isArray(data) ? data : []);
+        if (!cancelled) {
+          setPrograms(Array.isArray(data) ? data : []);
+          setProgramsError(null);
+        }
       } catch {
-        if (!cancelled) setError(t("superadmin.training.failedToLoadPrograms"));
+        if (!cancelled) setProgramsError(t("superadmin.training.failedToLoadPrograms"));
       } finally {
         if (!cancelled) setLoadingPrograms(false);
       }
@@ -78,16 +103,20 @@ export function TrainingAdminClient() {
       try {
         const res = await fetch("/api/saas/training/enrollments?limit=100");
         if (!res.ok) {
-          if (!cancelled) setError(t("superadmin.training.failedToLoadEnrollments"));
+          if (!cancelled) {
+            const msg = await readApiErrorMessage(res);
+            setEnrollmentsError(`${t("superadmin.training.failedToLoadEnrollments")}: ${msg}`);
+          }
           return;
         }
         const data = await res.json();
         if (!cancelled) {
           setEnrollments(data.enrollments ?? []);
           setEnrollmentsTotal(data.total ?? 0);
+          setEnrollmentsError(null);
         }
       } catch {
-        if (!cancelled) setError(t("superadmin.training.failedToLoadEnrollments"));
+        if (!cancelled) setEnrollmentsError(t("superadmin.training.failedToLoadEnrollments"));
       } finally {
         if (!cancelled) setLoadingEnrollments(false);
       }
@@ -101,6 +130,7 @@ export function TrainingAdminClient() {
     const title = newTitle.trim();
     if (!title) return;
     setCreating(true);
+    setCreateError(null);
     try {
       const res = await fetch("/api/saas/training/programs", {
         method: "POST",
@@ -113,7 +143,14 @@ export function TrainingAdminClient() {
         if (listRes.ok) {
           const data = await listRes.json();
           setPrograms(Array.isArray(data) ? data : []);
+          setProgramsError(null);
+        } else if (!listRes.ok) {
+          const msg = await readApiErrorMessage(listRes);
+          setProgramsError(`${t("superadmin.training.failedToLoadPrograms")}: ${msg}`);
         }
+      } else {
+        const msg = await readApiErrorMessage(res);
+        setCreateError(msg);
       }
     } finally {
       setCreating(false);
@@ -143,9 +180,24 @@ export function TrainingAdminClient() {
         </button>
       </form>
 
-      {error && (
+      {createError && (
         <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">
-          {error}
+          {createError}
+        </div>
+      )}
+
+      {(programsError || enrollmentsError) && (
+        <div className="space-y-2">
+          {programsError && (
+            <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">
+              {programsError}
+            </div>
+          )}
+          {enrollmentsError && (
+            <div className="rounded-sm border border-alert-warningBorder bg-alert-warning p-4 text-sm text-foreground">
+              {enrollmentsError}
+            </div>
+          )}
         </div>
       )}
 
