@@ -44,19 +44,17 @@ export default async function DashboardPage(props: PageProps) {
   let recentProjects: Awaited<ReturnType<typeof prisma.project.findMany>> = [];
   let pendingUsers = 0;
   const fallbackDisplayName = locale === "es" ? "Usuario" : "User";
-  let displayName = (user as { name?: string | null }).name?.trim() || null;
-  if (!displayName) {
-    const sessionUserId = (user as { userId?: string; id?: string }).userId ?? (user as { id?: string }).id;
-    if (sessionUserId) {
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: sessionUserId },
-          select: { fullName: true },
-        });
-        displayName = dbUser?.fullName?.trim() || null;
-      } catch {
-        displayName = null;
-      }
+  let displayName: string | null = null;
+  const sessionUserId = (user as { userId?: string; id?: string }).userId ?? (user as { id?: string }).id;
+  if (sessionUserId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: { fullName: true },
+      });
+      displayName = dbUser?.fullName?.trim() || null;
+    } catch {
+      displayName = null;
     }
   }
 

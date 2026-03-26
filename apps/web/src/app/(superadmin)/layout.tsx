@@ -28,19 +28,17 @@ export default async function SuperadminLayout({
     redirect("/dashboard?access_denied=superadmin");
   }
 
-  let userDisplayName: string | null = user.name?.trim() || null;
-  if (!userDisplayName) {
-    const sessionUserId = user.userId ?? user.id;
-    if (sessionUserId) {
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: sessionUserId },
-          select: { fullName: true },
-        });
-        userDisplayName = dbUser?.fullName?.trim() || null;
-      } catch {
-        userDisplayName = null;
-      }
+  let userDisplayName: string | null = null;
+  const sessionUserId = user.userId ?? user.id;
+  if (sessionUserId) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: { fullName: true },
+      });
+      userDisplayName = dbUser?.fullName?.trim() || null;
+    } catch {
+      userDisplayName = null;
     }
   }
 
