@@ -29,16 +29,19 @@ export default async function SuperadminLayout({
   }
 
   let userDisplayName: string | null = null;
+  let hasAvatar = false;
   const sessionUserId = user.userId ?? user.id;
   if (sessionUserId) {
     try {
       const dbUser = await prisma.user.findUnique({
         where: { id: sessionUserId },
-        select: { fullName: true },
+        select: { fullName: true, image: true },
       });
       userDisplayName = dbUser?.fullName?.trim() || null;
+      hasAvatar = Boolean(dbUser?.image?.trim());
     } catch {
       userDisplayName = null;
+      hasAvatar = false;
     }
   }
 
@@ -51,6 +54,7 @@ export default async function SuperadminLayout({
     <div className="flex h-screen bg-muted overflow-hidden">
       <SuperadminSidebar
         userDisplayName={safeUser.name?.trim() || "Superadmin"}
+        hasAvatar={hasAvatar}
         profileHref="/superadmin/settings/profile"
       />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-border/60">

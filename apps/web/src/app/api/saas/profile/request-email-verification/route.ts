@@ -37,6 +37,12 @@ export async function POST(req: Request) {
           { status: 503 }
         );
       }
+      if (result.reason === "token_store_unavailable") {
+        return NextResponse.json(
+          { error: "Verification token storage unavailable. Ensure latest DB migration is deployed." },
+          { status: 503 }
+        );
+      }
       return NextResponse.json({ error: "Could not send verification email. Try again later." }, { status: 502 });
     }
 
@@ -45,6 +51,7 @@ export async function POST(req: Request) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
-    throw e;
+    console.error("[request-email-verification]", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -48,6 +48,7 @@ export default async function DashboardLayout({
     // Resolve org name: only query when we have a valid id (never pass null to findUnique)
     let activeOrgName: string | null = user.activeOrgName ?? null;
     let userDisplayName: string | null = null;
+    let hasAvatar = false;
     if (effectiveOrgId !== user.activeOrgId) {
       try {
         const org = await prisma.organization.findUnique({ where: { id: effectiveOrgId }, select: { name: true } });
@@ -61,11 +62,13 @@ export default async function DashboardLayout({
       try {
         const dbUser = await prisma.user.findUnique({
           where: { id: sessionUserId },
-          select: { fullName: true },
+          select: { fullName: true, image: true },
         });
         userDisplayName = dbUser?.fullName?.trim() || null;
+        hasAvatar = Boolean(dbUser?.image?.trim());
       } catch {
         userDisplayName = null;
+        hasAvatar = false;
       }
     }
 
@@ -82,6 +85,7 @@ export default async function DashboardLayout({
         <Sidebar
           role={safeUser.role}
           userDisplayName={safeUser.name?.trim() || "Usuario"}
+          hasAvatar={hasAvatar}
           profileHref="/profile"
           moduleVisibility={moduleVisibility}
         />

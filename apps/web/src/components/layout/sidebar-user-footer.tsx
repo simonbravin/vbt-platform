@@ -19,10 +19,12 @@ export function SidebarUserFooter({
   displayName,
   role,
   profileHref,
+  hasAvatar,
 }: {
   displayName: string;
   role: string;
   profileHref: string;
+  hasAvatar?: boolean;
 }) {
   const t = useT();
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -36,7 +38,7 @@ export function SidebarUserFooter({
           className="relative h-9 w-9 shrink-0 rounded-full bg-header-foreground/15 overflow-hidden flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35"
           title={t("nav.settings.profile")}
         >
-          {!avatarFailed ? (
+          {hasAvatar && !avatarFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src="/api/saas/profile/avatar"

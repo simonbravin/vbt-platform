@@ -8,7 +8,7 @@ const EXPIRY_HOURS = 24;
 
 export type SendEmailVerificationResult =
   | { ok: true }
-  | { ok: false; reason: "no_resend" | "send_failed" };
+  | { ok: false; reason: "no_resend" | "send_failed" | "token_store_unavailable" };
 
 /** Creates a fresh token (invalidates previous rows for this user) and sends the message via Resend. */
 export async function createEmailVerificationTokenAndSend(
@@ -23,10 +23,15 @@ export async function createEmailVerificationTokenAndSend(
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000);
 
-  await prisma.emailVerificationToken.deleteMany({ where: { userId } });
-  await prisma.emailVerificationToken.create({
-    data: { token, userId, expiresAt },
-  });
+  try {
+    await prisma.emailVerificationToken.deleteMany({ where: { userId } });
+    await prisma.emailVerificationToken.create({
+      data: { token, userId, expiresAt },
+    });
+  } catch (e) {
+    console.error("[send-email-verification token store]", e);
+    return { ok: false, reason: "token_store_unavailable" };
+  }
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const verifyUrl = `${appUrl}/api/auth/verify-email?token=${encodeURIComponent(token)}`;

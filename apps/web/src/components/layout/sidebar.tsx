@@ -70,6 +70,8 @@ interface SidebarProps {
   role: string;
   /** Footer: signed-in user full name (fallback email). */
   userDisplayName?: string | null;
+  /** Footer avatar availability to avoid 404 image requests. */
+  hasAvatar?: boolean;
   /** Profile page for footer block. */
   profileHref?: string;
   /** Per-partner module visibility (global + override already resolved). */
@@ -114,7 +116,7 @@ function isNavLinkActive(pathname: string, href: string) {
   return pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ role, userDisplayName, profileHref, moduleVisibility }: SidebarProps) {
+export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleVisibility }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -239,7 +241,7 @@ export function Sidebar({ role, userDisplayName, profileHref, moduleVisibility }
       </nav>
 
       {userDisplayName?.trim() && profileHref ? (
-        <SidebarUserFooter displayName={userDisplayName.trim()} role={role} profileHref={profileHref} />
+        <SidebarUserFooter displayName={userDisplayName.trim()} role={role} hasAvatar={hasAvatar} profileHref={profileHref} />
       ) : null}
 
       {/* Footer */}

@@ -84,10 +84,11 @@ const superadminNavigation: NavItem[] = [
 
 interface SuperadminSidebarProps {
   userDisplayName?: string | null;
+  hasAvatar?: boolean;
   profileHref?: string;
 }
 
-export function SuperadminSidebar({ userDisplayName, profileHref }: SuperadminSidebarProps) {
+export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: SuperadminSidebarProps) {
   const pathname = usePathname();
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -189,7 +190,7 @@ export function SuperadminSidebar({ userDisplayName, profileHref }: SuperadminSi
         })}
       </nav>
       {userDisplayName?.trim() && profileHref ? (
-        <SidebarUserFooter displayName={userDisplayName.trim()} role="SUPERADMIN" profileHref={profileHref} />
+        <SidebarUserFooter displayName={userDisplayName.trim()} role="SUPERADMIN" hasAvatar={hasAvatar} profileHref={profileHref} />
       ) : null}
       <div className="px-4 py-3 border-t border-header-foreground/10">
         <p className="text-header-foreground/30 text-xs text-center">{t("sidebar.superadminPortal")}</p>
