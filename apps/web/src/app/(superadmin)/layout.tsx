@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@vbt/db";
 import { SuperadminSidebar } from "@/components/layout/superadmin-sidebar";
 import { TopBar } from "@/components/layout/topbar";
 
@@ -27,15 +28,31 @@ export default async function SuperadminLayout({
     redirect("/dashboard?access_denied=superadmin");
   }
 
+  let userDisplayName: string | null = user.name?.trim() || null;
+  if (!userDisplayName) {
+    const sessionUserId = user.userId ?? user.id;
+    if (sessionUserId) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: sessionUserId },
+          select: { fullName: true },
+        });
+        userDisplayName = dbUser?.fullName?.trim() || null;
+      } catch {
+        userDisplayName = null;
+      }
+    }
+  }
+
   const safeUser = {
-    name: user.name ?? null,
+    name: userDisplayName,
     email: user.email ?? null,
     role: "SUPERADMIN",
   };
   return (
     <div className="flex h-screen bg-muted overflow-hidden">
       <SuperadminSidebar
-        userDisplayName={safeUser.name?.trim() || safeUser.email}
+        userDisplayName={safeUser.name?.trim() || "Superadmin"}
         profileHref="/superadmin/settings/profile"
       />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-border/60">

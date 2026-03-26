@@ -43,6 +43,22 @@ export default async function DashboardPage(props: PageProps) {
   let recentQuotes: Awaited<ReturnType<typeof prisma.quote.findMany>> = [];
   let recentProjects: Awaited<ReturnType<typeof prisma.project.findMany>> = [];
   let pendingUsers = 0;
+  const fallbackDisplayName = locale === "es" ? "Usuario" : "User";
+  let displayName = (user as { name?: string | null }).name?.trim() || null;
+  if (!displayName) {
+    const sessionUserId = (user as { userId?: string; id?: string }).userId ?? (user as { id?: string }).id;
+    if (sessionUserId) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: sessionUserId },
+          select: { fullName: true },
+        });
+        displayName = dbUser?.fullName?.trim() || null;
+      } catch {
+        displayName = null;
+      }
+    }
+  }
 
   const startOfYear = new Date(new Date().getFullYear(), 0, 1);
   let dataLoadError: string | null = null;
@@ -106,9 +122,10 @@ export default async function DashboardPage(props: PageProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {t("dashboard.title")}, {(user as any).name ?? (user as any).email}
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {t("dashboard.welcome")}, {displayName ?? fallbackDisplayName}
+          </p>
         </div>
         <div className="flex gap-3">
           <Link
