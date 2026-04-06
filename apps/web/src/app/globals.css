@@ -49,8 +49,9 @@
     --sidebar-foreground: 220 5% 78%;
     --sidebar-primary: 211 100% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 220 6% 13%;
+    /* Subtle active/hover surface (match .dark rail, not white pill in app “light” theme) */
+    --sidebar-accent: 220 8% 22%;
+    --sidebar-accent-foreground: 220 5% 96%;
     /* Subtle dividers (avoid harsh white line under logo) */
     --sidebar-border: 220 6% 26%;
     --sidebar-ring: 211 100% 45%;

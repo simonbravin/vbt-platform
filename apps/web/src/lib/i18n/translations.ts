@@ -171,6 +171,12 @@ export const translations = {
     "shell.nav.platform": "Platform",
     "shell.expandGroup": "Expand or collapse section",
     "shell.breadcrumbNav": "Breadcrumb",
+    "shell.profileMenu.open": "Account menu",
+    "shell.signOutConfirm.title": "Sign out?",
+    "shell.signOutConfirm.description":
+      "You will need to sign in again to use the platform.",
+    "shell.signOutConfirm.cancel": "Cancel",
+    "shell.signOutConfirm.confirm": "Sign out",
     "sidebar.superadminPortal": "Superadmin portal",
     "sidebar.platformSection": "Platform",
     // Topbar
@@ -2347,6 +2353,12 @@ export const translations = {
     "shell.nav.platform": "Plataforma",
     "shell.expandGroup": "Expandir o contraer sección",
     "shell.breadcrumbNav": "Migas de navegación",
+    "shell.profileMenu.open": "Menú de cuenta",
+    "shell.signOutConfirm.title": "¿Cerrar sesión?",
+    "shell.signOutConfirm.description":
+      "Tendrás que volver a iniciar sesión para usar la plataforma.",
+    "shell.signOutConfirm.cancel": "Cancelar",
+    "shell.signOutConfirm.confirm": "Cerrar sesión",
     "sidebar.superadminPortal": "Portal superadmin",
     "sidebar.platformSection": "Plataforma",
     // Topbar

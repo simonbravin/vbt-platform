@@ -137,7 +137,7 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
 
   return (
     <SidebarRoot collapsible="icon" variant="inset">
-      <div className="box-border flex h-12 flex-shrink-0 flex-col border-b border-header-foreground/10 px-3 py-0.5">
+      <div className="box-border flex h-14 flex-shrink-0 flex-col border-b border-header-foreground/10 px-3 py-0.5">
         <Link
           href="/superadmin/dashboard"
           className="flex max-h-full min-h-0 w-full flex-1 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-background))]"
@@ -149,7 +149,7 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
             width={240}
             height={56}
             draggable={false}
-            className="max-h-[calc(3rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center opacity-95 select-none [-webkit-user-drag:none] group-data-[collapsible=icon]/sidebar-wrapper:max-h-8 group-data-[collapsible=icon]/sidebar-wrapper:max-w-[2rem]"
+            className="max-h-[calc(3.5rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center opacity-95 select-none [-webkit-user-drag:none] group-data-[collapsible=icon]/sidebar-wrapper:max-h-8 group-data-[collapsible=icon]/sidebar-wrapper:max-w-[2rem]"
             priority
           />
         </Link>
@@ -241,9 +241,10 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
             hasAvatar={hasAvatar}
             profileHref={profileHref}
             surface="sidebar"
+            settingsHref="/superadmin/settings"
+            versionLabel={t("sidebar.superadminPortal")}
           />
         ) : null}
-        <p className="px-2 pb-2 text-center text-micro text-sidebar-foreground/50">{t("sidebar.superadminPortal")}</p>
       </SidebarFooter>
     </SidebarRoot>
   );
