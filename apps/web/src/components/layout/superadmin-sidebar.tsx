@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -12,7 +12,6 @@ import {
   FileText,
   BookOpen,
   Settings,
-  ChevronDown,
   ChevronRight,
   FileBarChart,
   Users,
@@ -30,9 +29,27 @@ import {
   Award,
   User,
 } from "lucide-react";
-import { useState } from "react";
 import { useT } from "@/lib/i18n/context";
 import { SidebarUserFooter } from "@/components/layout/sidebar-user-footer";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sidebar as SidebarRoot,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   labelKey: string;
@@ -41,7 +58,6 @@ interface NavItem {
   children?: NavItem[];
 }
 
-/** Alineado al orden partner: Inicio → Partners → Ingeniería → Proyectos → Cotizaciones → Ventas → Inventario → Documentos/Capacitación → Analíticas/Reportes/Actividad → Administración */
 const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
@@ -82,6 +98,10 @@ const superadminNavigation: NavItem[] = [
   },
 ];
 
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 interface SuperadminSidebarProps {
   userDisplayName?: string | null;
   hasAvatar?: boolean;
@@ -93,20 +113,34 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
   const t = useT();
   const [expanded, setExpanded] = useState<string[]>([]);
 
-  const toggle = (key: string) => {
-    setExpanded((prev) =>
-      prev.includes(key) ? prev.filter((l) => l !== key) : [...prev, key]
-    );
+  useEffect(() => {
+    if (
+      pathname.startsWith("/superadmin/documents") ||
+      pathname.startsWith("/superadmin/training") ||
+      pathname.startsWith("/superadmin/quizzes")
+    ) {
+      setExpanded((prev) => (prev.includes("nav.superadmin.content") ? prev : [...prev, "nav.superadmin.content"]));
+    }
+    if (
+      pathname.startsWith("/superadmin/settings") ||
+      pathname.startsWith("/superadmin/admin") ||
+      pathname.startsWith("/superadmin/emails")
+    ) {
+      setExpanded((prev) => (prev.includes("nav.admin") ? prev : [...prev, "nav.admin"]));
+    }
+  }, [pathname]);
+
+  const parentHref = (item: NavItem & { children: NavItem[] }) => {
+    const first = item.children.find((c) => c.href);
+    return first?.href ?? "#";
   };
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-
   return (
-    <div className="flex h-full w-64 flex-shrink-0 flex-col border-r border-header-foreground/10 bg-header">
-      <div className="box-border flex h-12 flex-shrink-0 items-center justify-center border-b border-header-foreground/10 px-3 py-0.5">
+    <SidebarRoot collapsible="icon" variant="inset">
+      <div className="box-border flex h-12 flex-shrink-0 flex-col border-b border-header-foreground/10 px-3 py-0.5">
         <Link
           href="/superadmin/dashboard"
-          className="flex max-h-full w-full items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35 focus-visible:ring-offset-2 focus-visible:ring-offset-header"
+          className="flex max-h-full min-h-0 w-full flex-1 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-background))]"
           aria-label={t("nav.superadmin.dashboard")}
         >
           <Image
@@ -115,86 +149,102 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
             width={240}
             height={56}
             draggable={false}
-            className="max-h-[calc(3rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center select-none [-webkit-user-drag:none]"
+            className="max-h-[calc(3rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center opacity-95 select-none [-webkit-user-drag:none] group-data-[collapsible=icon]/sidebar-wrapper:max-h-8 group-data-[collapsible=icon]/sidebar-wrapper:max-w-[2rem]"
             priority
           />
         </Link>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
-        <p className="px-3 py-2 text-micro font-semibold uppercase tracking-[0.5px] text-header-foreground/45">
-          Platform
-        </p>
-        {superadminNavigation.map((item) => {
-          if (item.children) {
-            const isOpen = expanded.includes(item.labelKey);
-            const hasActiveChild = item.children.some(
-              (child) => child.href && isActive(child.href)
-            );
-            return (
-              <div key={item.labelKey}>
-                <button
-                  type="button"
-                  onClick={() => toggle(item.labelKey)}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg border border-transparent px-3 py-[0.5rem] text-left text-[15px] tracking-[-0.02em] transition-colors",
-                    hasActiveChild
-                      ? "bg-header-foreground/10 text-header-foreground"
-                      : "text-header-foreground/75 hover:bg-header-foreground/5 hover:text-header-foreground"
-                  )}
-                >
-                  <item.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 text-left">{t(item.labelKey)}</span>
-                  {isOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="ml-3 mt-1 space-y-1 border-l border-header-foreground/15 pl-3">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href!}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-[0.5rem] text-[14px] transition-colors",
-                          child.href && isActive(child.href)
-                            ? "bg-header-foreground/10 text-header-foreground"
-                            : "text-header-foreground/60 hover:bg-header-foreground/5 hover:text-header-foreground"
-                        )}
-                      >
-                        <child.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                        {t(child.labelKey)}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
-          return (
-            <Link
-              key={item.href}
-              href={item.href!}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg border border-transparent px-3 py-[0.5rem] text-[15px] font-medium tracking-[-0.02em] transition-colors",
-                isActive(item.href!)
-                  ? "bg-header-foreground/12 text-header-foreground"
-                  : "text-header-foreground/75 hover:bg-header-foreground/5 hover:text-header-foreground"
-              )}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {t(item.labelKey)}
-            </Link>
-          );
-        })}
-      </nav>
-      {userDisplayName?.trim() && profileHref ? (
-        <SidebarUserFooter displayName={userDisplayName.trim()} role="SUPERADMIN" hasAvatar={hasAvatar} profileHref={profileHref} />
-      ) : null}
-      <div className="border-t border-header-foreground/10 px-4 py-4">
-        <p className="text-center text-micro text-header-foreground/40">{t("sidebar.superadminPortal")}</p>
-      </div>
-    </div>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("shell.nav.platform")}</SidebarGroupLabel>
+          <SidebarMenu>
+            {superadminNavigation.map((item) => {
+              if (item.children?.length) {
+                const open = expanded.includes(item.labelKey);
+                const hasActiveChild = item.children.some((child) => child.href && isActive(pathname, child.href));
+                const ph = parentHref(item as NavItem & { children: NavItem[] });
+
+                return (
+                  <Collapsible
+                    key={item.labelKey}
+                    open={open}
+                    onOpenChange={(next) => {
+                      setExpanded((prev) =>
+                        next
+                          ? prev.includes(item.labelKey)
+                            ? prev
+                            : [...prev, item.labelKey]
+                          : prev.filter((k) => k !== item.labelKey)
+                      );
+                    }}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={hasActiveChild} tooltip={t(item.labelKey)}>
+                        <Link href={ph}>
+                          <item.icon className="shrink-0" />
+                          <span>{t(item.labelKey)}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuAction aria-label={t("shell.expandGroup")} className="data-[state=open]:rotate-90">
+                          <ChevronRight className="size-4" />
+                        </SidebarMenuAction>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.children.map((child) => (
+                            <SidebarMenuSubItem key={child.href}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={Boolean(child.href && isActive(pathname, child.href!))}
+                              >
+                                <Link href={child.href!}>
+                                  <child.icon className="size-4 shrink-0" />
+                                  <span>{t(child.labelKey)}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              }
+
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={Boolean(item.href && isActive(pathname, item.href))}
+                    tooltip={t(item.labelKey)}
+                  >
+                    <Link href={item.href!}>
+                      <item.icon className="shrink-0" />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        {userDisplayName?.trim() && profileHref ? (
+          <SidebarUserFooter
+            displayName={userDisplayName.trim()}
+            role="SUPERADMIN"
+            hasAvatar={hasAvatar}
+            profileHref={profileHref}
+            surface="sidebar"
+          />
+        ) : null}
+        <p className="px-2 pb-2 text-center text-micro text-sidebar-foreground/50">{t("sidebar.superadminPortal")}</p>
+      </SidebarFooter>
+    </SidebarRoot>
   );
 }

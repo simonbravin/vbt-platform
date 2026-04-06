@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { Bell, Building2, ChevronDown, Sun, Moon } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
 import { useTheme } from "@/lib/theme";
+import { CustomSidebarTrigger } from "@/components/layout/custom-sidebar-trigger";
+import { ShellBreadcrumb } from "@/components/layout/shell-breadcrumb";
+import { Separator } from "@/components/ui/separator";
 
 type NotificationItem = {
   id: string;
@@ -134,80 +137,89 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 h-12 flex-shrink-0 flex items-center justify-between border-b border-header-foreground/10 bg-header/80 px-8 text-header-foreground backdrop-blur-[20px] backdrop-saturate-[180%] supports-[backdrop-filter]:bg-header/80 dark:bg-header/88">
-      <div className="flex items-center gap-4">
-        <h1 className="text-[14px] font-semibold tracking-[-0.28px] text-header-foreground">{t("topbar.title")}</h1>
-        <span className="text-header-foreground/30" aria-hidden>
-          |
-        </span>
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/95 px-4 text-foreground backdrop-blur-md supports-[backdrop-filter]:bg-background/80 md:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <CustomSidebarTrigger />
+        <Separator className="h-4 data-[orientation=vertical]:self-center" orientation="vertical" />
+        <div className="min-w-0 shrink">
+          <ShellBreadcrumb />
+        </div>
         {showContextSwitcher ? (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setSwitcherOpen((o) => !o)}
-              disabled={switching}
-              className="flex items-center gap-1.5 rounded-full border border-header-foreground/20 px-3 py-1.5 text-[12px] text-header-foreground/90 transition-colors hover:bg-header-foreground/10"
-            >
-              <Building2 className="h-4 w-4" />
-              <span>{t("topbar.viewAs")}</span>
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            {switcherOpen && (
-              <>
-                <div className="fixed inset-0 z-10" aria-hidden onClick={() => setSwitcherOpen(false)} />
-                <div className="absolute left-0 top-full mt-2 z-20 min-w-[220px] rounded-lg border border-border/80 bg-popover py-1 text-left text-popover-foreground shadow-none">
-                  <button
-                    type="button"
-                    onClick={() => setActiveOrg(null)}
-                    className="w-full px-4 py-2.5 text-left text-[15px] text-popover-foreground hover:bg-muted"
-                  >
-                    Platform (all)
-                  </button>
-                  {partners.map((p) => (
+          <>
+            <Separator className="hidden h-4 data-[orientation=vertical]:self-center sm:flex" orientation="vertical" />
+            <div className="relative min-w-0">
+              <button
+                type="button"
+                onClick={() => setSwitcherOpen((o) => !o)}
+                disabled={switching}
+                className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted"
+              >
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("topbar.viewAs")}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              </button>
+              {switcherOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" aria-hidden onClick={() => setSwitcherOpen(false)} />
+                  <div className="absolute left-0 top-full z-20 mt-2 min-w-[220px] rounded-lg border border-border/80 bg-popover py-1 text-left text-popover-foreground shadow-none">
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => setActiveOrg(p.id)}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[15px] text-popover-foreground hover:bg-muted"
+                      onClick={() => setActiveOrg(null)}
+                      className="w-full px-4 py-2.5 text-left text-[15px] text-popover-foreground hover:bg-muted"
                     >
-                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      {p.name}
+                      Platform (all)
                     </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                    {partners.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setActiveOrg(p.id)}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[15px] text-popover-foreground hover:bg-muted"
+                      >
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
         ) : (
-          <span className="text-[12px] text-header-foreground/70">{activeOrgName ?? t("topbar.org")}</span>
+          <>
+            <Separator className="hidden h-4 data-[orientation=vertical]:self-center md:flex" orientation="vertical" />
+            <span className="hidden max-w-[14rem] truncate text-xs text-muted-foreground md:inline">
+              {activeOrgName ?? t("topbar.org")}
+            </span>
+          </>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Theme toggle */}
+      <div className="flex shrink-0 items-center gap-2 md:gap-3">
         <button
           type="button"
           onClick={toggleTheme}
-          className="rounded-full p-2 text-header-foreground/70 transition-colors hover:bg-header-foreground/10 hover:text-header-foreground"
+          className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title={theme === "dark" ? "Light mode" : "Dark mode"}
           aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
-        {/* Language toggle */}
-        <div className="flex items-center overflow-hidden rounded-full border border-header-foreground/20 text-[12px] font-medium">
+        <div className="flex items-center overflow-hidden rounded-full border border-border text-[12px] font-medium">
           <button
+            type="button"
             onClick={() => setLocale("en")}
             className={`px-3 py-1.5 transition-colors ${
-              locale === "en" ? "bg-primary text-primary-foreground" : "text-header-foreground/70 hover:bg-header-foreground/10"
+              locale === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             ENG
           </button>
           <button
+            type="button"
             onClick={() => setLocale("es")}
             className={`px-3 py-1.5 transition-colors ${
-              locale === "es" ? "bg-primary text-primary-foreground" : "text-header-foreground/70 hover:bg-header-foreground/10"
+              locale === "es" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             ESP
@@ -218,7 +230,7 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
           <button
             type="button"
             onClick={() => setBellOpen((o) => !o)}
-            className="relative rounded-full p-2 text-header-foreground/70 transition-colors hover:bg-header-foreground/10 hover:text-header-foreground"
+            className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-expanded={bellOpen}
             aria-haspopup="true"
           >

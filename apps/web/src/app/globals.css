@@ -44,6 +44,16 @@
     --alert-success-border: 152 60% 32%;
     --alert-error-bg: 3 100% 96%;
     --alert-error-border: 3 92% 50%;
+    /* Sidebar shell: partner chrome; foreground muted like legacy header-foreground/75 */
+    --sidebar-background: 220 6% 13%;
+    --sidebar-foreground: 220 5% 78%;
+    --sidebar-primary: 211 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 220 6% 13%;
+    /* Subtle dividers (avoid harsh white line under logo) */
+    --sidebar-border: 220 6% 26%;
+    --sidebar-ring: 211 100% 45%;
   }
 
   .dark {
@@ -80,6 +90,14 @@
     --alert-success-border: 152 55% 42%;
     --alert-error-bg: 4 50% 18%;
     --alert-error-border: 4 90% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 5% 72%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 4% 22%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 

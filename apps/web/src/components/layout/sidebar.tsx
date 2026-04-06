@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -13,18 +13,35 @@ import {
   Users,
   Settings,
   BarChart3,
-  ChevronDown,
-  ChevronRight,
   ShoppingCart,
   Wrench,
   FileStack,
   GraduationCap,
   Receipt,
   User,
+  ChevronRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n/context";
 import { SidebarUserFooter } from "@/components/layout/sidebar-user-footer";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sidebar as SidebarRoot,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   labelKey: string;
@@ -34,7 +51,6 @@ interface NavItem {
   children?: NavItem[];
 }
 
-/** Partner sidebar order: Inicio → Clientes → Ingeniería → Proyectos → Cotizaciones → Ventas → Inventario → Documentos → Capacitación → Reportes → Configuración */
 const navigation: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.clients", href: "/clients", icon: Building2 },
@@ -68,13 +84,9 @@ const navigation: NavItem[] = [
 
 interface SidebarProps {
   role: string;
-  /** Footer: signed-in user full name (fallback email). */
   userDisplayName?: string | null;
-  /** Footer avatar availability to avoid 404 image requests. */
   hasAvatar?: boolean;
-  /** Profile page for footer block. */
   profileHref?: string;
-  /** Per-partner module visibility (global + override already resolved). */
   moduleVisibility?: {
     dashboard?: boolean;
     clients?: boolean;
@@ -106,7 +118,6 @@ function isModuleVisible(moduleVisibility: SidebarProps["moduleVisibility"], hre
   return true;
 }
 
-/** Avoid marking "Ventas" active on account-statements routes; sale detail URLs stay under Ventas. */
 function isNavLinkActive(pathname: string, href: string) {
   if (pathname === href) return true;
   if (href === "/sales") {
@@ -125,26 +136,27 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
     if (pathname.startsWith("/sales")) {
       setExpanded((prev) => (prev.includes("nav.sales") ? prev : [...prev, "nav.sales"]));
     }
+    if (pathname.startsWith("/settings") || pathname.startsWith("/profile")) {
+      setExpanded((prev) => (prev.includes("nav.settings") ? prev : [...prev, "nav.settings"]));
+    }
   }, [pathname]);
-
-  const toggle = (key: string) => {
-    setExpanded((prev) =>
-      prev.includes(key) ? prev.filter((l) => l !== key) : [...prev, key]
-    );
-  };
 
   const canSee = (item: NavItem) => {
     if (!item.roles) return true;
     return item.roles.includes(role);
   };
 
+  const parentHref = (item: NavItem & { children: NavItem[] }) => {
+    const first = item.children.find((c) => c.href && canSee(c) && isModuleVisible(moduleVisibility, c.href));
+    return first?.href ?? "#";
+  };
+
   return (
-    <div className="flex h-full w-64 flex-shrink-0 flex-col border-r border-header-foreground/10 bg-header">
-      {/* Logo row: h-12 matches TopBar */}
-      <div className="box-border flex h-12 flex-shrink-0 items-center justify-center border-b border-header-foreground/10 px-3 py-0.5">
+    <SidebarRoot collapsible="icon" variant="inset">
+      <div className="box-border flex h-12 flex-shrink-0 flex-col border-b border-header-foreground/10 px-3 py-0.5">
         <Link
           href="/dashboard"
-          className="flex max-h-full w-full items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35 focus-visible:ring-offset-2 focus-visible:ring-offset-header"
+          className="flex max-h-full min-h-0 w-full flex-1 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-header-foreground/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-background))]"
           aria-label={t("nav.dashboard")}
         >
           <Image
@@ -153,101 +165,118 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
             width={240}
             height={56}
             draggable={false}
-            className="max-h-[calc(3rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center select-none [-webkit-user-drag:none]"
+            className="max-h-[calc(3rem-0.25rem)] h-auto w-auto max-w-full object-contain object-center opacity-95 select-none [-webkit-user-drag:none] group-data-[collapsible=icon]/sidebar-wrapper:max-h-8 group-data-[collapsible=icon]/sidebar-wrapper:max-w-[2rem]"
             priority
           />
         </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
-        {navigation
-          .filter(canSee)
-          .filter((item) => {
-            if (item.children?.length) {
-              return item.children.some((c) => c.href && isModuleVisible(moduleVisibility, c.href));
-            }
-            return isModuleVisible(moduleVisibility, item.href);
-          })
-          .map((item) => {
-          if (item.children) {
-            const isOpen = expanded.includes(item.labelKey);
-            const hasActiveChild = item.children.some(
-              (child) => child.href && isNavLinkActive(pathname, child.href)
-            );
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("shell.nav.menu")}</SidebarGroupLabel>
+          <SidebarMenu>
+            {navigation
+              .filter(canSee)
+              .filter((item) => {
+                if (item.children?.length) {
+                  return item.children.some((c) => c.href && isModuleVisible(moduleVisibility, c.href));
+                }
+                return isModuleVisible(moduleVisibility, item.href);
+              })
+              .map((item) => {
+                if (item.children?.length) {
+                  const open = expanded.includes(item.labelKey);
+                  const hasActiveChild = item.children.some(
+                    (child) => child.href && isNavLinkActive(pathname, child.href)
+                  );
+                  const ph = parentHref(item as NavItem & { children: NavItem[] });
 
-            return (
-              <div key={item.labelKey}>
-                <button
-                  onClick={() => toggle(item.labelKey)}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg border border-transparent px-3 py-[0.5rem] text-left text-[15px] tracking-[-0.02em] transition-colors",
-                    hasActiveChild
-                      ? "bg-header-foreground/10 text-header-foreground"
-                      : "text-header-foreground/75 hover:bg-header-foreground/5 hover:text-header-foreground"
-                  )}
-                >
-                  <item.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 text-left">{t(item.labelKey)}</span>
-                  {isOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </button>
+                  return (
+                    <Collapsible
+                      key={item.labelKey}
+                      open={open}
+                      onOpenChange={(next) => {
+                        setExpanded((prev) =>
+                          next ? (prev.includes(item.labelKey) ? prev : [...prev, item.labelKey]) : prev.filter((k) => k !== item.labelKey)
+                        );
+                      }}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={hasActiveChild}
+                          tooltip={t(item.labelKey)}
+                        >
+                          <Link href={ph}>
+                            <item.icon className="shrink-0" />
+                            <span>{t(item.labelKey)}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuAction
+                            aria-label={t("shell.expandGroup")}
+                            className="data-[state=open]:rotate-90"
+                          >
+                            <ChevronRight className="size-4" />
+                          </SidebarMenuAction>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.children
+                              .filter(canSee)
+                              .filter((child) => isModuleVisible(moduleVisibility, child.href))
+                              .map((child) => (
+                                <SidebarMenuSubItem key={child.href}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={Boolean(child.href && isNavLinkActive(pathname, child.href))}
+                                  >
+                                    <Link href={child.href!}>
+                                      <child.icon className="size-4 shrink-0" />
+                                      <span>{t(child.labelKey)}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
 
-                {isOpen && (
-                  <div className="ml-3 mt-1 space-y-1 border-l border-header-foreground/15 pl-3">
-                    {item.children
-                      .filter(canSee)
-                      .filter((child) => isModuleVisible(moduleVisibility, child.href))
-                      .map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href!}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-[0.5rem] text-[14px] transition-colors",
-                          child.href && isNavLinkActive(pathname, child.href)
-                            ? "bg-header-foreground/10 text-header-foreground"
-                            : "text-header-foreground/60 hover:bg-header-foreground/5 hover:text-header-foreground"
-                        )}
-                      >
-                        <child.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                        {t(child.labelKey)}
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={Boolean(item.href && isNavLinkActive(pathname, item.href))}
+                      tooltip={t(item.labelKey)}
+                    >
+                      <Link href={item.href!}>
+                        <item.icon className="shrink-0" />
+                        <span>{t(item.labelKey)}</span>
                       </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href!}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg border border-transparent px-3 py-[0.5rem] text-[15px] font-medium tracking-[-0.02em] transition-colors",
-                isNavLinkActive(pathname, item.href!)
-                  ? "bg-header-foreground/12 text-header-foreground"
-                  : "text-header-foreground/75 hover:bg-header-foreground/5 hover:text-header-foreground"
-              )}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {t(item.labelKey)}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {userDisplayName?.trim() && profileHref ? (
-        <SidebarUserFooter displayName={userDisplayName.trim()} role={role} hasAvatar={hasAvatar} profileHref={profileHref} />
-      ) : null}
-
-      {/* Footer */}
-      <div className="border-t border-header-foreground/10 px-4 py-4">
-        <p className="text-center text-micro text-header-foreground/40">{t("sidebar.footerVersion")}</p>
-      </div>
-    </div>
+      <SidebarFooter className="border-t border-sidebar-border">
+        {userDisplayName?.trim() && profileHref ? (
+          <SidebarUserFooter
+            displayName={userDisplayName.trim()}
+            role={role}
+            hasAvatar={hasAvatar}
+            profileHref={profileHref}
+            surface="sidebar"
+          />
+        ) : null}
+        <p className="px-2 pb-2 text-center text-micro text-sidebar-foreground/50">{t("sidebar.footerVersion")}</p>
+      </SidebarFooter>
+    </SidebarRoot>
   );
 }

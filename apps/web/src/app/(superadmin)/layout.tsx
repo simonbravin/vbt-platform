@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@vbt/db";
 import { SuperadminSidebar } from "@/components/layout/superadmin-sidebar";
 import { TopBar } from "@/components/layout/topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default async function SuperadminLayout({
   children,
@@ -51,16 +52,16 @@ export default async function SuperadminLayout({
     role: "SUPERADMIN",
   };
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <SidebarProvider className="relative min-h-svh w-full">
       <SuperadminSidebar
         userDisplayName={safeUser.name?.trim() || "Superadmin"}
         hasAvatar={hasAvatar}
         profileHref="/superadmin/settings/profile"
       />
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-header-foreground/10">
+      <SidebarInset className="min-h-svh min-w-0 overflow-hidden">
         <TopBar showContextSwitcher />
-        <main className="app-main-scroll flex-1 overflow-y-auto bg-background">{children}</main>
-      </div>
-    </div>
+        <div className="app-main-scroll flex flex-1 flex-col overflow-y-auto bg-background">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

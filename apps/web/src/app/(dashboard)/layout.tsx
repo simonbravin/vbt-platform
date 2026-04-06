@@ -6,6 +6,7 @@ import { prisma } from "@vbt/db";
 import { resolvePartnerModuleVisibility } from "@vbt/core";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default async function DashboardLayout({
   children,
@@ -81,7 +82,7 @@ export default async function DashboardLayout({
 
     const moduleVisibility = await resolvePartnerModuleVisibility(prisma, effectiveOrgId);
     return (
-      <div className="flex h-screen bg-background overflow-hidden">
+      <SidebarProvider className="relative min-h-svh w-full">
         <Sidebar
           role={safeUser.role}
           userDisplayName={safeUser.name?.trim() || "Usuario"}
@@ -89,11 +90,11 @@ export default async function DashboardLayout({
           profileHref="/profile"
           moduleVisibility={moduleVisibility}
         />
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0 border-l border-header-foreground/10">
+        <SidebarInset className="min-h-svh min-w-0 overflow-hidden">
           <TopBar activeOrgName={safeUser.activeOrgName} />
-          <main className="app-main-scroll flex-1 overflow-y-auto bg-background">{children}</main>
-        </div>
-      </div>
+          <div className="app-main-scroll flex flex-1 flex-col overflow-y-auto bg-background">{children}</div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   } catch (e) {
     // Next.js redirect() throws NEXT_REDIRECT; must rethrow so redirect works

@@ -165,6 +165,12 @@ export const translations = {
 
     // Sidebar
     "sidebar.footerVersion": "VBT Platform v1.1",
+    "shell.toggleSidebar": "Toggle navigation",
+    "shell.toggleSidebarHint": "Toggle sidebar",
+    "shell.nav.menu": "Menu",
+    "shell.nav.platform": "Platform",
+    "shell.expandGroup": "Expand or collapse section",
+    "shell.breadcrumbNav": "Breadcrumb",
     "sidebar.superadminPortal": "Superadmin portal",
     "sidebar.platformSection": "Platform",
     // Topbar
@@ -2335,6 +2341,12 @@ export const translations = {
 
     // Sidebar
     "sidebar.footerVersion": "Plataforma VBT v1.1",
+    "shell.toggleSidebar": "Mostrar u ocultar navegación",
+    "shell.toggleSidebarHint": "Mostrar u ocultar menú lateral",
+    "shell.nav.menu": "Menú",
+    "shell.nav.platform": "Plataforma",
+    "shell.expandGroup": "Expandir o contraer sección",
+    "shell.breadcrumbNav": "Migas de navegación",
     "sidebar.superadminPortal": "Portal superadmin",
     "sidebar.platformSection": "Plataforma",
     // Topbar
