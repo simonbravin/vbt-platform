@@ -16,7 +16,7 @@ export default function NewQuotePage() {
     router.replace("/quotes/create");
   }, [router]);
   return (
-    <div className="max-w-lg mx-auto p-6 space-y-4">
+    <div className="data-entry-page p-6 space-y-4">
       <p className="text-muted-foreground text-sm">
         {t("quotes.newQuoteTitle")} — redirecting to create draft…
       </p>

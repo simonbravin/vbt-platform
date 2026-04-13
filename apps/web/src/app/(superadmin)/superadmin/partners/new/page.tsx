@@ -16,7 +16,7 @@ export default async function NewPartnerPage() {
   const { t } = await getServerT();
 
   return (
-    <div className="space-y-6">
+    <div className="data-entry-page">
       <div>
         <Link
           href="/superadmin/partners"

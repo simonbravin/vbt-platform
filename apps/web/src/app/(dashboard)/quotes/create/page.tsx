@@ -58,7 +58,7 @@ function CreateQuotePage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="data-entry-page">
       <div className="flex items-center gap-3">
         <Link
           href={projectIdFromQuery ? `/projects/${projectIdFromQuery}` : "/quotes"}
@@ -114,7 +114,7 @@ function CreateQuotePage() {
 
 function CreateQuoteFallback() {
   const t = useT();
-  return <div className="max-w-lg mx-auto p-6">{t("common.loading")}</div>;
+  return <div className="data-entry-page p-6">{t("common.loading")}</div>;
 }
 
 export default function CreateQuotePageWithSuspense() {

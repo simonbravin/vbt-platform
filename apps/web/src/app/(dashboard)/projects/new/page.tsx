@@ -125,7 +125,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="data-entry-page">
       <div className="flex items-center gap-3">
         <Link href="/projects" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />
@@ -133,7 +133,7 @@ export default function NewProjectPage() {
         <h1 className="text-2xl font-bold text-foreground">{t("projects.newProjectTitle")}</h1>
       </div>
 
-      <form onSubmit={submit} className="space-y-5 rounded-lg border border-border/60 bg-card p-6">
+      <form onSubmit={submit} className="surface-card space-y-5 p-6">
         {error && (
           <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>
         )}
@@ -145,7 +145,7 @@ export default function NewProjectPage() {
             value={form.projectName}
             onChange={(e) => update("projectName", e.target.value)}
             placeholder={t("projects.projectNamePlaceholder")}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="input-native"
           />
         </div>
 
@@ -192,7 +192,7 @@ export default function NewProjectPage() {
             value={form.city}
             onChange={(e) => update("city", e.target.value)}
             placeholder={t("projects.city")}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="input-native"
           />
         </div>
 
@@ -203,7 +203,7 @@ export default function NewProjectPage() {
             value={form.address}
             onChange={(e) => update("address", e.target.value)}
             placeholder={t("projects.addressPlaceholder")}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="input-native"
           />
         </div>
 
@@ -216,7 +216,7 @@ export default function NewProjectPage() {
             value={form.estimatedTotalAreaM2}
             onChange={(e) => update("estimatedTotalAreaM2", e.target.value)}
             placeholder={t("projects.areaPlaceholder")}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="input-native"
           />
         </div>
 
@@ -227,7 +227,7 @@ export default function NewProjectPage() {
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
             placeholder={t("projects.descriptionPlaceholder")}
-            className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="input-native min-h-[5.5rem] resize-y"
           />
         </div>
 
@@ -264,7 +264,7 @@ export default function NewProjectPage() {
                 <input
                   value={newClientForm.name}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="input-native"
                   placeholder={t("projects.companyNamePlaceholder")}
                 />
               </div>
@@ -273,7 +273,7 @@ export default function NewProjectPage() {
                 <input
                   value={newClientForm.legalName}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, legalName: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="input-native"
                 />
               </div>
               <div>
@@ -293,7 +293,7 @@ export default function NewProjectPage() {
                   type="email"
                   value={newClientForm.email}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, email: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="input-native"
                 />
               </div>
               <div>
@@ -301,7 +301,7 @@ export default function NewProjectPage() {
                 <input
                   value={newClientForm.phone}
                   onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="input-native"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">

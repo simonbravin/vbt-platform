@@ -131,7 +131,7 @@ export function EditPartnerForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="surface-card max-w-2xl p-6 space-y-6"
+      className="surface-card p-6 space-y-6"
     >
       {error && (
         <div className="rounded-lg border border-alert-errorBorder bg-alert-error px-4 py-3 text-sm text-foreground">

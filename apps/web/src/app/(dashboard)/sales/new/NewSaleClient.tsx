@@ -213,7 +213,7 @@ export function NewSaleClient({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form onSubmit={handleSubmit} className="w-full space-y-6">
       <div className="flex gap-4">
         <Link href={backHref} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm">
           <ArrowLeft className="w-4 h-4" /> {t("partner.sales.backToSales")}

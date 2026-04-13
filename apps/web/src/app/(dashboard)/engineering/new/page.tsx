@@ -16,7 +16,7 @@ export default async function NewEngineeringRequestPage() {
     redirect("/login");
   }
   return (
-    <div className="space-y-6">
+    <div className="data-entry-page">
       <div className="flex items-center gap-4">
         <Link href="/engineering" className="text-sm text-muted-foreground hover:text-primary">{t("partner.engineering.back")}</Link>
         <h1 className="text-2xl font-semibold text-foreground">{t("partner.engineering.newTitle")}</h1>

@@ -124,7 +124,7 @@ export function NewEngineeringRequestForm() {
   };
 
   return (
-    <div className="surface-card max-w-2xl p-6">
+    <div className="surface-card p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div>
@@ -195,7 +195,7 @@ export function NewEngineeringRequestForm() {
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             rows={3}
-            className="input-native"
+            className="input-native min-h-[5.5rem] resize-y"
           />
         </div>
         <div>

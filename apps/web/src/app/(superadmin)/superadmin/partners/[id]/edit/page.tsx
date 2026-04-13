@@ -29,7 +29,7 @@ export default async function EditPartnerPage({ params }: PageProps) {
   const { t } = await getServerT();
 
   return (
-    <div className="space-y-6">
+    <div className="data-entry-page">
       <div>
         <Link
           href={`/superadmin/partners/${params.id}`}

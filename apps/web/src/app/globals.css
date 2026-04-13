@@ -149,7 +149,15 @@
     @apply rounded-lg border border-border/80 bg-card text-card-foreground shadow-none;
   }
   .input-native {
-    @apply w-full rounded-full border border-input bg-background px-3.5 py-2.5 text-[17px] tracking-[-0.374px] text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-[17px] tracking-[-0.374px] text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Centered create/edit forms; use -wide for multi-column flows (e.g. new sale). */
+  .data-entry-page {
+    @apply mx-auto w-full max-w-3xl space-y-6;
+  }
+  .data-entry-page-wide {
+    @apply mx-auto w-full max-w-4xl space-y-6;
   }
 }
 

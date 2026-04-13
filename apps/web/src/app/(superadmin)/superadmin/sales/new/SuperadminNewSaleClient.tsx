@@ -25,8 +25,8 @@ export function SuperadminNewSaleClient({ initialOrganizationId = "" }: { initia
   }, [initialOrganizationId]);
 
   return (
-    <div className="space-y-6">
-      <div className="max-w-md">
+    <div className="data-entry-page-wide">
+      <div className="w-full max-w-md">
         <label className="block text-sm font-medium text-foreground mb-1">{t("admin.entities.partnerLabel")}</label>
         <FilterSelect
           value={organizationId}

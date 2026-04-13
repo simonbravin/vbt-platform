@@ -6,7 +6,7 @@ export default async function NewSalePage() {
   await requireAuth();
   const { t } = await getServerT();
   return (
-    <div className="space-y-6">
+    <div className="data-entry-page-wide">
       <div>
         <h1 className="text-2xl font-bold text-foreground">{t("partner.sales.page.newTitle")}</h1>
         <p className="text-muted-foreground text-sm mt-0.5">{t("partner.sales.page.newSubtitle")}</p>
