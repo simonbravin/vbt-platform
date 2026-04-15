@@ -2,7 +2,7 @@ import { requireAuth } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Users, Warehouse, Truck, TrendingUp } from "lucide-react";
+import { Users, Warehouse, Truck, TrendingUp, ClipboardList } from "lucide-react";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 
@@ -24,6 +24,20 @@ export default async function SettingsHubPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/settings/activity"
+          className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"
+        >
+          <div className="rounded-lg bg-primary/10 p-2">
+            <ClipboardList className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">{t("partner.settings.activityLogTitle")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("partner.settings.activityLogCardDescription")}</p>
+            <span className="inline-block mt-2 text-sm font-medium text-primary">{t("partner.settings.open")}</span>
+          </div>
+        </Link>
+
         <Link
           href="/settings/team"
           className="surface-card p-6 transition-colors hover:border-primary/40 flex items-start gap-4"

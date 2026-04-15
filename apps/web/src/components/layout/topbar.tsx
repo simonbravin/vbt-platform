@@ -9,15 +9,18 @@ import { useTheme } from "@/lib/theme";
 import { CustomSidebarTrigger } from "@/components/layout/custom-sidebar-trigger";
 import { ShellBreadcrumb } from "@/components/layout/shell-breadcrumb";
 import { Separator } from "@/components/ui/separator";
+import { PartnerUpdateChangesList } from "@/components/activity/PartnerUpdateChangesList";
 
 type NotificationItem = {
   id: string;
+  action?: string;
   titleKey: string;
   link: string;
   createdAt: string;
   organizationName?: string;
   entityType: string;
   entityId: string;
+  metadata?: unknown;
 };
 
 interface TopBarProps {
@@ -266,6 +269,13 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
                             {n.organizationName && (
                               <span className="block text-xs text-muted-foreground mt-0.5">{n.organizationName}</span>
                             )}
+                            {n.action?.toLowerCase() === "partner_updated" && n.metadata ? (
+                              <PartnerUpdateChangesList
+                                changes={(n.metadata as { changes?: unknown })?.changes}
+                                compact
+                                maxItems={2}
+                              />
+                            ) : null}
                             <span className="block text-xs text-muted-foreground/80 mt-0.5">
                               {new Date(n.createdAt).toLocaleString(locale, {
                                 dateStyle: "short",

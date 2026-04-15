@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { PartnerTerritoriesSection, type PartnerTerritoryRow } from "../PartnerTerritoriesSection";
 
 const PARTNER_TYPES = [
   { value: "commercial_partner", labelKey: "superadmin.partners.commercialPartner" as const },
@@ -56,12 +57,15 @@ type Initial = {
 export function EditPartnerForm({
   partnerId,
   initial,
+  initialTerritories,
 }: {
   partnerId: string;
   initial: Initial;
+  initialTerritories: PartnerTerritoryRow[];
 }) {
   const t = useT();
   const router = useRouter();
+  const [territories, setTerritories] = useState<PartnerTerritoryRow[]>(initialTerritories);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -129,6 +133,7 @@ export function EditPartnerForm({
   }
 
   return (
+    <div className="space-y-6">
     <form
       onSubmit={handleSubmit}
       className="surface-card p-6 space-y-6"
@@ -350,5 +355,12 @@ export function EditPartnerForm({
         </button>
       </div>
     </form>
+    <PartnerTerritoriesSection
+      partnerId={partnerId}
+      territories={territories}
+      setTerritories={setTerritories}
+      onUpdate={() => router.refresh()}
+    />
+    </div>
   );
 }

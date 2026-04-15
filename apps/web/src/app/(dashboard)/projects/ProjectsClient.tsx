@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-projects-view";
 
+const PROJECT_STATUSES = ["lead", "qualified", "quoting", "engineering", "won", "lost", "on_hold"] as const;
+
 type Project = {
   id: string;
   projectName: string;
@@ -40,6 +42,7 @@ const statusLabel: Record<string, string> = {
 
 export function ProjectsClient({ projects: initialProjects, total: initialTotal }: { projects: Project[]; total: number }) {
   const t = useT();
+  const projectStatusLabel = (code: string) => t(`partner.reports.status.${code}`);
   const [view, setView] = useState<"cards" | "table">(() => {
     if (typeof window === "undefined") return "table";
     return localStorage.getItem(VIEW_STORAGE_KEY) === "cards" ? "cards" : "table";
@@ -47,17 +50,34 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | "">("");
   const [searching, setSearching] = useState(false);
 
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [search]);
+
   const runSearch = useCallback(() => {
-    const q = search.trim();
-    if (!q) {
+    setDebouncedSearch(search.trim());
+  }, [search]);
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
+
+  useEffect(() => {
+    if (!debouncedSearch && !statusFilter) {
       setProjects(initialProjects);
       setTotal(initialTotal);
       return;
     }
     setSearching(true);
-    fetch(`/api/saas/projects?search=${encodeURIComponent(q)}&limit=100`)
+    const params = new URLSearchParams({ limit: "100" });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (statusFilter) params.set("status", statusFilter);
+    fetch(`/api/saas/projects?${params}`)
       .then(async (r) => {
         try {
           const text = await r.text();
@@ -71,71 +91,66 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
         }
       })
       .finally(() => setSearching(false));
-  }, [search.trim(), initialProjects, initialTotal]);
-
-  useEffect(() => {
-    localStorage.setItem(VIEW_STORAGE_KEY, view);
-  }, [view]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!search.trim()) {
-        setProjects(initialProjects);
-        setTotal(initialTotal);
-        return;
-      }
-      setSearching(true);
-      fetch(`/api/saas/projects?search=${encodeURIComponent(search.trim())}&limit=100`)
-        .then(async (r) => {
-          try {
-            const text = await r.text();
-            const data = text ? JSON.parse(text) : {};
-            if (r.ok && Array.isArray(data.projects)) {
-              setProjects(data.projects);
-              setTotal(typeof data.total === "number" ? data.total : 0);
-            }
-          } catch {
-            // ignore
-          }
-        })
-        .finally(() => setSearching(false));
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [search, initialProjects, initialTotal]);
+  }, [debouncedSearch, statusFilter, initialProjects, initialTotal]);
 
   const displayName = (p: Project) => p.projectName ?? (p as any).name ?? "";
   const displayClient = (p: Project) => p.client?.name ?? (p as any).clientRecord?.name ?? (p as any).client ?? "";
   const quoteCount = (p: Project) => p._count?.quotes ?? 0;
   const areaM2 = (p: Project) => p.estimatedTotalAreaM2 ?? p.estimatedWallAreaM2 ?? 0;
 
+  const hasActiveFilters = Boolean(debouncedSearch) || Boolean(statusFilter);
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:items-center">
-        <div className="relative flex-1 min-w-0">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={t("projects.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            className="pl-9"
-            aria-label={t("projects.searchPlaceholder")}
-          />
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="relative flex-1 min-w-0">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={t("projects.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
+              className="pl-9"
+              aria-label={t("projects.searchPlaceholder")}
+            />
+          </div>
+          <Button type="button" onClick={runSearch} disabled={searching} className="border border-primary/20 shrink-0">
+            {searching ? t("projects.searching") : t("projects.search")}
+          </Button>
+          <ViewLayoutToggle view={view} onViewChange={setView} />
         </div>
-        <Button type="button" onClick={runSearch} disabled={searching} className="border border-primary/20 shrink-0">
-          {searching ? t("projects.searching") : t("projects.search")}
-        </Button>
-        <ViewLayoutToggle view={view} onViewChange={setView} />
+        <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          <div className="flex flex-wrap items-center gap-2 min-w-min">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("")}
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              {t("projects.filterAllStatuses")}
+            </button>
+            {PROJECT_STATUSES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                {projectStatusLabel(s)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {projects.length === 0 ? (
         <div className="surface-card p-12 text-center">
           <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
           <p className="text-muted-foreground">
-            {search.trim() ? t("projects.noSearchResults") : t("projects.noProjects")}
+            {hasActiveFilters ? t("projects.noSearchResults") : t("projects.noProjects")}
           </p>
-          {!search.trim() && (
+          {!hasActiveFilters && (
             <Link href="/projects/new" className="text-primary text-sm hover:underline mt-2 block">
               {t("projects.createFirstLink")}
             </Link>

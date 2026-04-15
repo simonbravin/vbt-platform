@@ -9,16 +9,6 @@ import { QuotesClient } from "./QuotesClient";
 import type { SessionUser } from "@/lib/auth";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
-import { cn } from "@/lib/utils";
-
-const STATUS_KEYS: Record<string, string> = {
-  draft: "quotes.draft",
-  sent: "quotes.sent",
-  accepted: "quotes.accepted",
-  rejected: "quotes.rejected",
-  expired: "quotes.expired",
-  archived: "quotes.archived",
-};
 
 export default async function QuotesPage({ searchParams }: { searchParams: { status?: string } }) {
   const user = await requireAuth();
@@ -61,8 +51,6 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
     dataLoadError = err instanceof Error ? err.message : String(err);
   }
 
-  const statuses = ["draft", "sent", "accepted", "rejected", "expired", "archived"];
-
   return (
     <div className="space-y-5">
       {dataLoadError && quotes.length > 0 && (
@@ -88,46 +76,6 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
             <Plus className="h-4 w-4 shrink-0" /> {t("quotes.newQuote")}
           </Link>
         </Button>
-      </div>
-
-      {/* Status filters: same pattern as ViewLayoutToggle — flex + gap + pill active state */}
-      <div
-        className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full border border-border/80 bg-filter p-1"
-        role="tablist"
-        aria-label={t("common.status")}
-      >
-        <Link
-          href="/quotes"
-          role="tab"
-          aria-selected={!searchParams.status}
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider transition-colors",
-            !searchParams.status
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-          )}
-        >
-          {t("quotes.all")}
-        </Link>
-        {statuses.map((s) => {
-          const active = searchParams.status === s;
-          return (
-            <Link
-              key={s}
-              href={`/quotes?status=${s}`}
-              role="tab"
-              aria-selected={active}
-              className={cn(
-                "inline-flex shrink-0 items-center justify-center rounded-full px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider transition-colors",
-                active
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              )}
-            >
-              {t(STATUS_KEYS[s] ?? s)}
-            </Link>
-          );
-        })}
       </div>
 
       <QuotesClient quotes={quotes} initialStatus={searchParams.status} />

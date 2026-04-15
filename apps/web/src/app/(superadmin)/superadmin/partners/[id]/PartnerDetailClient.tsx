@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,14 +9,12 @@ import {
   Mail,
   Globe,
   Settings,
-  MapPinned,
-  ClipboardList,
-  Sliders,
   Users,
   UserPlus,
   Target,
   Phone,
 } from "lucide-react";
+import { PartnerTerritoriesSection, type PartnerTerritoryRow } from "./PartnerTerritoriesSection";
 import { useT, useLanguage } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FilterSelect } from "@/components/ui/filter-select";
@@ -70,18 +68,7 @@ function memberStatusDisplay(t: (key: string) => string, status: string): string
   return out === key ? status : out;
 }
 
-function territoryTypeDisplay(t: (key: string) => string, territoryType: string): string {
-  const key = `superadmin.partner.territoryType.${territoryType}`;
-  const out = t(key);
-  return out === key ? territoryType : out;
-}
-
-type Territory = {
-  id: string;
-  countryCode: string;
-  region?: string | null;
-  territoryType: string;
-};
+type Territory = PartnerTerritoryRow;
 
 type Partner = {
   id: string;
@@ -116,9 +103,6 @@ type Partner = {
 const TABS = [
   { id: "overview" as const, labelKey: "superadmin.partner.tabs.overview" as const, icon: Building2 },
   { id: "team" as const, labelKey: "superadmin.partner.tabs.team" as const, icon: Users },
-  { id: "territories" as const, labelKey: "superadmin.partner.tabs.territories" as const, icon: MapPinned },
-  { id: "onboarding" as const, labelKey: "superadmin.partner.tabs.onboarding" as const, icon: ClipboardList },
-  { id: "parameters" as const, labelKey: "superadmin.partner.tabs.parameters" as const, icon: Sliders },
 ] as const;
 
 const TEAM_ROLES = [
@@ -252,7 +236,8 @@ export function PartnerDetailClient({
       )}
 
       {activeTab === "overview" && (
-        <div className="surface-card p-6 space-y-6">
+        <div className="space-y-6">
+          <div className="surface-card p-6 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">{t("superadmin.partner.detail.company")}</p>
@@ -322,38 +307,61 @@ export function PartnerDetailClient({
             </div>
           </div>
 
-          <div className="rounded-lg border border-alert-warningBorder bg-alert-warning p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-foreground">{t("superadmin.partner.commissionSectionTitle")}</h3>
-              <Link
-                href={`/superadmin/partners/${partnerId}/edit`}
-                className="text-sm text-primary hover:underline"
-              >
-                {t("common.edit")}
-              </Link>
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">{t("superadmin.partner.summaryCommercialTitle")}</h3>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.onboardingState")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.partner.onboardingHelp")}</p>
+              <div className="mt-2">
+                <FilterSelect
+                  value={onboardingState}
+                  onValueChange={handleUpdateOnboarding}
+                  emptyOptionLabel={t("superadmin.partner.onboardingNotSet")}
+                  options={ONBOARDING_STATES.map((s) => ({
+                    value: s,
+                    label: onboardingStateLabel(t, s),
+                  }))}
+                  disabled={saving}
+                  aria-label={t("superadmin.partner.detail.onboardingState")}
+                  triggerClassName="h-10 max-w-xs min-w-0 text-sm"
+                />
+                {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
+              </div>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{t("superadmin.partner.commissionSectionHelp")}</p>
-            <div className="mt-2 flex flex-wrap gap-4">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionPctLabel")}</p>
-                <p className="font-medium text-foreground">
+                <p className="mt-0.5 font-medium text-foreground">
                   {partner.partnerProfile?.visionLatamCommissionPct != null
                     ? `${partner.partnerProfile.visionLatamCommissionPct}%`
                     : t("superadmin.partner.commissionUsesGlobal")}
                 </p>
               </div>
-              {partner.partnerProfile?.visionLatamCommissionFixedUsd != null && partner.partnerProfile.visionLatamCommissionFixedUsd > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
-                  <p className="font-medium text-foreground">
-                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(partner.partnerProfile.visionLatamCommissionFixedUsd)}
-                  </p>
-                </div>
-              )}
+              <div>
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
+                <p className="mt-0.5 font-medium text-foreground">
+                  {partner.partnerProfile?.visionLatamCommissionFixedUsd != null
+                    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+                        partner.partnerProfile.visionLatamCommissionFixedUsd
+                      )
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.summaryMarginsLabel")}</p>
+                <p className="mt-0.5 font-medium text-foreground">
+                  {partner.partnerProfile?.marginMinPct != null || partner.partnerProfile?.marginMaxPct != null
+                    ? `${partner.partnerProfile?.marginMinPct ?? "—"}% – ${partner.partnerProfile?.marginMaxPct ?? "—"}%`
+                    : "—"}
+                </p>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionSectionHelp")}</p>
+            <Link href={`/superadmin/partners/${partnerId}/edit`} className="inline-block text-sm text-primary hover:underline">
+              {t("superadmin.partner.summaryEditCommissionLink")}
+            </Link>
           </div>
 
-          {/* Annual goals (read-only); edit in Parameters tab */}
           <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -362,7 +370,7 @@ export function PartnerDetailClient({
               </div>
               <button
                 type="button"
-                onClick={() => setActiveTab("parameters")}
+                onClick={() => document.getElementById("partner-parameters-block")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 className="text-sm text-primary hover:underline"
               >
                 {t("superadmin.partner.detail.editInParameters")}
@@ -387,6 +395,21 @@ export function PartnerDetailClient({
               </div>
             </div>
           </div>
+          </div>
+
+          <PartnerTerritoriesSection
+            partnerId={partnerId}
+            territories={territories}
+            onUpdate={() => {
+              refreshPartner();
+              router.refresh();
+            }}
+            setTerritories={setTerritories}
+          />
+
+          <div id="partner-parameters-block">
+            <ParametersSection partnerId={partnerId} partner={partner} onSaved={refreshPartner} />
+          </div>
 
           <Link
             href={`/superadmin/partners/${partnerId}/edit`}
@@ -400,46 +423,6 @@ export function PartnerDetailClient({
 
       {activeTab === "team" && (
         <TeamSection partnerId={partnerId} partnerName={partner.name} />
-      )}
-
-      {activeTab === "territories" && (
-        <TerritoriesSection
-          partnerId={partnerId}
-          territories={territories}
-          onUpdate={() => {
-            refreshPartner();
-            router.refresh();
-          }}
-          setTerritories={setTerritories}
-        />
-      )}
-
-      {activeTab === "onboarding" && (
-        <div className="surface-card p-6">
-          <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.onboardingState")}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("superadmin.partner.onboardingHelp")}
-          </p>
-          <div className="mt-4">
-            <FilterSelect
-              value={onboardingState}
-              onValueChange={handleUpdateOnboarding}
-              emptyOptionLabel={t("superadmin.partner.onboardingNotSet")}
-              options={ONBOARDING_STATES.map((s) => ({
-                value: s,
-                label: onboardingStateLabel(t, s),
-              }))}
-              disabled={saving}
-              aria-label={t("superadmin.partner.detail.onboardingState")}
-              triggerClassName="h-10 mt-1 max-w-xs min-w-0 text-sm"
-            />
-            {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "parameters" && (
-        <ParametersSection partnerId={partnerId} partner={partner} onSaved={refreshPartner} />
       )}
     </div>
   );
@@ -699,192 +682,6 @@ function TeamSection({ partnerId, partnerName }: { partnerId: string; partnerNam
   );
 }
 
-function TerritoriesSection({
-  partnerId,
-  territories,
-  onUpdate,
-  setTerritories,
-}: {
-  partnerId: string;
-  territories: Territory[];
-  onUpdate: () => void;
-  setTerritories: (t: Territory[]) => void;
-}) {
-  const t = useT();
-  const [adding, setAdding] = useState(false);
-  const [countryCode, setCountryCode] = useState("");
-  const [region, setRegion] = useState("");
-  const [territoryType, setTerritoryType] = useState<"exclusive" | "open" | "referral">("open");
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [removeTerritoryId, setRemoveTerritoryId] = useState<string | null>(null);
-  const [removingTerritory, setRemovingTerritory] = useState(false);
-
-  async function handleAdd() {
-    if (!countryCode.trim() || countryCode.length !== 2) {
-      setErr(t("superadmin.partner.countryCodeTwoChars"));
-      return;
-    }
-    setErr(null);
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/saas/partners/${partnerId}/territories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          countryCode: countryCode.trim().toUpperCase(),
-          region: region.trim() || null,
-          territoryType,
-          exclusive: territoryType === "exclusive",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErr(data?.error?.message ?? t("superadmin.partners.failedToAddTerritory"));
-        return;
-      }
-      setTerritories([...territories, data]);
-      setCountryCode("");
-      setRegion("");
-      setAdding(false);
-      onUpdate();
-    } catch {
-      setErr(t("superadmin.partners.failedToAddTerritory"));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function doRemoveTerritory(territoryId: string) {
-    try {
-      const res = await fetch(`/api/saas/territories/${territoryId}`, { method: "DELETE" });
-      if (!res.ok) return;
-      setTerritories(territories.filter((t) => t.id !== territoryId));
-      setRemoveTerritoryId(null);
-      onUpdate();
-    } catch {
-      // ignore
-    } finally {
-      setRemovingTerritory(false);
-    }
-  }
-
-  async function handleRemoveConfirm() {
-    if (!removeTerritoryId) return;
-    setRemovingTerritory(true);
-    await doRemoveTerritory(removeTerritoryId);
-  }
-
-  return (
-    <div className="surface-card p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.territories")}</h3>
-        {!adding ? (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            {t("superadmin.partner.addTerritory")}
-          </button>
-        ) : null}
-      </div>
-
-      {adding && (
-        <div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <div className="flex flex-wrap gap-3 items-end">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.countryCode")}</label>
-              <input
-                type="text"
-                maxLength={2}
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                className="mt-1 block w-20 rounded-lg border border-input px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.region")}</label>
-              <input
-                type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="mt-1 block w-32 rounded-lg border border-input px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.territoryType")}</label>
-              <FilterSelect
-                value={territoryType}
-                onValueChange={(v) => setTerritoryType(v as "exclusive" | "open" | "referral")}
-                options={[
-                  { value: "exclusive", label: t("superadmin.partner.territoryType.exclusive") },
-                  { value: "open", label: t("superadmin.partner.territoryType.open") },
-                  { value: "referral", label: t("superadmin.partner.territoryType.referral") },
-                ]}
-                aria-label={t("superadmin.partner.detail.territoryType")}
-                triggerClassName="mt-1 h-9 min-w-[9rem] max-w-full text-sm"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={submitting}
-              className="rounded-lg border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {submitting ? t("superadmin.partner.adding") : t("superadmin.partner.add")}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAdding(false); setErr(null); }}
-              className="rounded-lg border border-border/60 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              {t("common.cancel")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {territories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("superadmin.partner.detail.noTerritoriesYet")}</p>
-      ) : (
-        <ul className="divide-y divide-border/60">
-          {territories.map((territory) => (
-            <li key={territory.id} className="py-3 flex items-center justify-between">
-              <span className="font-medium">{territory.countryCode}</span>
-              {territory.region && <span className="text-muted-foreground">{territory.region}</span>}
-              <span className="text-xs rounded-lg bg-muted px-2 py-0.5">
-                {territoryTypeDisplay(t, territory.territoryType)}
-              </span>
-              <button
-                type="button"
-                onClick={() => setRemoveTerritoryId(territory.id)}
-                className="text-sm text-destructive hover:underline"
-              >
-                {t("superadmin.partner.removeTerritory")}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <ConfirmDialog
-        open={!!removeTerritoryId}
-        onOpenChange={(open) => !open && setRemoveTerritoryId(null)}
-        title={t("superadmin.partners.removeTerritoryConfirmTitle")}
-        description={t("superadmin.partners.removeTerritoryConfirmMessage")}
-        confirmLabel={t("common.delete")}
-        cancelLabel={t("common.cancel")}
-        loadingLabel={t("superadmin.partners.removing")}
-        variant="danger"
-        loading={removingTerritory}
-        onConfirm={handleRemoveConfirm}
-      />
-    </div>
-  );
-}
-
 const ENGINEERING_FEE_MODES = [
   { value: "fixed" as const, labelKey: "superadmin.partner.engineeringFee.fixed" as const },
   { value: "percent" as const, labelKey: "superadmin.partner.engineeringFee.percent" as const },
@@ -901,6 +698,11 @@ type PlatformDefaults = {
   };
 };
 
+function formatUsdDisplay(n: number | null | undefined) {
+  if (n == null || Number.isNaN(n)) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+}
+
 function ParametersSection({
   partnerId,
   partner,
@@ -912,23 +714,46 @@ function ParametersSection({
 }) {
   const t = useT();
   const profile = partner.partnerProfile;
+  const [isEditing, setIsEditing] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [defaults, setDefaults] = useState<PlatformDefaults | null>(null);
-  const [entryFeeUsd, setEntryFeeUsd] = useState<string>(profile?.entryFeeUsd != null ? String(profile.entryFeeUsd) : "");
-  const [trainingFeeUsd, setTrainingFeeUsd] = useState<string>(profile?.trainingFeeUsd != null ? String(profile.trainingFeeUsd) : "");
-  const [materialCreditUsd, setMaterialCreditUsd] = useState<string>(profile?.materialCreditUsd != null ? String(profile.materialCreditUsd) : "");
-  const [engineeringFeeMode, setEngineeringFeeMode] = useState<string>(profile?.engineeringFeeMode ?? "");
-  const [engineeringFeeValue, setEngineeringFeeValue] = useState<string>(profile?.engineeringFeeValue != null ? String(profile.engineeringFeeValue) : "");
-  const [marginMinPct, setMarginMinPct] = useState<string>(profile?.marginMinPct != null ? String(profile.marginMinPct) : "");
-  const [marginMaxPct, setMarginMaxPct] = useState<string>(profile?.marginMaxPct != null ? String(profile.marginMaxPct) : "");
-  const [minimumPricePolicy, setMinimumPricePolicy] = useState<string>(profile?.minimumPricePolicy ?? "");
-  const [salesTargetAnnualUsd, setSalesTargetAnnualUsd] = useState<string>(profile?.salesTargetAnnualUsd != null ? String(profile.salesTargetAnnualUsd) : "");
-  const [salesTargetAnnualM2, setSalesTargetAnnualM2] = useState<string>(profile?.salesTargetAnnualM2 != null ? String(profile.salesTargetAnnualM2) : "");
-  const [agreementStartDate, setAgreementStartDate] = useState<string>(profile?.agreementStartDate ? String(profile.agreementStartDate).slice(0, 10) : "");
-  const [agreementEndDate, setAgreementEndDate] = useState<string>(profile?.agreementEndDate ? String(profile.agreementEndDate).slice(0, 10) : "");
-  const [agreementStatus, setAgreementStatus] = useState<string>(profile?.agreementStatus ?? "");
+  const [entryFeeUsd, setEntryFeeUsd] = useState("");
+  const [trainingFeeUsd, setTrainingFeeUsd] = useState("");
+  const [materialCreditUsd, setMaterialCreditUsd] = useState("");
+  const [engineeringFeeMode, setEngineeringFeeMode] = useState("");
+  const [engineeringFeeValue, setEngineeringFeeValue] = useState("");
+  const [marginMinPct, setMarginMinPct] = useState("");
+  const [marginMaxPct, setMarginMaxPct] = useState("");
+  const [minimumPricePolicy, setMinimumPricePolicy] = useState("");
+  const [salesTargetAnnualUsd, setSalesTargetAnnualUsd] = useState("");
+  const [salesTargetAnnualM2, setSalesTargetAnnualM2] = useState("");
+  const [agreementStartDate, setAgreementStartDate] = useState("");
+  const [agreementEndDate, setAgreementEndDate] = useState("");
+  const [agreementStatus, setAgreementStatus] = useState("");
+
+  const resetDraftFromPartner = useCallback(() => {
+    const p = partner.partnerProfile;
+    setEntryFeeUsd(p?.entryFeeUsd != null ? String(p.entryFeeUsd) : "");
+    setTrainingFeeUsd(p?.trainingFeeUsd != null ? String(p.trainingFeeUsd) : "");
+    setMaterialCreditUsd(p?.materialCreditUsd != null ? String(p.materialCreditUsd) : "");
+    setEngineeringFeeMode(p?.engineeringFeeMode ?? "");
+    setEngineeringFeeValue(p?.engineeringFeeValue != null ? String(p.engineeringFeeValue) : "");
+    setMarginMinPct(p?.marginMinPct != null ? String(p.marginMinPct) : "");
+    setMarginMaxPct(p?.marginMaxPct != null ? String(p.marginMaxPct) : "");
+    setMinimumPricePolicy(p?.minimumPricePolicy ?? "");
+    setSalesTargetAnnualUsd(p?.salesTargetAnnualUsd != null ? String(p.salesTargetAnnualUsd) : "");
+    setSalesTargetAnnualM2(p?.salesTargetAnnualM2 != null ? String(p.salesTargetAnnualM2) : "");
+    setAgreementStartDate(p?.agreementStartDate ? String(p.agreementStartDate).slice(0, 10) : "");
+    setAgreementEndDate(p?.agreementEndDate ? String(p.agreementEndDate).slice(0, 10) : "");
+    setAgreementStatus(p?.agreementStatus ?? "");
+  }, [partner]);
+
+  useEffect(() => {
+    if (!isEditing) resetDraftFromPartner();
+  }, [partner, isEditing, resetDraftFromPartner]);
 
   useEffect(() => {
     let cancelled = false;
@@ -943,8 +768,20 @@ function ParametersSection({
     };
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function beginEdit() {
+    resetDraftFromPartner();
+    setError(null);
+    setSuccessMessage(null);
+    setIsEditing(true);
+  }
+
+  function cancelEdit() {
+    resetDraftFromPartner();
+    setError(null);
+    setIsEditing(false);
+  }
+
+  async function executeSave() {
     setError(null);
     setSuccessMessage(null);
     setSaving(true);
@@ -981,9 +818,11 @@ function ParametersSection({
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data?.error ?? t("superadmin.partners.failedToSave"));
+        setError(typeof data?.error === "string" ? data.error : data?.error?.message ?? t("superadmin.partners.failedToSave"));
         return;
       }
+      setConfirmSaveOpen(false);
+      setIsEditing(false);
       onSaved();
       setSuccessMessage(t("superadmin.partners.parametersSaved"));
       setTimeout(() => setSuccessMessage(null), 4000);
@@ -994,142 +833,279 @@ function ParametersSection({
     }
   }
 
+  const p = profile;
+  const agreementStatusRaw = p?.agreementStatus ?? "";
+  const agreementStatusOption = AGREEMENT_STATUS_OPTIONS.find((o) => o.value === agreementStatusRaw);
+  const agreementStatusRead = agreementStatusOption
+    ? t(agreementStatusOption.labelKey)
+    : agreementStatusRaw || "—";
+
   return (
     <div className="surface-card p-6 space-y-6">
-      <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.parametersTitle")}</h3>
-      <p className="text-sm text-muted-foreground">
-        {t("superadmin.partner.parametersIntro")}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-medium text-foreground">{t("superadmin.partner.detail.parametersTitle")}</h3>
+          <p className="text-sm text-muted-foreground mt-1">{t("superadmin.partner.parametersViewHint")}</p>
+        </div>
+        {!isEditing ? (
+          <button
+            type="button"
+            onClick={beginEdit}
+            className="rounded-lg border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            {t("superadmin.partner.parametersEditButton")}
+          </button>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="rounded-lg border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {t("superadmin.partner.parametersCancelEdit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmSaveOpen(true)}
+              disabled={saving}
+              className="rounded-lg border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {t("superadmin.partner.saveParameters")}
+            </button>
+          </div>
+        )}
+      </div>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       {successMessage && (
         <div className="rounded-lg border border-alert-successBorder bg-alert-success p-3 text-sm text-foreground">
           {successMessage}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div>
-          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.fees")}</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">
-                {t("superadmin.partner.paramEntryFeeUsd")}
-                {defaults?.pricing?.defaultEntryFeeUsd != null && entryFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-muted-foreground/70">
-                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultEntryFeeUsd })}
-                  </span>
-                )}
-              </label>
-              <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="input-native mt-1" />
+
+      {!isEditing ? (
+        <div className="space-y-6 text-sm">
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.detail.fees")}</h4>
+            <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.paramEntryFeeUsd")}</dt>
+                <dd className="font-medium text-foreground">{p?.entryFeeUsd != null ? formatUsdDisplay(p.entryFeeUsd) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.paramTrainingFeeUsd")}</dt>
+                <dd className="font-medium text-foreground">{p?.trainingFeeUsd != null ? formatUsdDisplay(p.trainingFeeUsd) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.materialCreditUsd")}</dt>
+                <dd className="font-medium text-foreground">{p?.materialCreditUsd != null ? formatUsdDisplay(p.materialCreditUsd) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.edit.engineeringFeeMode")}</dt>
+                <dd className="font-medium text-foreground">{engineeringFeeModeLabel(t, p?.engineeringFeeMode)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.engineeringFeeValue")}</dt>
+                <dd className="font-medium text-foreground">{p?.engineeringFeeValue != null ? String(p.engineeringFeeValue) : "—"}</dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.detail.marginsPricing")}</h4>
+            <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.paramMinMarginPct")}</dt>
+                <dd className="font-medium text-foreground">{p?.marginMinPct != null ? `${p.marginMinPct}%` : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.paramMaxMarginPct")}</dt>
+                <dd className="font-medium text-foreground">{p?.marginMaxPct != null ? `${p.marginMaxPct}%` : "—"}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.minimumPricePolicy")}</dt>
+                <dd className="font-medium text-foreground">{p?.minimumPricePolicy?.trim() ? p.minimumPricePolicy : "—"}</dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.detail.salesTargets")}</h4>
+            <dl className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.annualTargetUsd")}</dt>
+                <dd className="font-medium text-foreground">{p?.salesTargetAnnualUsd != null ? formatUsdDisplay(p.salesTargetAnnualUsd) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.annualTargetM2")}</dt>
+                <dd className="font-medium text-foreground">{p?.salesTargetAnnualM2 != null ? p.salesTargetAnnualM2.toLocaleString() : "—"}</dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.detail.agreement")}</h4>
+            <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.startDate")}</dt>
+                <dd className="font-medium text-foreground">{p?.agreementStartDate ? String(p.agreementStartDate).slice(0, 10) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.endDate")}</dt>
+                <dd className="font-medium text-foreground">{p?.agreementEndDate ? String(p.agreementEndDate).slice(0, 10) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("superadmin.partner.detail.status")}</dt>
+                <dd className="font-medium text-foreground">{agreementStatusRead}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <p className="text-sm text-muted-foreground">{t("superadmin.partner.parametersIntro")}</p>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.fees")}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  {t("superadmin.partner.paramEntryFeeUsd")}
+                  {defaults?.pricing?.defaultEntryFeeUsd != null && entryFeeUsd === "" && (
+                    <span className="ml-1 font-normal text-muted-foreground/70">
+                      {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultEntryFeeUsd })}
+                    </span>
+                  )}
+                </label>
+                <input type="text" inputMode="decimal" value={entryFeeUsd} onChange={(e) => setEntryFeeUsd(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  {t("superadmin.partner.paramTrainingFeeUsd")}
+                  {defaults?.pricing?.defaultTrainingFeeUsd != null && trainingFeeUsd === "" && (
+                    <span className="ml-1 font-normal text-muted-foreground/70">
+                      {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultTrainingFeeUsd })}
+                    </span>
+                  )}
+                </label>
+                <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.materialCreditUsd")}</label>
+                <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
+                <FilterSelect
+                  value={engineeringFeeMode}
+                  onValueChange={setEngineeringFeeMode}
+                  emptyOptionLabel={t("superadmin.partner.onboardingNotSet")}
+                  options={ENGINEERING_FEE_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) }))}
+                  aria-label={t("superadmin.partner.edit.engineeringFeeMode")}
+                  triggerClassName="mt-1 h-10 w-full min-w-0 max-w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={engineeringFeeValue}
+                  onChange={(e) => setEngineeringFeeValue(e.target.value)}
+                  className="input-native mt-1"
+                  placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">
-                {t("superadmin.partner.paramTrainingFeeUsd")}
-                {defaults?.pricing?.defaultTrainingFeeUsd != null && trainingFeeUsd === "" && (
-                  <span className="ml-1 font-normal text-muted-foreground/70">
-                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultTrainingFeeUsd })}
-                  </span>
-                )}
-              </label>
-              <input type="text" inputMode="decimal" value={trainingFeeUsd} onChange={(e) => setTrainingFeeUsd(e.target.value)} className="input-native mt-1" />
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.marginsPricing")}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  {t("superadmin.partner.paramMinMarginPct")}
+                  {defaults?.pricing?.defaultMarginMinPct != null && marginMinPct === "" && (
+                    <span className="ml-1 font-normal text-muted-foreground/70">
+                      {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMinPct })}
+                    </span>
+                  )}
+                </label>
+                <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  {t("superadmin.partner.paramMaxMarginPct")}
+                  {defaults?.pricing?.defaultMarginMaxPct != null && marginMaxPct === "" && (
+                    <span className="ml-1 font-normal text-muted-foreground/70">
+                      {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMaxPct })}
+                    </span>
+                  )}
+                </label>
+                <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
+                <input
+                  type="text"
+                  value={minimumPricePolicy}
+                  onChange={(e) => setMinimumPricePolicy(e.target.value)}
+                  className="input-native mt-1"
+                  placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.materialCreditUsd")}</label>
-              <input type="text" inputMode="decimal" value={materialCreditUsd} onChange={(e) => setMaterialCreditUsd(e.target.value)} className="input-native mt-1" />
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.salesTargets")}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetUsd")}</label>
+                <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetM2")}</label>
+                <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="input-native mt-1" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.edit.engineeringFeeMode")}</label>
-              <FilterSelect
-                value={engineeringFeeMode}
-                onValueChange={setEngineeringFeeMode}
-                emptyOptionLabel={t("superadmin.partner.onboardingNotSet")}
-                options={ENGINEERING_FEE_MODES.map((m) => ({ value: m.value, label: t(m.labelKey) }))}
-                aria-label={t("superadmin.partner.edit.engineeringFeeMode")}
-                triggerClassName="mt-1 h-10 w-full min-w-0 max-w-full text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.engineeringFeeValue")}</label>
-              <input type="text" inputMode="decimal" value={engineeringFeeValue} onChange={(e) => setEngineeringFeeValue(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderEngineeringFee")} />
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.agreement")}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.startDate")}</label>
+                <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.endDate")}</label>
+                <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="input-native mt-1" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.status")}</label>
+                <FilterSelect
+                  value={agreementStatus}
+                  onValueChange={setAgreementStatus}
+                  emptyOptionLabel={t("superadmin.partner.agreementStatusNone")}
+                  options={AGREEMENT_STATUS_OPTIONS.filter((o) => o.value !== "").map((o) => ({
+                    value: o.value,
+                    label: t(o.labelKey),
+                  }))}
+                  aria-label={t("superadmin.partner.detail.status")}
+                  triggerClassName="mt-1 h-10 w-full min-w-0 max-w-full text-sm"
+                />
+              </div>
             </div>
           </div>
         </div>
-        <div>
-          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.marginsPricing")}</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">
-                {t("superadmin.partner.paramMinMarginPct")}
-                {defaults?.pricing?.defaultMarginMinPct != null && marginMinPct === "" && (
-                  <span className="ml-1 font-normal text-muted-foreground/70">
-                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMinPct })}
-                  </span>
-                )}
-              </label>
-              <input type="text" inputMode="decimal" value={marginMinPct} onChange={(e) => setMarginMinPct(e.target.value)} className="input-native mt-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">
-                {t("superadmin.partner.paramMaxMarginPct")}
-                {defaults?.pricing?.defaultMarginMaxPct != null && marginMaxPct === "" && (
-                  <span className="ml-1 font-normal text-muted-foreground/70">
-                    {t("superadmin.partner.defaultValueInline", { value: defaults.pricing.defaultMarginMaxPct })}
-                  </span>
-                )}
-              </label>
-              <input type="text" inputMode="decimal" value={marginMaxPct} onChange={(e) => setMarginMaxPct(e.target.value)} className="input-native mt-1" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.minimumPricePolicy")}</label>
-              <input type="text" value={minimumPricePolicy} onChange={(e) => setMinimumPricePolicy(e.target.value)} className="input-native mt-1" placeholder={t("superadmin.partner.detail.placeholderMinPricePolicy")} />
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.salesTargets")}</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetUsd")}</label>
-              <input type="text" inputMode="decimal" value={salesTargetAnnualUsd} onChange={(e) => setSalesTargetAnnualUsd(e.target.value)} className="input-native mt-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.annualTargetM2")}</label>
-              <input type="text" inputMode="decimal" value={salesTargetAnnualM2} onChange={(e) => setSalesTargetAnnualM2(e.target.value)} className="input-native mt-1" />
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-medium text-foreground mb-3">{t("superadmin.partner.detail.agreement")}</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.startDate")}</label>
-              <input type="date" value={agreementStartDate} onChange={(e) => setAgreementStartDate(e.target.value)} className="input-native mt-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.endDate")}</label>
-              <input type="date" value={agreementEndDate} onChange={(e) => setAgreementEndDate(e.target.value)} className="input-native mt-1" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.status")}</label>
-              <FilterSelect
-                value={agreementStatus}
-                onValueChange={setAgreementStatus}
-                emptyOptionLabel={t("superadmin.partner.agreementStatusNone")}
-                options={AGREEMENT_STATUS_OPTIONS.filter((o) => o.value !== "").map((o) => ({
-                  value: o.value,
-                  label: t(o.labelKey),
-                }))}
-                aria-label={t("superadmin.partner.detail.status")}
-                triggerClassName="mt-1 h-10 w-full min-w-0 max-w-full text-sm"
-              />
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button type="submit" disabled={saving} className="rounded-lg border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-            {saving ? t("common.saving") : t("superadmin.partner.saveParameters")}
-          </button>
-        </div>
-      </form>
+      )}
+
+      <ConfirmDialog
+        open={confirmSaveOpen}
+        onOpenChange={(open) => !open && !saving && setConfirmSaveOpen(false)}
+        title={t("superadmin.partner.parametersSaveConfirmTitle")}
+        description={t("superadmin.partner.parametersSaveConfirmDescription")}
+        confirmLabel={t("common.confirm")}
+        cancelLabel={t("common.cancel")}
+        loadingLabel={t("common.saving")}
+        variant="primary"
+        loading={saving}
+        onConfirm={executeSave}
+      />
     </div>
   );
 }

@@ -102,55 +102,61 @@ export function SuperadminProjectsListClient() {
           </button>
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-3">
-        <FilterSelect
-          value={organizationId}
-          onValueChange={setOrganizationId}
-          emptyOptionLabel={t("superadmin.projectsList.allCompanies")}
-          options={partners.map((p) => ({ value: p.id, label: p.name }))}
-          aria-label={t("admin.entities.partnerLabel")}
-          triggerClassName="h-9 min-w-[180px] max-w-[min(100vw-2rem,280px)] text-sm"
-        />
-        <input
-          type="text"
-          placeholder={t("superadmin.projectsList.countryPlaceholder")}
-          value={countryCode}
-          onChange={(e) => setCountryCode(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
-        />
-        <input
-          type="search"
-          placeholder={t("superadmin.projectsList.searchPlaceholder")}
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
-        />
-        <button
-          type="button"
-          onClick={() => setDebouncedSearch(searchInput.trim())}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
-        >
-          {t("superadmin.projectsList.search")}
-        </button>
-        <ViewLayoutToggle view={view} onViewChange={setView} />
-        <button
-          type="button"
-          onClick={() => setStatusFilter("")}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-        >
-          {t("superadmin.projectsList.allStatuses")}
-        </button>
-        {PROJECT_STATUSES.map((s) => (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <FilterSelect
+            value={organizationId}
+            onValueChange={setOrganizationId}
+            emptyOptionLabel={t("superadmin.projectsList.allCompanies")}
+            options={partners.map((p) => ({ value: p.id, label: p.name }))}
+            aria-label={t("admin.entities.partnerLabel")}
+            triggerClassName="h-9 min-w-[180px] max-w-[min(100vw-2rem,280px)] text-sm"
+          />
+          <input
+            type="text"
+            placeholder={t("superadmin.projectsList.countryPlaceholder")}
+            value={countryCode}
+            onChange={(e) => setCountryCode(e.target.value)}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
+          />
+          <input
+            type="search"
+            placeholder={t("superadmin.projectsList.searchPlaceholder")}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && setDebouncedSearch(searchInput.trim())}
+            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[200px]"
+          />
           <button
-            key={s}
             type="button"
-            onClick={() => setStatusFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            onClick={() => setDebouncedSearch(searchInput.trim())}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80"
           >
-            {projectStatusLabel(s)}
+            {t("superadmin.projectsList.search")}
           </button>
-        ))}
+          <ViewLayoutToggle view={view} onViewChange={setView} />
+        </div>
+        <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          <div className="flex flex-wrap items-center gap-2 min-w-min">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("")}
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${!statusFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              {t("superadmin.projectsList.allStatuses")}
+            </button>
+            {PROJECT_STATUSES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                {projectStatusLabel(s)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="surface-card-overflow">

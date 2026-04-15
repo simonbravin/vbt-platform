@@ -3,7 +3,60 @@ import { prisma } from "@/lib/db";
 import { getTenantContext, requirePlatformSuperadmin, TenantError, tenantErrorStatus } from "@/lib/tenant";
 import { getPartnerById, updatePartner } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
+import {
+  buildPartnerUpdateChanges,
+  type PartnerOrgSnapshot,
+} from "@/lib/partner-update-activity";
 import { z } from "zod";
+
+/** Subset of org rows used for audit diff (updatePartner return omits `territories` from getPartnerById). */
+type OrgForPartnerSnapshot = {
+  id: string;
+  name: string;
+  website: string | null;
+  countryCode: string | null;
+  status: string;
+  organizationType: string;
+  partnerProfile: NonNullable<Awaited<ReturnType<typeof getPartnerById>>>["partnerProfile"];
+};
+
+function toPartnerActivitySnapshot(org: OrgForPartnerSnapshot): PartnerOrgSnapshot {
+  const p = org.partnerProfile;
+  return {
+    id: org.id,
+    name: org.name,
+    website: org.website ?? null,
+    countryCode: org.countryCode ?? null,
+    status: org.status,
+    organizationType: org.organizationType,
+    partnerProfile: p
+      ? {
+          contactName: p.contactName,
+          contactEmail: p.contactEmail,
+          partnerType: p.partnerType,
+          engineeringFeeMode: p.engineeringFeeMode,
+          engineeringFeeValue: p.engineeringFeeValue,
+          entryFeeUsd: p.entryFeeUsd,
+          trainingFeeUsd: p.trainingFeeUsd,
+          materialCreditUsd: p.materialCreditUsd,
+          marginMinPct: p.marginMinPct,
+          marginMaxPct: p.marginMaxPct,
+          minimumPricePolicy: p.minimumPricePolicy,
+          salesTargetAnnualUsd: p.salesTargetAnnualUsd,
+          salesTargetAnnualM2: p.salesTargetAnnualM2,
+          agreementStartDate: p.agreementStartDate,
+          agreementEndDate: p.agreementEndDate,
+          agreementStatus: p.agreementStatus,
+          visionLatamCommissionPct: p.visionLatamCommissionPct,
+          visionLatamCommissionFixedUsd: p.visionLatamCommissionFixedUsd,
+          moduleVisibility: p.moduleVisibility,
+          enabledSystems: p.enabledSystems,
+          quoteDefaults: p.quoteDefaults,
+          requireDeliveredEngineeringForQuotes: p.requireDeliveredEngineeringForQuotes,
+        }
+      : null,
+  };
+}
 
 const countryQuoteOverrideSchema = z
   .object({
@@ -105,6 +158,12 @@ export async function PATCH(
       isPlatformSuperadmin: true,
     };
     const data = parsed.data;
+    const beforeOrg = await getPartnerById(prisma, ctx, params.id);
+    if (!beforeOrg) {
+      return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+    }
+    const beforeSnap = toPartnerActivitySnapshot(beforeOrg as OrgForPartnerSnapshot);
+
     const partner = await updatePartner(prisma, ctx, params.id, {
       companyName: data.companyName,
       contactName: data.contactName,
@@ -133,13 +192,22 @@ export async function PATCH(
       quotePricingDefaults: data.quotePricingDefaults ?? undefined,
       requireDeliveredEngineeringForQuotes: data.requireDeliveredEngineeringForQuotes,
     });
+    const afterSnap = toPartnerActivitySnapshot(partner as OrgForPartnerSnapshot);
+    const patchKeys = Object.entries(data)
+      .filter(([, v]) => v !== undefined)
+      .map(([k]) => k);
+    const changes = buildPartnerUpdateChanges(beforeSnap, afterSnap, patchKeys);
     await createActivityLog({
       organizationId: partner.id,
       userId: user.userId ?? user.id,
       action: "partner_updated",
       entityType: "organization",
       entityId: partner.id,
-      metadata: { companyName: partner.name },
+      metadata: {
+        companyName: partner.name,
+        changes,
+        changeCount: changes.length,
+      },
     });
     return NextResponse.json(partner);
   } catch (e) {

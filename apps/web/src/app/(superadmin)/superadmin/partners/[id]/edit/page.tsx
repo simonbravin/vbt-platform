@@ -21,7 +21,7 @@ export default async function EditPartnerPage({ params }: PageProps) {
       id: params.id,
       organizationType: { in: ["commercial_partner", "master_partner"] },
     },
-    include: { partnerProfile: true },
+    include: { partnerProfile: true, territories: true },
   });
 
   if (!partner) notFound();
@@ -43,6 +43,12 @@ export default async function EditPartnerPage({ params }: PageProps) {
       </div>
       <EditPartnerForm
         partnerId={params.id}
+        initialTerritories={(partner.territories ?? []).map((row) => ({
+          id: row.id,
+          countryCode: row.countryCode,
+          region: row.region,
+          territoryType: row.territoryType,
+        }))}
         initial={{
           companyName: partner.name,
           contactName: partner.partnerProfile?.contactName ?? "",

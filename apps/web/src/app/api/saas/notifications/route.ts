@@ -29,7 +29,6 @@ async function getHandler(req: Request) {
 
   const superadminOnlyActions = new Set([
     "partner_created",
-    "partner_updated",
     "partner_invite_sent",
     "partner_onboarded",
   ]);
@@ -53,7 +52,9 @@ async function getHandler(req: Request) {
 
     if (!ctx.isPlatformSuperadmin) {
       rows = rows.filter((r) => {
-        if (superadminOnlyActions.has(r.action.toLowerCase())) return false;
+        const a = r.action.toLowerCase();
+        if (superadminOnlyActions.has(a)) return false;
+        if (a === "partner_updated" && r.organizationId !== ctx.activeOrgId) return false;
         if (
           r.entityType.toLowerCase() === "engineering_request" &&
           (r.action.toLowerCase() === "engineering_review_note" ||
@@ -77,6 +78,7 @@ async function getHandler(req: Request) {
       });
       return {
         id: row.id,
+        action: row.action,
         titleKey,
         link,
         createdAt: row.createdAt,
@@ -84,6 +86,7 @@ async function getHandler(req: Request) {
         organizationName: row.organization?.name ?? undefined,
         entityType: row.entityType,
         entityId: row.entityId,
+        metadata: row.metadataJson,
       };
     });
 

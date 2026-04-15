@@ -344,6 +344,7 @@ export async function getDashboardActivity(
       entityType: true,
       entityId: true,
       createdAt: true,
+      metadataJson: true,
       user: { select: { id: true, fullName: true } },
     },
     orderBy: { createdAt: "desc" },
