@@ -169,7 +169,7 @@ async function postHandler(req: Request) {
   });
 
   await createActivityLog({
-    organizationId: user.activeOrgId ?? null,
+    organizationId: orgId,
     userId: user.userId ?? user.id,
     action: "quote_created",
     entityType: "quote",
