@@ -1,5 +1,20 @@
-import type { PrismaClient } from "@vbt/db";
+import { Prisma, type PrismaClient } from "@vbt/db";
 import { orgScopeWhere, type TenantContext } from "./tenant-context";
+
+/** `pg_advisory_xact_lock(key1, key2)` namespace — serializes inventory mutations per warehouse. */
+const ADV_LOCK_INV_KEY1 = 884_291_424;
+
+type TxWithExecuteRaw = Pick<PrismaClient, "$executeRaw">;
+
+/**
+ * Blocks until exclusive access to this warehouse's inventory levels for the current DB transaction.
+ * Prevents lost updates when bulk import and manual (or concurrent) transactions overlap.
+ */
+async function acquireWarehouseInventoryXactLock(tx: TxWithExecuteRaw, warehouseId: string): Promise<void> {
+  await tx.$executeRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(${ADV_LOCK_INV_KEY1}, hashtext(${warehouseId}))`
+  );
+}
 
 export type InventoryTransactionType =
   | "purchase_in"
@@ -29,6 +44,33 @@ export type CreateTransactionInput = {
   notes?: string | null;
   createdByUserId?: string | null;
   organizationId: string;
+};
+
+/** True when the movement removes stock (delta should be negative for a positive file count). */
+export function isInventoryMovementOut(type: InventoryTransactionType): boolean {
+  return (
+    type === "sale_out" ||
+    type === "project_consumption" ||
+    type === "adjustment_out" ||
+    type === "transfer_out"
+  );
+}
+
+export type BulkInventoryLine = {
+  catalogPieceId: string;
+  /** Positive quantity from the file (same sign convention as manual “quantity” for ins). */
+  quantity: number;
+};
+
+export type CreateBulkTransactionsInput = {
+  warehouseId: string;
+  organizationId: string;
+  type: InventoryTransactionType;
+  lines: BulkInventoryLine[];
+  notes?: string | null;
+  createdByUserId?: string | null;
+  referenceQuoteId?: string | null;
+  referenceProjectId?: string | null;
 };
 
 export type ListTransactionsOptions = {
@@ -98,56 +140,171 @@ export async function createTransaction(
   if (!ctx.isPlatformSuperadmin && ctx.organizationId !== input.organizationId)
     throw new Error("Cannot create transaction for another organization");
 
-  const tx = await prisma.$transaction(async (tx) => {
-    const created = await tx.inventoryTransaction.create({
-      data: {
-        warehouseId: input.warehouseId,
-        catalogPieceId: input.catalogPieceId,
-        quantityDelta: input.quantityDelta,
-        type: input.type,
-        referenceQuoteId: input.referenceQuoteId ?? undefined,
-        referenceProjectId: input.referenceProjectId ?? undefined,
-        notes: input.notes ?? undefined,
-        createdByUserId: input.createdByUserId ?? undefined,
-        organizationId: input.organizationId,
-      },
-    });
+  const tx = await prisma.$transaction(
+    async (tx) => {
+      await acquireWarehouseInventoryXactLock(tx, input.warehouseId);
 
-    const existing = await tx.inventoryLevel.findUnique({
-      where: {
-        warehouseId_catalogPieceId: {
+      const created = await tx.inventoryTransaction.create({
+        data: {
           warehouseId: input.warehouseId,
           catalogPieceId: input.catalogPieceId,
+          quantityDelta: input.quantityDelta,
+          type: input.type,
+          referenceQuoteId: input.referenceQuoteId ?? undefined,
+          referenceProjectId: input.referenceProjectId ?? undefined,
+          notes: input.notes ?? undefined,
+          createdByUserId: input.createdByUserId ?? undefined,
+          organizationId: input.organizationId,
         },
-      },
-    });
-
-    const newQuantity = (existing?.quantity ?? 0) + input.quantityDelta;
-    if (newQuantity < 0) throw new Error("Insufficient inventory");
-
-    if (existing) {
-      await tx.inventoryLevel.update({
-        where: { id: existing.id },
-        data: { quantity: newQuantity, updatedAt: new Date() },
       });
-    } else {
-      if (newQuantity === 0) {
-        // no need to create a zero row unless we want to track it
-      } else {
-        await tx.inventoryLevel.create({
-          data: {
+
+      const existing = await tx.inventoryLevel.findUnique({
+        where: {
+          warehouseId_catalogPieceId: {
             warehouseId: input.warehouseId,
             catalogPieceId: input.catalogPieceId,
-            quantity: newQuantity,
           },
-        });
-      }
-    }
+        },
+      });
 
-    return created;
-  });
+      const newQuantity = (existing?.quantity ?? 0) + input.quantityDelta;
+      if (newQuantity < 0) throw new Error("Insufficient inventory");
+
+      if (existing) {
+        await tx.inventoryLevel.update({
+          where: { id: existing.id },
+          data: { quantity: newQuantity, updatedAt: new Date() },
+        });
+      } else {
+        if (newQuantity === 0) {
+          // no need to create a zero row unless we want to track it
+        } else {
+          await tx.inventoryLevel.create({
+            data: {
+              warehouseId: input.warehouseId,
+              catalogPieceId: input.catalogPieceId,
+              quantity: newQuantity,
+            },
+          });
+        }
+      }
+
+      return created;
+    },
+    { timeout: 135_000 }
+  );
 
   return tx;
+}
+
+/**
+ * Apply one inventory transaction row per catalog piece, after merging positive `quantity` values by piece.
+ * Uses a per-warehouse transaction lock and re-reads levels before validating (all-or-nothing).
+ */
+export async function createBulkTransactions(
+  prisma: PrismaClient,
+  ctx: TenantContext,
+  input: CreateBulkTransactionsInput
+) {
+  const warehouse = await prisma.warehouse.findFirst({
+    where: { id: input.warehouseId },
+    select: { id: true, organizationId: true },
+  });
+  if (!warehouse) throw new Error("Warehouse not found");
+  if (warehouse.organizationId !== input.organizationId)
+    throw new Error("Warehouse does not belong to organization");
+
+  if (!ctx.isPlatformSuperadmin && ctx.organizationId !== input.organizationId)
+    throw new Error("Cannot create transaction for another organization");
+
+  const merged = new Map<string, number>();
+  for (const line of input.lines) {
+    if (!line.catalogPieceId || !(line.quantity > 0) || !Number.isFinite(line.quantity)) continue;
+    merged.set(line.catalogPieceId, (merged.get(line.catalogPieceId) ?? 0) + line.quantity);
+  }
+  if (merged.size === 0) throw new Error("No lines to apply");
+
+  const sign = isInventoryMovementOut(input.type) ? -1 : 1;
+  const pieceIds = [...merged.keys()];
+
+  const pieces = await prisma.catalogPiece.findMany({
+    where: { id: { in: pieceIds } },
+    select: { id: true, canonicalName: true },
+  });
+  const pieceName = new Map(pieces.map((p) => [p.id, p.canonicalName]));
+
+  const txTimeoutMs = Math.min(120_000, 10_000 + merged.size * 250);
+
+  await prisma.$transaction(
+    async (tx) => {
+      await acquireWarehouseInventoryXactLock(tx, input.warehouseId);
+
+      const levelsNow = await tx.inventoryLevel.findMany({
+        where: { warehouseId: input.warehouseId, catalogPieceId: { in: pieceIds } },
+        select: { id: true, catalogPieceId: true, quantity: true },
+      });
+      const levelQty = new Map(levelsNow.map((l) => [l.catalogPieceId, l.quantity]));
+
+      for (const [catalogPieceId, qty] of merged) {
+        const delta = sign * qty;
+        const current = levelQty.get(catalogPieceId) ?? 0;
+        const newQty = current + delta;
+        if (newQty < 0) {
+          const label = pieceName.get(catalogPieceId) ?? catalogPieceId;
+          throw new Error(`Insufficient inventory for ${label}`);
+        }
+      }
+
+      for (const [catalogPieceId, qty] of merged) {
+        const delta = sign * qty;
+        if (delta === 0) continue;
+
+        await tx.inventoryTransaction.create({
+          data: {
+            warehouseId: input.warehouseId,
+            catalogPieceId,
+            quantityDelta: delta,
+            type: input.type,
+            referenceQuoteId: input.referenceQuoteId ?? undefined,
+            referenceProjectId: input.referenceProjectId ?? undefined,
+            notes: input.notes ?? undefined,
+            createdByUserId: input.createdByUserId ?? undefined,
+            organizationId: input.organizationId,
+          },
+        });
+
+        const existing = await tx.inventoryLevel.findUnique({
+          where: {
+            warehouseId_catalogPieceId: {
+              warehouseId: input.warehouseId,
+              catalogPieceId,
+            },
+          },
+        });
+
+        const newQuantity = (existing?.quantity ?? 0) + delta;
+        if (newQuantity < 0) throw new Error("Insufficient inventory");
+
+        if (existing) {
+          await tx.inventoryLevel.update({
+            where: { id: existing.id },
+            data: { quantity: newQuantity, updatedAt: new Date() },
+          });
+        } else if (newQuantity !== 0) {
+          await tx.inventoryLevel.create({
+            data: {
+              warehouseId: input.warehouseId,
+              catalogPieceId,
+              quantity: newQuantity,
+            },
+          });
+        }
+      }
+    },
+    { timeout: txTimeoutMs }
+  );
+
+  return { appliedPieces: merged.size };
 }
 
 /**

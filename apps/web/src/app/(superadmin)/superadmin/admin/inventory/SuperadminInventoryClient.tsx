@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Package, Plus, Calculator, ArrowDownToLine, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
 
 type Org = { id: string; name: string };
 type WarehouseRow = { id: string; name: string; location: string | null; isActive: boolean };
@@ -303,6 +304,20 @@ export function SuperadminInventoryClient() {
           <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
         </button>
       </div>
+
+      <InventoryBulkFileImport
+        warehouses={warehouses}
+        txTypes={txTypes}
+        organizationId={vlOrgId || null}
+        defaultMovementType="adjustment_in"
+        disabled={!vlOrgId || warehouses.length === 0}
+        onApplied={() => {
+          if (!vlOrgId) return;
+          fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`)
+            .then((r) => (r.ok ? r.json() : { levels: [] }))
+            .then((d) => setLevels(d.levels ?? []));
+        }}
+      />
 
       <div className="surface-card-overflow">
         <h3 className="px-4 py-2 text-sm font-semibold text-foreground border-b border-border bg-muted/30">

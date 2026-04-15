@@ -890,6 +890,22 @@ export const translations = {
     "admin.inventory.txType.project_consumption": "Project consumption",
     "admin.inventory.txType.adjustment_out": "Adjustment out",
 
+    "admin.inventory.bulkImport.title": "Bulk import (CSV / Excel)",
+    "admin.inventory.bulkImport.description":
+      "Same columns as Revit schedules for quoting: Type (or piece name), Count / Qty, Length (mm). Rows are matched to catalog pieces; quantities are summed per piece and applied as one movement per piece. Length is used for parsing only; stock is tracked per piece, not per length.",
+    "admin.inventory.bulkImport.fileLabel": "File",
+    "admin.inventory.bulkImport.preview": "Preview",
+    "admin.inventory.bulkImport.apply": "Apply to inventory",
+    "admin.inventory.bulkImport.summaryLine":
+      "Rows in file: {{total}} · invalid (parse): {{invalid}} · unmatched to catalog: {{unmatched}} · matched: {{matched}}",
+    "admin.inventory.bulkImport.nothingToApply": "No catalog matches in this file. Fix types or catalog aliases, then preview again.",
+    "admin.inventory.bulkImport.colQtyFile": "Qty (file)",
+    "admin.inventory.bulkImport.colDelta": "Delta",
+    "admin.inventory.bulkImport.unmatchedToggle": "Rows without catalog match ({{count}}; first 80 listed)",
+    "admin.inventory.bulkImport.unmatchedRow": "Row {{row}}: {{name}} (code: {{code}})",
+    "admin.inventory.bulkImport.missingFileOrWarehouse": "Choose a warehouse and a file.",
+    "admin.inventory.bulkImport.requestFailed": "Request failed",
+
     "superadmin.page.dashboardTitle": "Platform dashboard",
     "superadmin.page.dashboardSubtitle": "Global overview and partner performance",
     "superadmin.page.projectsTitle": "Projects",
@@ -3181,6 +3197,22 @@ export const translations = {
     "admin.inventory.txType.sale_out": "Salida (venta)",
     "admin.inventory.txType.project_consumption": "Consumo proyecto",
     "admin.inventory.txType.adjustment_out": "Ajuste salida",
+
+    "admin.inventory.bulkImport.title": "Importación masiva (CSV / Excel)",
+    "admin.inventory.bulkImport.description":
+      "Mismas columnas que los cronogramas Revit para cotizar: Tipo (o nombre de pieza), Cantidad / Qty, Longitud (mm). Las filas se cruzan con el catálogo; las cantidades se suman por pieza y se aplican como un movimiento por pieza. La longitud solo sirve para el parseo; el stock es por pieza, no por medida.",
+    "admin.inventory.bulkImport.fileLabel": "Archivo",
+    "admin.inventory.bulkImport.preview": "Vista previa",
+    "admin.inventory.bulkImport.apply": "Aplicar al inventario",
+    "admin.inventory.bulkImport.summaryLine":
+      "Filas en archivo: {{total}} · inválidas (parseo): {{invalid}} · sin match al catálogo: {{unmatched}} · con match: {{matched}}",
+    "admin.inventory.bulkImport.nothingToApply": "No hay coincidencias con el catálogo. Revisá tipos o alias del catálogo y volvé a previsualizar.",
+    "admin.inventory.bulkImport.colQtyFile": "Cant. (archivo)",
+    "admin.inventory.bulkImport.colDelta": "Delta",
+    "admin.inventory.bulkImport.unmatchedToggle": "Filas sin match al catálogo ({{count}}; se listan las primeras 80)",
+    "admin.inventory.bulkImport.unmatchedRow": "Fila {{row}}: {{name}} (código: {{code}})",
+    "admin.inventory.bulkImport.missingFileOrWarehouse": "Elegí bodega y archivo.",
+    "admin.inventory.bulkImport.requestFailed": "Falló la solicitud",
 
     "superadmin.page.dashboardTitle": "Panel de la plataforma",
     "superadmin.page.dashboardSubtitle": "Resumen global y desempeño de partners",

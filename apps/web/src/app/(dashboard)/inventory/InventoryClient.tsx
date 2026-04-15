@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Warehouse, Plus, Package, ArrowRightLeft, Search, Settings } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
 
 type WarehouseRow = { id: string; name: string; location: string | null; countryCode?: string | null; address?: string | null; managerName?: string | null; contactPhone?: string | null; contactEmail?: string | null; isActive: boolean };
 type LevelRow = {
@@ -212,6 +213,17 @@ export function InventoryClient() {
           </ul>
         )}
       </div>
+
+      <InventoryBulkFileImport
+        warehouses={warehouses}
+        txTypes={txTypes}
+        defaultMovementType="purchase_in"
+        disabled={warehouses.length === 0}
+        onApplied={() => {
+          loadLevels();
+          loadTransactions();
+        }}
+      />
 
       <div className="surface-card-overflow">
         <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
