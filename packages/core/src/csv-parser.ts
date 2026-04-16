@@ -11,7 +11,8 @@ import { normalizeAliasRaw } from "./normalizer";
 export const RevitCsvRowSchema = z.object({
   pieceName: z.string().min(1),
   pieceCode: z.string().optional(),
-  qty: z.coerce.number().positive(),
+  /** Schedule unit count; 0 is allowed (inventory / Revit rows with no movement). */
+  qty: z.coerce.number().nonnegative(),
   heightMm: z.coerce.number().positive(),
 });
 
@@ -31,8 +32,17 @@ export interface ParsedCsvRow {
 
 // Common header synonyms (lowercase)
 const PIECE_NAME_HEADERS = ["type", "piece name", "piecename", "name", "element", "piece", "perfil", "tipo"];
-const PIECE_CODE_HEADERS = ["piece code", "piececode", "code", "code revit", "mark", "familia", "id"];
-const QTY_HEADERS = ["count", "quantity", "qty", "cantidad", "count:", "number"];
+const PIECE_CODE_HEADERS = [
+  "piece code",
+  "piececode",
+  "code",
+  "code revit",
+  "mark",
+  "matrix",
+  "familia",
+  "id",
+];
+const QTY_HEADERS = ["count", "quantity", "qty", "cantidad", "count:", "number", "units", "unidades"];
 const HEIGHT_HEADERS = [
   "height",
   "height_mm",
@@ -169,7 +179,17 @@ export function parseRevitCsv(csvText: string): CsvParseResult {
 
     // Try to parse qty and height
     const rawQty = parseFloat(rawQtyStr.replace(/,/g, ""));
-    const rawHeightMm = parseFloat(rawHeightStr.replace(/,/g, ""));
+    let rawHeightMm = parseFloat(rawHeightStr.replace(/,/g, ""));
+    // Inventory / UI exports often label wall height in meters (e.g. "Height (m)"); Revit schedules use mm.
+    if (
+      headerMap.heightMm &&
+      /\(\s*m\s*\)/i.test(headerMap.heightMm) &&
+      Number.isFinite(rawHeightMm) &&
+      rawHeightMm > 0 &&
+      rawHeightMm < 1000
+    ) {
+      rawHeightMm = rawHeightMm * 1000;
+    }
 
     const parseResult = RevitCsvRowSchema.safeParse({
       pieceName: rawPieceName,

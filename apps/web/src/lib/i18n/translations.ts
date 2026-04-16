@@ -892,7 +892,7 @@ export const translations = {
 
     "admin.inventory.bulkImport.title": "Bulk import (CSV / Excel)",
     "admin.inventory.bulkImport.description":
-      "Same columns as Revit schedules for quoting: Type (or piece name), Count / Qty, Length (mm). Rows are matched to catalog pieces; quantities are summed per piece and applied as one movement per piece. Length is used for parsing only; stock is tracked per piece, not per length.",
+      "Revit-style schedules: Type or Piece, Count / Qty / Units, Length or Height in mm (or Height (m), converted automatically). Optional code column: Piece code, Mark, or Matrix (#…). Rows with zero units still parse but add no quantity. Stock is summed per catalog piece; height is for parsing only.",
     "admin.inventory.bulkImport.fileLabel": "File",
     "admin.inventory.bulkImport.preview": "Preview",
     "admin.inventory.bulkImport.apply": "Apply to inventory",
@@ -3200,7 +3200,7 @@ export const translations = {
 
     "admin.inventory.bulkImport.title": "Importación masiva (CSV / Excel)",
     "admin.inventory.bulkImport.description":
-      "Mismas columnas que los cronogramas Revit para cotizar: Tipo (o nombre de pieza), Cantidad / Qty, Longitud (mm). Las filas se cruzan con el catálogo; las cantidades se suman por pieza y se aplican como un movimiento por pieza. La longitud solo sirve para el parseo; el stock es por pieza, no por medida.",
+      "Cronogramas estilo Revit: Tipo o Piece, Count / Qty / Units, Longitud o altura en mm (o Height (m), se convierte a mm). Columna de código opcional: Piece code, Mark o Matrix (#…). Filas con unidades 0 se parsean pero no suman cantidad. El stock se agrega por pieza de catálogo; la altura solo sirve para el parseo.",
     "admin.inventory.bulkImport.fileLabel": "Archivo",
     "admin.inventory.bulkImport.preview": "Vista previa",
     "admin.inventory.bulkImport.apply": "Aplicar al inventario",
