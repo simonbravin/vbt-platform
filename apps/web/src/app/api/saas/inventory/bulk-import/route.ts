@@ -74,27 +74,42 @@ async function postHandler(req: Request) {
   }
   const type = typeRaw as InventoryTransactionType;
 
+  const warehouseRow = await prisma.warehouse.findFirst({
+    where: { id: warehouseId },
+    select: { id: true, organizationId: true },
+  });
+  if (!warehouseRow) {
+    return NextResponse.json({ error: "Warehouse not found" }, { status: 400 });
+  }
+
+  const orgFromForm =
+    typeof formData.get("organizationId") === "string" ? String(formData.get("organizationId")).trim() : "";
+
   let organizationId: string;
-  if (ctx.isPlatformSuperadmin && formData.get("organizationId")) {
-    organizationId = String(formData.get("organizationId")).trim();
-    if (!organizationId) {
-      return NextResponse.json({ error: "organizationId is empty" }, { status: 400 });
+  if (ctx.isPlatformSuperadmin) {
+    // Prefer explicit org (UI sends VL id). If omitted, infer from warehouse so we never rely on
+    // vbt-active-org cookie matching the warehouse org (that mismatch caused apply 400 after preview).
+    if (orgFromForm) {
+      if (orgFromForm !== warehouseRow.organizationId) {
+        return NextResponse.json(
+          { error: "Warehouse does not belong to the selected organization" },
+          { status: 400 }
+        );
+      }
+      organizationId = orgFromForm;
+    } else {
+      organizationId = warehouseRow.organizationId;
     }
   } else if (ctx.activeOrgId) {
+    if (warehouseRow.organizationId !== ctx.activeOrgId) {
+      return NextResponse.json(
+        { error: "Warehouse not found or does not belong to the selected organization" },
+        { status: 400 }
+      );
+    }
     organizationId = ctx.activeOrgId;
   } else {
     return NextResponse.json({ error: "No organization context" }, { status: 400 });
-  }
-
-  const warehouseOk = await prisma.warehouse.findFirst({
-    where: { id: warehouseId, organizationId },
-    select: { id: true },
-  });
-  if (!warehouseOk) {
-    return NextResponse.json(
-      { error: "Warehouse not found or does not belong to the selected organization" },
-      { status: 400 }
-    );
   }
 
   const csvText = await fileToCsvText(file);
