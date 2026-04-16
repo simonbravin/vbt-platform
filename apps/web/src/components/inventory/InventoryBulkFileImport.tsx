@@ -42,6 +42,20 @@ type Props = {
   onApplied?: () => void;
 };
 
+/** SaaS routes may return `{ error: "text" }` or wrapped `{ error: { code, message } }` from withSaaSHandler. */
+function saasApiErrorMessage(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const e = (body as { error?: unknown }).error;
+  if (typeof e === "string" && e.trim()) return e;
+  if (e && typeof e === "object") {
+    const rec = e as { message?: unknown; code?: unknown };
+    const msg = typeof rec.message === "string" ? rec.message.trim() : "";
+    const code = typeof rec.code === "string" ? rec.code.trim() : "";
+    if (msg) return code ? `${code}: ${msg}` : msg;
+  }
+  return null;
+}
+
 export function InventoryBulkFileImport({
   warehouses,
   txTypes,
@@ -86,7 +100,7 @@ export function InventoryBulkFileImport({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : t("admin.inventory.bulkImport.requestFailed"));
+        throw new Error(saasApiErrorMessage(data) ?? t("admin.inventory.bulkImport.requestFailed"));
       }
       return data;
     },
