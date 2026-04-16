@@ -2,15 +2,24 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Warehouse, Plus, Package, ArrowRightLeft, Search, Settings } from "lucide-react";
+import { Warehouse, Plus, Package, Search, Settings } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type WarehouseRow = { id: string; name: string; location: string | null; countryCode?: string | null; address?: string | null; managerName?: string | null; contactPhone?: string | null; contactEmail?: string | null; isActive: boolean };
 type LevelRow = {
   id: string;
   quantity: number;
+  lengthMm: number;
   unit: string | null;
   warehouse: { id: string; name: string };
   catalogPiece: { id: string; canonicalName: string; systemCode: string };
@@ -19,6 +28,7 @@ type CatalogPieceRow = { id: string; canonicalName: string; systemCode: string }
 type TxRow = {
   id: string;
   quantityDelta: number;
+  lengthMm?: number;
   type: string;
   createdAt: string;
   warehouse: { name: string };
@@ -33,6 +43,9 @@ const TX_TYPE_VALUES = [
   "project_consumption",
   "adjustment_out",
 ] as const;
+
+/** Movement types that add stock when quantity is entered as a positive number in the form. */
+const STOCK_IN_TYPES = new Set<string>(["purchase_in", "project_surplus", "adjustment_in"]);
 
 export function InventoryClient() {
   const t = useT();
@@ -50,11 +63,19 @@ export function InventoryClient() {
   const [catalogPieces, setCatalogPieces] = useState<CatalogPieceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingLevels, setLoadingLevels] = useState(false);
-  const [txForm, setTxForm] = useState({ warehouseId: "", catalogPieceId: "", quantityDelta: 0, type: "purchase_in", notes: "", referenceProjectId: "" });
+  const [txForm, setTxForm] = useState({
+    warehouseId: "",
+    catalogPieceId: "",
+    quantityDelta: 0,
+    type: "purchase_in",
+    notes: "",
+    referenceProjectId: "",
+    lengthMmStr: "",
+  });
   const [txSaving, setTxSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -68,7 +89,7 @@ export function InventoryClient() {
 
   const loadLevels = useCallback(() => {
     setLoadingLevels(true);
-    fetch("/api/saas/inventory/levels?limit=300")
+    fetch("/api/saas/inventory/levels?limit=500")
       .then((r) => r.json())
       .then((data) => setLevels(data.levels ?? []))
       .catch(() => setLevels([]))
@@ -105,6 +126,15 @@ export function InventoryClient() {
     const delta = ["sale_out", "project_consumption", "adjustment_out"].includes(txForm.type)
       ? -Math.abs(txForm.quantityDelta)
       : Math.abs(txForm.quantityDelta);
+    const lmTrim = txForm.lengthMmStr.trim();
+    const isInbound = STOCK_IN_TYPES.has(txForm.type) && delta > 0;
+    if (isInbound && lmTrim === "") {
+      setError(t("partner.inventory.measureRequired"));
+      return;
+    }
+    const lengthMmParsed = lmTrim === "" ? undefined : Number(lmTrim);
+    const lengthMm =
+      lengthMmParsed !== undefined && Number.isFinite(lengthMmParsed) ? Math.round(lengthMmParsed) : undefined;
     setTxSaving(true);
     setError(null);
     fetch("/api/saas/inventory/transactions", {
@@ -115,6 +145,7 @@ export function InventoryClient() {
         catalogPieceId: txForm.catalogPieceId,
         quantityDelta: delta,
         type: txForm.type,
+        ...(lengthMm !== undefined ? { lengthMm } : {}),
         notes: txForm.notes || undefined,
         referenceProjectId: txForm.referenceProjectId.trim() || undefined,
       }),
@@ -124,7 +155,8 @@ export function InventoryClient() {
         return r.json();
       })
       .then(() => {
-        setTxForm((f) => ({ ...f, quantityDelta: 0, notes: "", referenceProjectId: "" }));
+        setTxForm((f) => ({ ...f, quantityDelta: 0, notes: "", referenceProjectId: "", lengthMmStr: "" }));
+        setAddItemDialogOpen(false);
         loadLevels();
         loadTransactions();
       })
@@ -139,7 +171,8 @@ export function InventoryClient() {
       (l) =>
         l.warehouse.name.toLowerCase().includes(q) ||
         (l.catalogPiece?.canonicalName ?? "").toLowerCase().includes(q) ||
-        (l.catalogPiece?.systemCode ?? "").toLowerCase().includes(q)
+        (l.catalogPiece?.systemCode ?? "").toLowerCase().includes(q) ||
+        String(l.lengthMm ?? 0).includes(q)
     );
   }, [levels, searchFilter]);
 
@@ -242,7 +275,10 @@ export function InventoryClient() {
           </div>
           <button
             type="button"
-            onClick={() => setShowAddItemForm((v) => !v)}
+            onClick={() => {
+              setError(null);
+              setAddItemDialogOpen(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
@@ -264,6 +300,9 @@ export function InventoryClient() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                     {t("admin.inventory.system")}
                   </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase whitespace-nowrap min-w-[7rem]">
+                    {t("partner.inventory.measureMmColumn")}
+                  </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
                     {t("admin.inventory.quantityColumn")}
                   </th>
@@ -272,21 +311,30 @@ export function InventoryClient() {
               <tbody className="divide-y divide-border bg-card">
                 {filteredLevels.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       {levels.length === 0
                         ? t("admin.inventory.noItemsAddOne")
                         : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredLevels.map((l) => (
-                    <tr key={l.id}>
-                      <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
-                      <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
-                      <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
-                      <td className="px-4 py-2 text-sm text-right text-foreground">{l.quantity}</td>
-                    </tr>
-                  ))
+                  filteredLevels.map((l) => {
+                    const mm = Math.round(Number(l.lengthMm ?? 0));
+                    return (
+                      <tr key={l.id}>
+                        <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
+                        <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                        <td
+                          className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
+                          title={mm === 0 ? t("partner.inventory.measureZeroTooltip") : undefined}
+                        >
+                          {mm}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -294,115 +342,149 @@ export function InventoryClient() {
         )}
       </div>
 
-      {showAddItemForm && (
+      {transactions.length > 0 && (
         <div className="surface-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" /> {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowAddItemForm(false)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {t("admin.inventory.close")}
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground mb-3">{t("admin.inventory.txFormHelpPartner")}</p>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
-            <FilterSelect
-              value={txForm.warehouseId}
-              onValueChange={(v) => setTxForm((f) => ({ ...f, warehouseId: v }))}
-              emptyOptionLabel="—"
-              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
-              aria-label={t("admin.inventory.warehouse")}
-              triggerClassName="min-w-[160px] max-w-[280px] h-10 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
-            <FilterSelect
-              value={txForm.catalogPieceId}
-              onValueChange={(v) => setTxForm((f) => ({ ...f, catalogPieceId: v }))}
-              emptyOptionLabel="—"
-              options={catalogPieces.map((p) => ({
-                value: p.id,
-                label: `${p.canonicalName} (${p.systemCode})`,
-              }))}
-              aria-label={t("admin.inventory.piece")}
-              triggerClassName="min-w-[180px] max-w-[min(100vw-2rem,360px)] h-10 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
-            <FilterSelect
-              value={txForm.type}
-              onValueChange={(v) => setTxForm((f) => ({ ...f, type: v }))}
-              options={txTypes}
-              aria-label={t("admin.inventory.labelType")}
-              triggerClassName="min-w-[160px] max-w-[280px] h-10 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={txForm.quantityDelta || ""}
-              onChange={(e) => setTxForm((f) => ({ ...f, quantityDelta: Number(e.target.value) || 0 }))}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.referenceProjectId")}</label>
-            <input
-              type="text"
-              value={txForm.referenceProjectId}
-              onChange={(e) => setTxForm((f) => ({ ...f, referenceProjectId: e.target.value }))}
-              placeholder={t("admin.inventory.optional")}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-36"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
-            <input
-              type="text"
-              value={txForm.notes}
-              onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
-              placeholder={t("admin.inventory.optional")}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-32"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleCreateTransaction}
-            disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {txSaving ? t("common.saving") : t("admin.inventory.apply")}
-          </button>
-        </div>
-        {transactions.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <h4 className="text-xs font-medium text-muted-foreground mb-2">{t("admin.inventory.recentMovements")}</h4>
-            <ul className="space-y-1 text-sm">
-              {transactions.slice(0, 10).map((tx) => (
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">{t("admin.inventory.recentMovements")}</h4>
+          <ul className="space-y-1 text-sm">
+            {transactions.slice(0, 10).map((tx) => {
+              const txMm = Math.round(Number(tx.lengthMm ?? 0));
+              return (
                 <li key={tx.id} className="flex flex-wrap gap-2 text-foreground">
                   <span className="font-medium">{tx.warehouse.name}</span>
                   <span>{tx.catalogPiece.canonicalName}</span>
-                  <span className={tx.quantityDelta >= 0 ? "text-primary" : "text-destructive"}>{tx.quantityDelta >= 0 ? "+" : ""}{tx.quantityDelta}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">
+                    @{txMm} mm
+                  </span>
+                  <span className={tx.quantityDelta >= 0 ? "text-primary" : "text-destructive"}>
+                    {tx.quantityDelta >= 0 ? "+" : ""}
+                    {tx.quantityDelta}
+                  </span>
                   <span className="text-muted-foreground text-xs">{tx.type}</span>
                   <span className="text-muted-foreground text-xs">{new Date(tx.createdAt).toLocaleDateString()}</span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
+              );
+            })}
+          </ul>
         </div>
       )}
+
+      <Dialog
+        open={addItemDialogOpen}
+        onOpenChange={(open) => {
+          setAddItemDialogOpen(open);
+          if (!open) {
+            setError(null);
+            setTxForm((f) => ({ ...f, quantityDelta: 0, notes: "", referenceProjectId: "", lengthMmStr: "" }));
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("partner.inventory.addItemDialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("partner.inventory.addItemDialogDescription")} {t("admin.inventory.txFormHelpPartner")}{" "}
+              {t("admin.inventory.lengthMmFormHelp")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
+              <FilterSelect
+                value={txForm.warehouseId}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, warehouseId: v }))}
+                emptyOptionLabel="—"
+                options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+                aria-label={t("admin.inventory.warehouse")}
+                triggerClassName="w-full h-10 text-sm"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
+              <FilterSelect
+                value={txForm.catalogPieceId}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, catalogPieceId: v }))}
+                emptyOptionLabel="—"
+                options={catalogPieces.map((p) => ({
+                  value: p.id,
+                  label: `${p.canonicalName} (${p.systemCode})`,
+                }))}
+                aria-label={t("admin.inventory.piece")}
+                triggerClassName="w-full h-10 text-sm max-w-full"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
+              <FilterSelect
+                value={txForm.type}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, type: v }))}
+                options={txTypes}
+                aria-label={t("admin.inventory.labelType")}
+                triggerClassName="w-full h-10 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={txForm.quantityDelta || ""}
+                onChange={(e) => setTxForm((f) => ({ ...f, quantityDelta: Number(e.target.value) || 0 }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.lengthMmFormLabel")}</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={txForm.lengthMmStr}
+                onChange={(e) => setTxForm((f) => ({ ...f, lengthMmStr: e.target.value }))}
+                placeholder={t("admin.inventory.lengthMmFormPlaceholder")}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm tabular-nums"
+                aria-required={STOCK_IN_TYPES.has(txForm.type)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.referenceProjectId")}</label>
+              <input
+                type="text"
+                value={txForm.referenceProjectId}
+                onChange={(e) => setTxForm((f) => ({ ...f, referenceProjectId: e.target.value }))}
+                placeholder={t("admin.inventory.optional")}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
+              <input
+                type="text"
+                value={txForm.notes}
+                onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder={t("admin.inventory.optional")}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setAddItemDialogOpen(false)}
+              className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateTransaction}
+              disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
+              className="rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {txSaving ? t("common.saving") : t("admin.inventory.apply")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

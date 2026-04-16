@@ -23,4 +23,4 @@ En **Vercel** el proyecto ya tiene definidas (nombres exactos; **no** documentar
 | `R2_SECRET_ACCESS_KEY` | Secreto R2 (`r2-client.ts`) |
 | `R2_BUCKET_NAME` | Bucket de objetos R2 |
 
-Si el usuario pide aplicar migraciones contra producción, puede hacerlo con `DATABASE_URL` apuntando a Neon (p. ej. `pnpm --filter @vbt/db migrate:deploy` desde `packages/db` con la URL cargada en el entorno).
+**Migraciones Neon:** si el usuario pide aplicar migraciones contra producción/Neon, el **agente** debe ejecutarlas cuando `DATABASE_URL` esté disponible: desde la raíz del monorepo, `pnpm --filter @vbt/db migrate:deploy` (Prisma carga `packages/db/.env` si existe). No limitarse a instrucciones si la sesión puede correr el comando de forma segura.

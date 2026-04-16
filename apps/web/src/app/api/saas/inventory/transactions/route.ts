@@ -57,19 +57,27 @@ async function postHandler(req: Request) {
     organizationId: ctx.activeOrgId ?? null,
     isPlatformSuperadmin: ctx.isPlatformSuperadmin,
   };
+  const lengthMmRaw = body.lengthMm;
+  const lengthMm =
+    lengthMmRaw === undefined || lengthMmRaw === null || lengthMmRaw === ""
+      ? undefined
+      : typeof lengthMmRaw === "number"
+        ? lengthMmRaw
+        : Number(lengthMmRaw);
   try {
-    const transaction = await createTransaction(prisma, tenantCtx, {
+    const transactions = await createTransaction(prisma, tenantCtx, {
       warehouseId,
       catalogPieceId,
       quantityDelta,
       type: type as "purchase_in" | "sale_out" | "project_consumption" | "project_surplus" | "adjustment_in" | "adjustment_out" | "transfer_in" | "transfer_out",
+      ...(lengthMm !== undefined && Number.isFinite(lengthMm) ? { lengthMm: Math.round(lengthMm) } : {}),
       referenceQuoteId: body.referenceQuoteId ?? null,
       referenceProjectId: body.referenceProjectId ?? null,
       notes: body.notes ?? null,
       createdByUserId: ctx.userId,
       organizationId,
     });
-    return NextResponse.json(transaction, { status: 201 });
+    return NextResponse.json(transactions.length === 1 ? transactions[0] : transactions, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to create transaction";
     if (message.includes("not found") || message.includes("another organization") || message.includes("Insufficient")) {

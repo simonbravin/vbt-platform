@@ -5,12 +5,21 @@ import { Package, Plus, Calculator, ArrowDownToLine, Search } from "lucide-react
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Org = { id: string; name: string };
 type WarehouseRow = { id: string; name: string; location: string | null; isActive: boolean };
 type LevelRow = {
   id: string;
   quantity: number;
+  lengthMm: number;
   unit: string | null;
   warehouse: { id: string; name: string };
   catalogPiece: { id: string; canonicalName: string; systemCode: string };
@@ -25,6 +34,8 @@ const SUPERADMIN_TX_ORDER = [
   "project_consumption",
   "project_surplus",
 ] as const;
+
+const SUPERADMIN_STOCK_IN_TYPES = new Set<string>(["purchase_in", "adjustment_in", "project_surplus"]);
 
 export function SuperadminInventoryClient() {
   const t = useT();
@@ -53,10 +64,18 @@ export function SuperadminInventoryClient() {
   const [simulateResult, setSimulateResult] = useState<{ required: { pieceName: string; systemCode: string; quantity: number }[]; byWarehouse: { warehouseName: string; organizationName: string; levels: { pieceName: string; onHand: number; required: number; surplus: number; shortage: number }[] }[] } | null>(null);
   const [affectQuoteId, setAffectQuoteId] = useState("");
   const [affectResult, setAffectResult] = useState<string | null>(null);
-  const [txForm, setTxForm] = useState({ warehouseId: "", catalogPieceId: "", quantityDelta: 0, type: "adjustment_in" as string, notes: "" });
+  const [txForm, setTxForm] = useState({
+    warehouseId: "",
+    catalogPieceId: "",
+    quantityDelta: 0,
+    type: "adjustment_in" as string,
+    notes: "",
+    lengthMmStr: "",
+  });
   const [txSaving, setTxSaving] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
+  const [txDialogError, setTxDialogError] = useState<string | null>(null);
 
   const vlOrgId = visionLatamOrg?.id ?? "";
 
@@ -159,7 +178,17 @@ export function SuperadminInventoryClient() {
   const handleCreateTransaction = () => {
     if (!txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0) return;
     const delta = txForm.type.includes("out") || txForm.type === "sale_out" || txForm.type === "project_consumption" ? -Math.abs(txForm.quantityDelta) : Math.abs(txForm.quantityDelta);
+    const lmTrim = txForm.lengthMmStr.trim();
+    const isInbound = SUPERADMIN_STOCK_IN_TYPES.has(txForm.type) && delta > 0;
+    if (isInbound && lmTrim === "") {
+      setTxDialogError(t("admin.inventory.measureRequired"));
+      return;
+    }
+    const lengthMmParsed = lmTrim === "" ? undefined : Number(lmTrim);
+    const lengthMm =
+      lengthMmParsed !== undefined && Number.isFinite(lengthMmParsed) ? Math.round(lengthMmParsed) : undefined;
     setTxSaving(true);
+    setTxDialogError(null);
     fetch("/api/saas/inventory/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -169,6 +198,7 @@ export function SuperadminInventoryClient() {
         quantityDelta: delta,
         type: txForm.type,
         organizationId: vlOrgId,
+        ...(lengthMm !== undefined ? { lengthMm } : {}),
         notes: txForm.notes || undefined,
       }),
     })
@@ -177,7 +207,9 @@ export function SuperadminInventoryClient() {
         return r.json();
       })
       .then(() => {
-        setTxForm({ ...txForm, quantityDelta: 0, notes: "" });
+        setTxForm({ ...txForm, quantityDelta: 0, notes: "", lengthMmStr: "" });
+        setAddItemDialogOpen(false);
+        setAffectResult(null);
         fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=500`).then((res) => res.json()).then((d) => setLevels(d.levels ?? []));
       })
       .catch((e) =>
@@ -203,7 +235,8 @@ export function SuperadminInventoryClient() {
       (l) =>
         l.warehouse.name.toLowerCase().includes(q) ||
         (l.catalogPiece.canonicalName ?? "").toLowerCase().includes(q) ||
-        (l.catalogPiece.systemCode ?? "").toLowerCase().includes(q)
+        (l.catalogPiece.systemCode ?? "").toLowerCase().includes(q) ||
+        String(l.lengthMm ?? 0).includes(q)
     );
   }, [levels, searchFilter]);
 
@@ -298,7 +331,11 @@ export function SuperadminInventoryClient() {
         </div>
         <button
           type="button"
-          onClick={() => setShowAddItemForm((v) => !v)}
+          onClick={() => {
+            setAffectResult(null);
+            setTxDialogError(null);
+            setAddItemDialogOpen(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
@@ -340,6 +377,9 @@ export function SuperadminInventoryClient() {
                     {t("admin.inventory.system")}
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t("admin.inventory.lengthMmColumn")}
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
                     {t("admin.inventory.quantityColumn")}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
@@ -350,20 +390,29 @@ export function SuperadminInventoryClient() {
               <tbody className="divide-y divide-border bg-card">
                 {filteredLevels.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       {levels.length === 0 ? t("admin.inventory.noLevelsAddItem") : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredLevels.map((l) => (
-                    <tr key={l.id}>
-                      <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
-                      <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
-                      <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
-                      <td className="px-4 py-2 text-sm text-right text-foreground">{l.quantity}</td>
-                      <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
-                    </tr>
-                  ))
+                  filteredLevels.map((l) => {
+                    const mm = Math.round(Number(l.lengthMm ?? 0));
+                    return (
+                      <tr key={l.id}>
+                        <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
+                        <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                        <td
+                          className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
+                          title={mm === 0 ? t("admin.inventory.measureZeroTooltip") : undefined}
+                        >
+                          {mm}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -393,18 +442,28 @@ export function SuperadminInventoryClient() {
                             <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.warehouse")}</th>
                             <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.piece")}</th>
                             <th className="text-left py-1 pr-4 text-muted-foreground">{t("admin.inventory.system")}</th>
+                            <th className="text-right py-1 pr-4 text-muted-foreground">{t("admin.inventory.lengthMmColumn")}</th>
                             <th className="text-right py-1 text-muted-foreground">{t("admin.inventory.quantityColumn")}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {pl.map((l) => (
-                            <tr key={l.id} className="border-b border-border/50">
-                              <td className="py-1 pr-4">{l.warehouse.name}</td>
-                              <td className="py-1 pr-4">{l.catalogPiece.canonicalName}</td>
-                              <td className="py-1 pr-4">{l.catalogPiece.systemCode}</td>
-                              <td className="py-1 text-right">{l.quantity}</td>
-                            </tr>
-                          ))}
+                          {pl.map((l) => {
+                            const mm = Math.round(Number(l.lengthMm ?? 0));
+                            return (
+                              <tr key={l.id} className="border-b border-border/50">
+                                <td className="py-1 pr-4">{l.warehouse.name}</td>
+                                <td className="py-1 pr-4">{l.catalogPiece.canonicalName}</td>
+                                <td className="py-1 pr-4">{l.catalogPiece.systemCode}</td>
+                                <td
+                                  className="py-1 pr-4 text-right tabular-nums text-muted-foreground"
+                                  title={mm === 0 ? t("admin.inventory.measureZeroTooltip") : undefined}
+                                >
+                                  {mm}
+                                </td>
+                                <td className="py-1 text-right tabular-nums">{l.quantity}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -416,178 +475,211 @@ export function SuperadminInventoryClient() {
         </div>
       )}
 
-      {showAddItemForm && (
-        <div className="space-y-4 surface-card p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowAddItemForm(false)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {t("admin.inventory.close")}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("admin.inventory.txFormHelpSuperadmin")}</p>
-              <div className="flex flex-wrap gap-3 items-end">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
-                  <FilterSelect
-                    value={txForm.warehouseId}
-                    onValueChange={(v) => setTxForm((f) => ({ ...f, warehouseId: v }))}
-                    emptyOptionLabel="—"
-                    options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
-                    aria-label={t("admin.inventory.warehouse")}
-                    triggerClassName="h-9 min-w-[160px] max-w-[min(100vw-2rem,240px)] text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
-                  <FilterSelect
-                    value={txForm.catalogPieceId}
-                    onValueChange={(v) => setTxForm((f) => ({ ...f, catalogPieceId: v }))}
-                    emptyOptionLabel="—"
-                    options={catalogPieces.map((p) => ({
-                      value: p.id,
-                      label: `${p.canonicalName} (${p.systemCode})`,
-                    }))}
-                    aria-label={t("admin.inventory.piece")}
-                    triggerClassName="h-9 min-w-[180px] max-w-[min(100vw-2rem,280px)] text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
-                  <FilterSelect
-                    value={txForm.type}
-                    onValueChange={(v) => setTxForm((f) => ({ ...f, type: v }))}
-                    options={txTypes.map((opt) => ({ value: opt.value, label: opt.label }))}
-                    aria-label={t("admin.inventory.labelType")}
-                    triggerClassName="h-9 min-w-[160px] max-w-[min(100vw-2rem,240px)] text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step="any"
-                    value={txForm.quantityDelta || ""}
-                    onChange={(e) => setTxForm((f) => ({ ...f, quantityDelta: Number(e.target.value) || 0 }))}
-                    className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-24"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
-                  <input
-                    type="text"
-                    value={txForm.notes}
-                    onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
-                    placeholder={t("admin.inventory.optional")}
-                    className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-40"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCreateTransaction}
-                  disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
-                >
-                  <Plus className="h-4 w-4" /> {t("admin.inventory.apply")}
-                </button>
-              </div>
+      <div className="surface-card p-4 space-y-6">
+        <div>
+          <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.affectByQuoteTitle")}</h4>
+          <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.affectByQuoteDescription")}</p>
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              placeholder={t("admin.inventory.quoteIdPlaceholder")}
+              value={affectQuoteId}
+              onChange={(e) => setAffectQuoteId(e.target.value)}
+              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
+            />
+            <button
+              type="button"
+              onClick={handleAffect}
+              disabled={txSaving || !affectQuoteId.trim()}
+              className="flex items-center gap-1 rounded-lg border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <ArrowDownToLine className="h-4 w-4" /> {t("admin.inventory.affectButton")}
+            </button>
+            {affectResult && <span className="text-sm text-muted-foreground">{affectResult}</span>}
+          </div>
+        </div>
 
-              <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.affectByQuoteTitle")}</h4>
-                <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.affectByQuoteDescription")}</p>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder={t("admin.inventory.quoteIdPlaceholder")}
-                    value={affectQuoteId}
-                    onChange={(e) => setAffectQuoteId(e.target.value)}
-                    className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAffect}
-                    disabled={txSaving || !affectQuoteId.trim()}
-                    className="flex items-center gap-1 rounded-lg border border-primary/20 bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                  >
-                    <ArrowDownToLine className="h-4 w-4" /> {t("admin.inventory.affectButton")}
-                  </button>
-                  {affectResult && <span className="text-sm text-muted-foreground">{affectResult}</span>}
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.simulateByQuoteTitle")}</h4>
-                <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.simulateByQuoteDescription")}</p>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder={t("admin.inventory.quoteIdPlaceholder")}
-                    value={simulateQuoteId}
-                    onChange={(e) => setSimulateQuoteId(e.target.value)}
-                    className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSimulate}
-                    disabled={!simulateQuoteId.trim()}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 flex items-center gap-1"
-                  >
-                    <Calculator className="h-4 w-4" /> {t("admin.inventory.simulateButton")}
-                  </button>
-                </div>
-                {simulateResult && (
-                  <div className="mt-3 p-3 rounded-lg bg-muted/50 text-sm space-y-2">
-                    <p className="font-medium">{t("admin.inventory.simulateRequiredByPiece")}</p>
-                    <ul className="list-disc list-inside">
-                      {simulateResult.required.map((r, i) => (
-                        <li key={i}>
-                          {t("admin.inventory.simulatePieceLine", {
-                            name: r.pieceName,
-                            code: r.systemCode,
-                            quantity: r.quantity,
-                          })}
-                        </li>
-                      ))}
-                    </ul>
-                    {simulateResult.byWarehouse.length > 0 && (
-                      <>
-                        <p className="font-medium mt-2">{t("admin.inventory.simulateByWarehouse")}</p>
-                        {simulateResult.byWarehouse.map((wh, wi) => (
-                          <div key={wi} className="ml-2">
-                            <p className="font-medium">
-                              {t("admin.inventory.simulateWarehouseOrg", {
-                                warehouse: wh.warehouseName,
-                                organization: wh.organizationName,
-                              })}
-                            </p>
-                            <ul className="list-disc list-inside text-muted-foreground">
-                              {wh.levels.map((lev, li) => (
-                                <li key={li}>
-                                  {t("admin.inventory.simulateLevelLine", {
-                                    piece: lev.pieceName,
-                                    onHand: lev.onHand,
-                                    required: lev.required,
-                                    surplus: lev.surplus,
-                                    shortage: lev.shortage,
-                                  })}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+        <div className="pt-2 border-t border-border">
+          <h4 className="text-sm font-medium text-foreground mb-2">{t("admin.inventory.simulateByQuoteTitle")}</h4>
+          <p className="text-xs text-muted-foreground mb-2">{t("admin.inventory.simulateByQuoteDescription")}</p>
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              placeholder={t("admin.inventory.quoteIdPlaceholder")}
+              value={simulateQuoteId}
+              onChange={(e) => setSimulateQuoteId(e.target.value)}
+              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm w-56"
+            />
+            <button
+              type="button"
+              onClick={handleSimulate}
+              disabled={!simulateQuoteId.trim()}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 flex items-center gap-1"
+            >
+              <Calculator className="h-4 w-4" /> {t("admin.inventory.simulateButton")}
+            </button>
+          </div>
+          {simulateResult && (
+            <div className="mt-3 p-3 rounded-lg bg-muted/50 text-sm space-y-2">
+              <p className="font-medium">{t("admin.inventory.simulateRequiredByPiece")}</p>
+              <ul className="list-disc list-inside">
+                {simulateResult.required.map((r, i) => (
+                  <li key={i}>
+                    {t("admin.inventory.simulatePieceLine", {
+                      name: r.pieceName,
+                      code: r.systemCode,
+                      quantity: r.quantity,
+                    })}
+                  </li>
+                ))}
+              </ul>
+              {simulateResult.byWarehouse.length > 0 && (
+                <>
+                  <p className="font-medium mt-2">{t("admin.inventory.simulateByWarehouse")}</p>
+                  {simulateResult.byWarehouse.map((wh, wi) => (
+                    <div key={wi} className="ml-2">
+                      <p className="font-medium">
+                        {t("admin.inventory.simulateWarehouseOrg", {
+                          warehouse: wh.warehouseName,
+                          organization: wh.organizationName,
+                        })}
+                      </p>
+                      <ul className="list-disc list-inside text-muted-foreground">
+                        {wh.levels.map((lev, li) => (
+                          <li key={li}>
+                            {t("admin.inventory.simulateLevelLine", {
+                              piece: lev.pieceName,
+                              onHand: lev.onHand,
+                              required: lev.required,
+                              surplus: lev.surplus,
+                              shortage: lev.shortage,
+                            })}
+                          </li>
                         ))}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+                      </ul>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
-      )}
+          )}
+        </div>
+      </div>
+
+      <Dialog
+        open={addItemDialogOpen}
+        onOpenChange={(open) => {
+          setAddItemDialogOpen(open);
+          if (!open) {
+            setTxDialogError(null);
+            setTxForm((f) => ({ ...f, quantityDelta: 0, notes: "", lengthMmStr: "" }));
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("admin.inventory.addItem")} — {t("admin.inventory.catalogPiecesOnly")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("admin.inventory.addItemDialogDescription")} {t("admin.inventory.txFormHelpSuperadmin")}{" "}
+              {t("admin.inventory.lengthMmFormHelp")}
+            </DialogDescription>
+          </DialogHeader>
+          {txDialogError && (
+            <div className="rounded-lg border border-alert-warningBorder bg-alert-warning px-3 py-2 text-sm text-foreground">
+              {txDialogError}
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.warehouse")}</label>
+              <FilterSelect
+                value={txForm.warehouseId}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, warehouseId: v }))}
+                emptyOptionLabel="—"
+                options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+                aria-label={t("admin.inventory.warehouse")}
+                triggerClassName="w-full h-10 text-sm"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.piece")}</label>
+              <FilterSelect
+                value={txForm.catalogPieceId}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, catalogPieceId: v }))}
+                emptyOptionLabel="—"
+                options={catalogPieces.map((p) => ({
+                  value: p.id,
+                  label: `${p.canonicalName} (${p.systemCode})`,
+                }))}
+                aria-label={t("admin.inventory.piece")}
+                triggerClassName="w-full h-10 text-sm max-w-full"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelType")}</label>
+              <FilterSelect
+                value={txForm.type}
+                onValueChange={(v) => setTxForm((f) => ({ ...f, type: v }))}
+                options={txTypes.map((opt) => ({ value: opt.value, label: opt.label }))}
+                aria-label={t("admin.inventory.labelType")}
+                triggerClassName="w-full h-10 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.labelQuantity")}</label>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={txForm.quantityDelta || ""}
+                onChange={(e) => setTxForm((f) => ({ ...f, quantityDelta: Number(e.target.value) || 0 }))}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">{t("admin.inventory.lengthMmFormLabel")}</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={txForm.lengthMmStr}
+                onChange={(e) => setTxForm((f) => ({ ...f, lengthMmStr: e.target.value }))}
+                placeholder={t("admin.inventory.lengthMmFormPlaceholder")}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm tabular-nums"
+                aria-required={SUPERADMIN_STOCK_IN_TYPES.has(txForm.type)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">{t("common.notes")}</label>
+              <input
+                type="text"
+                value={txForm.notes}
+                onChange={(e) => setTxForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder={t("admin.inventory.optional")}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setAddItemDialogOpen(false)}
+              className="rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateTransaction}
+              disabled={txSaving || !txForm.warehouseId || !txForm.catalogPieceId || txForm.quantityDelta === 0}
+              className="inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" /> {txSaving ? t("common.saving") : t("admin.inventory.apply")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

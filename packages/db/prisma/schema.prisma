@@ -327,12 +327,14 @@ model Warehouse {
   @@map("warehouses")
 }
 
-// ─── Inventory levels (stock per warehouse per catalog piece) ──────────────────
+// ─── Inventory levels (stock per warehouse, catalog piece, and length mm) ───────
 
 model InventoryLevel {
   id             String   @id @default(cuid())
   warehouseId    String   @map("warehouse_id")
   catalogPieceId String   @map("catalog_piece_id")
+  /// Wall length / schedule height in mm; 0 = undifferentiated or legacy stock before length tracking.
+  lengthMm       Int      @default(0) @map("length_mm")
   quantity       Float    @default(0)
   unit           String?  // e.g. m2, m, units
   createdAt      DateTime @default(now()) @map("created_at")
@@ -341,9 +343,10 @@ model InventoryLevel {
   warehouse   Warehouse   @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   catalogPiece CatalogPiece @relation(fields: [catalogPieceId], references: [id], onDelete: Restrict)
 
-  @@unique([warehouseId, catalogPieceId])
+  @@unique([warehouseId, catalogPieceId, lengthMm])
   @@index([warehouseId])
   @@index([catalogPieceId])
+  @@index([lengthMm])
   @@map("inventory_levels")
 }
 
@@ -353,6 +356,8 @@ model InventoryTransaction {
   id                String                  @id @default(cuid())
   warehouseId       String                  @map("warehouse_id")
   catalogPieceId    String                  @map("catalog_piece_id")
+  /// Matches the inventory_levels bucket affected (0 = undifferentiated / legacy).
+  lengthMm          Int                     @default(0) @map("length_mm")
   quantityDelta     Float                   @map("quantity_delta")
   type              InventoryTransactionType @map("type")
   referenceQuoteId  String?                 @map("reference_quote_id")

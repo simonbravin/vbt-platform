@@ -5,5 +5,5 @@ alwaysApply: true
 
 - El equipo **no ejecuta** la app ni Prisma contra una base **local** de forma habitual: el flujo real es **producción** (p. ej. Vercel + Neon).
 - **No asumir** que exista `.env` local ni correr `prisma migrate`, `db push`, `db execute`, seeds o scripts destructivos salvo que el usuario lo pida **explícitamente** para un entorno concreto.
-- Los cambios de schema deben ir como **migraciones versionadas** en el repo; el usuario aplica `migrate deploy` (u otro paso) **en producción** cuando corresponda.
+- Los cambios de schema deben ir como **migraciones versionadas** en el repo. **Migraciones contra Neon:** cuando el usuario pida aplicarlas (o la tarea lo implique), el **agente** ejecuta `pnpm --filter @vbt/db migrate:deploy` con `DATABASE_URL` de Neon disponible en el entorno; si no hay URL, indicar que hace falta cargarla (no inventar valores).
 - Priorizar **cambios seguros y reversibles**; evitar SQL o diffs que borren columnas/datos sin validación explícita del usuario.

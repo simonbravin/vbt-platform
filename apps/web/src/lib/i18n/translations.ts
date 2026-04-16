@@ -856,6 +856,19 @@ export const translations = {
     "admin.inventory.errorCreateTransaction": "Could not create transaction",
     "admin.inventory.errorTransactionFallback": "transaction",
     "admin.inventory.quantityColumn": "Qty",
+    "admin.inventory.lengthMmColumn": "Measure (mm)",
+    "admin.inventory.lengthMmUndifferentiated": "0",
+    "admin.inventory.measureZeroTooltip":
+      "0 mm = stock not broken down by length (legacy or manual). Re-import a Revit-style file to split by length, or add lines with a measure.",
+    "admin.inventory.measureRequired":
+      "Enter the measure in mm for stock-in movements (or type 0 only for undifferentiated stock).",
+    "admin.inventory.addItemDialogTitle": "Add inventory line",
+    "admin.inventory.addItemDialogDescription":
+      "One catalog piece and one measure (mm) per line. Stock-in movements require a measure unless you explicitly enter 0.",
+    "admin.inventory.lengthMmFormLabel": "Measure (mm)",
+    "admin.inventory.lengthMmFormPlaceholder": "e.g. 3050",
+    "admin.inventory.lengthMmFormHelp":
+      "Optional. Leave empty for stock without length (0 mm). For outs, leave empty to consume from any length buckets automatically.",
     "admin.inventory.unitColumn": "Unit",
     "admin.inventory.vlOrgNotFound": "Vision Latam organization was not found. Only a platform superadmin can manage this inventory.",
     "admin.inventory.viewPartnerInventoryHint": "Also view inventory for (read-only):",
@@ -892,7 +905,7 @@ export const translations = {
 
     "admin.inventory.bulkImport.title": "Bulk import (CSV / Excel)",
     "admin.inventory.bulkImport.description":
-      "Revit-style schedules: Type or Piece, Count / Qty / Units, Length or Height in mm (or Height (m), converted automatically). Optional code column: Piece code, Mark, or Matrix (#…). Rows with zero units still parse but add no quantity. Stock is summed per catalog piece; height is for parsing only.",
+      "Revit-style schedules: Type or Piece, Count / Qty / Units, Length or Height in mm (or Height (m), converted automatically). Optional code column: Piece code, Mark, or Matrix (#…). Rows with zero units still parse but add no quantity. Stock is stored per catalog piece and length (mm); rows without length use 0 mm (undifferentiated).",
     "admin.inventory.bulkImport.fileLabel": "File",
     "admin.inventory.bulkImport.preview": "Preview",
     "admin.inventory.bulkImport.apply": "Apply to inventory",
@@ -903,7 +916,7 @@ export const translations = {
     "admin.inventory.bulkImport.colQtyFile": "Qty (file)",
     "admin.inventory.bulkImport.colDelta": "Delta",
     "admin.inventory.bulkImport.previewApplyNote":
-      "Preview is one row per catalog piece and length. Applying still posts one inventory movement per piece (total qty across all lengths in the file).",
+      "Preview is one row per catalog piece and length. Applying posts one movement per row (same buckets as stock by warehouse).",
     "admin.inventory.bulkImport.unmatchedToggle": "Rows without catalog match ({{count}}; first 80 listed)",
     "admin.inventory.bulkImport.unmatchedRow": "Row {{row}}: {{name}} (code: {{code}})",
     "admin.inventory.bulkImport.missingFileOrWarehouse": "Choose a warehouse and a file.",
@@ -1193,6 +1206,13 @@ export const translations = {
       "Warehouse names and locations are edited in Settings → Warehouses. This list is for reference when recording stock.",
     "partner.inventory.lowStockBanner":
       "{{count}} stock line(s) are below {{threshold}}. Review levels below or adjust replenishment.",
+    "partner.inventory.measureMmColumn": "Measure (mm)",
+    "partner.inventory.measureZeroTooltip":
+      "0 mm = stock not broken down by length. Re-import your schedule CSV/Excel to split by length, or add stock with a measure.",
+    "partner.inventory.addItemDialogTitle": "Add inventory line",
+    "partner.inventory.addItemDialogDescription":
+      "Each row is one catalog piece and one length in mm. Entrances require a measure so stock lands in the right bucket.",
+    "partner.inventory.measureRequired": "Enter the measure in mm for stock-in movements (or type 0 only if you mean undifferentiated stock).",
 
     "partner.settings.taxesPartnerIntro": "Base rules per country (Vision Latam) and yours. You can add or edit your own rules to change percentages or other values by country.",
 
@@ -3167,6 +3187,19 @@ export const translations = {
     "admin.inventory.errorCreateTransaction": "Error al crear transacción",
     "admin.inventory.errorTransactionFallback": "transacción",
     "admin.inventory.quantityColumn": "Cantidad",
+    "admin.inventory.lengthMmColumn": "Medida (mm)",
+    "admin.inventory.lengthMmUndifferentiated": "0",
+    "admin.inventory.measureZeroTooltip":
+      "0 mm = stock sin desglose por medida (histórico o manual). Volvé a importar el CSV/Excel estilo cronograma para separar por longitud, o cargá líneas con medida.",
+    "admin.inventory.measureRequired":
+      "Indicá la medida en mm para movimientos de entrada (o 0 solo para stock sin desglose).",
+    "admin.inventory.addItemDialogTitle": "Agregar línea de inventario",
+    "admin.inventory.addItemDialogDescription":
+      "Una pieza del catálogo y una medida (mm) por línea. Las entradas exigen medida salvo que pongas 0 a propósito.",
+    "admin.inventory.lengthMmFormLabel": "Medida (mm)",
+    "admin.inventory.lengthMmFormPlaceholder": "ej. 3050",
+    "admin.inventory.lengthMmFormHelp":
+      "Opcional. Vacío = stock sin medida (0 mm). En salidas, vacío = descontar automáticamente de los buckets por medida disponibles.",
     "admin.inventory.unitColumn": "Unidad",
     "admin.inventory.vlOrgNotFound": "No se encontró la organización Vision Latam. Solo el superadmin de la plataforma puede gestionar este inventario.",
     "admin.inventory.viewPartnerInventoryHint": "Ver también inventario de (solo lectura):",
@@ -3203,7 +3236,7 @@ export const translations = {
 
     "admin.inventory.bulkImport.title": "Importación masiva (CSV / Excel)",
     "admin.inventory.bulkImport.description":
-      "Cronogramas estilo Revit: Tipo o Piece, Count / Qty / Units, Longitud o altura en mm (o Height (m), se convierte a mm). Columna de código opcional: Piece code, Mark o Matrix (#…). Filas con unidades 0 se parsean pero no suman cantidad. El stock se agrega por pieza de catálogo; la altura solo sirve para el parseo.",
+      "Cronogramas estilo Revit: Tipo o Piece, Count / Qty / Units, Longitud o altura en mm (o Height (m), se convierte a mm). Columna de código opcional: Piece code, Mark o Matrix (#…). Filas con unidades 0 se parsean pero no suman cantidad. El stock se guarda por pieza de catálogo y longitud (mm); filas sin longitud usan 0 mm (sin desglose).",
     "admin.inventory.bulkImport.fileLabel": "Archivo",
     "admin.inventory.bulkImport.preview": "Vista previa",
     "admin.inventory.bulkImport.apply": "Aplicar al inventario",
@@ -3214,7 +3247,7 @@ export const translations = {
     "admin.inventory.bulkImport.colQtyFile": "Cant. (archivo)",
     "admin.inventory.bulkImport.colDelta": "Delta",
     "admin.inventory.bulkImport.previewApplyNote":
-      "La vista previa es una fila por pieza de catálogo y medida. Al aplicar sigue habiendo un solo movimiento de inventario por pieza (cantidad total sumando todas las medidas del archivo).",
+      "La vista previa es una fila por pieza de catálogo y medida. Al aplicar se registra un movimiento por fila (mismos buckets que el stock por bodega).",
     "admin.inventory.bulkImport.unmatchedToggle": "Filas sin match al catálogo ({{count}}; se listan las primeras 80)",
     "admin.inventory.bulkImport.unmatchedRow": "Fila {{row}}: {{name}} (código: {{code}})",
     "admin.inventory.bulkImport.missingFileOrWarehouse": "Elegí bodega y archivo.",
@@ -3504,6 +3537,14 @@ export const translations = {
       "Los nombres y ubicaciones de las bodegas se editan en Configuración → Bodegas. Esta lista es de referencia al registrar stock.",
     "partner.inventory.lowStockBanner":
       "{{count}} línea(s) de stock por debajo de {{threshold}}. Revisá los niveles o la reposición.",
+    "partner.inventory.measureMmColumn": "Medida (mm)",
+    "partner.inventory.measureZeroTooltip":
+      "0 mm = stock sin desglose por medida. Reimportá el CSV/Excel del cronograma para separar por longitud, o cargá stock con medida.",
+    "partner.inventory.addItemDialogTitle": "Agregar línea de inventario",
+    "partner.inventory.addItemDialogDescription":
+      "Cada fila es una pieza del catálogo y una medida en mm. Las entradas exigen medida para que el stock quede en el bucket correcto.",
+    "partner.inventory.measureRequired":
+      "Indicá la medida en mm para movimientos de entrada (o escribí 0 solo si querés stock sin desglose).",
 
     "partner.settings.taxesPartnerIntro": "Reglas base por país (Vision Latam) y las tuyas. Podés agregar o editar tus propias reglas para modificar % u otros valores por país.",
 

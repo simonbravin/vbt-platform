@@ -197,13 +197,13 @@ async function postHandler(req: Request) {
     (a, b) => a.canonicalName.localeCompare(b.canonicalName) || a.lengthMm - b.lengthMm
   );
 
-  const lines = [...qtyByPieceAndLength.entries()]
-    .map(([catalogPieceId, byLen]) => {
-      let quantity = 0;
-      for (const q of byLen.values()) quantity += q;
-      return { catalogPieceId, quantity };
-    })
-    .filter((l) => l.quantity > 0);
+  const lines = aggregated
+    .filter((a) => a.quantityFromFile > 0)
+    .map((a) => ({
+      catalogPieceId: a.catalogPieceId,
+      quantity: a.quantityFromFile,
+      lengthMm: a.lengthMm,
+    }));
 
   const noteParts = [`Bulk import: ${file.name}`];
   if (notes) noteParts.push(notes);

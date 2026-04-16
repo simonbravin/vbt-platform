@@ -6,6 +6,35 @@ const ADV_LOCK_INV_KEY1 = 884_291_424;
 
 type TxWithExecuteRaw = Pick<PrismaClient, "$executeRaw">;
 
+type InventoryDbTx = Pick<
+  PrismaClient,
+  "inventoryLevel" | "inventoryTransaction"
+> &
+  TxWithExecuteRaw;
+
+type CreatedInventoryTx = Awaited<ReturnType<PrismaClient["inventoryTransaction"]["create"]>>;
+
+function normalizeLengthMm(value: unknown): number {
+  if (value === undefined || value === null) return 0;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n);
+}
+
+function bulkBucketKey(catalogPieceId: string, lengthMm: number): string {
+  return `${catalogPieceId}\u0001${lengthMm}`;
+}
+
+/** Prefer non-zero length buckets before legacy 0; then longer pieces first (arbitrary but stable). */
+function sortLevelsForConsumption<T extends { lengthMm: number; quantity: number }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const za = a.lengthMm === 0 ? 1 : 0;
+    const zb = b.lengthMm === 0 ? 1 : 0;
+    if (za !== zb) return za - zb;
+    return b.lengthMm - a.lengthMm;
+  });
+}
+
 /**
  * Blocks until exclusive access to this warehouse's inventory levels for the current DB transaction.
  * Prevents lost updates when bulk import and manual (or concurrent) transactions overlap.
@@ -41,6 +70,12 @@ export type CreateTransactionInput = {
   catalogPieceId: string;
   quantityDelta: number;
   type: InventoryTransactionType;
+  /**
+   * Inventory bucket (mm). For **ins** and non-out movements, defaults to 0 (undifferentiated).
+   * For **outs** (`sale_out`, etc.): omit to consume across length buckets (non-zero first, then 0);
+   * set to a number (including 0) to hit a single bucket only.
+   */
+  lengthMm?: number;
   referenceQuoteId?: string | null;
   referenceProjectId?: string | null;
   notes?: string | null;
@@ -62,6 +97,8 @@ export type BulkInventoryLine = {
   catalogPieceId: string;
   /** Positive quantity from the file (same sign convention as manual “quantity” for ins). */
   quantity: number;
+  /** Schedule length / height in mm; 0 = undifferentiated bucket. */
+  lengthMm?: number;
 };
 
 export type CreateBulkTransactionsInput = {
@@ -113,7 +150,7 @@ export async function listLevels(
         warehouse: { select: { id: true, name: true, organizationId: true } },
         catalogPiece: { select: { id: true, canonicalName: true, systemCode: true } },
       },
-      orderBy: [{ warehouseId: "asc" }, { catalogPieceId: "asc" }],
+      orderBy: [{ warehouseId: "asc" }, { catalogPieceId: "asc" }, { lengthMm: "asc" }],
       take: options.limit ?? 200,
       skip: options.offset ?? 0,
     }),
@@ -122,15 +159,52 @@ export async function listLevels(
   return { levels, total };
 }
 
+async function upsertLevelQuantity(
+  tx: InventoryDbTx,
+  params: {
+    warehouseId: string;
+    catalogPieceId: string;
+    lengthMm: number;
+    delta: number;
+  }
+): Promise<void> {
+  const existing = await tx.inventoryLevel.findUnique({
+    where: {
+      warehouseId_catalogPieceId_lengthMm: {
+        warehouseId: params.warehouseId,
+        catalogPieceId: params.catalogPieceId,
+        lengthMm: params.lengthMm,
+      },
+    },
+  });
+  const newQuantity = (existing?.quantity ?? 0) + params.delta;
+  if (newQuantity < 0) throw new Error("Insufficient inventory");
+  if (existing) {
+    await tx.inventoryLevel.update({
+      where: { id: existing.id },
+      data: { quantity: newQuantity, updatedAt: new Date() },
+    });
+  } else if (newQuantity !== 0) {
+    await tx.inventoryLevel.create({
+      data: {
+        warehouseId: params.warehouseId,
+        catalogPieceId: params.catalogPieceId,
+        lengthMm: params.lengthMm,
+        quantity: newQuantity,
+      },
+    });
+  }
+}
+
 /**
- * Apply a single inventory transaction: insert transaction row and upsert inventory_levels.
- * Validates warehouse belongs to organizationId; for partners, organizationId must match ctx.
+ * Apply inventory movement: one or more transaction rows and matching inventory_levels buckets.
+ * Out movements with `lengthMm` omitted consume stock across length buckets (see `CreateTransactionInput`).
  */
 export async function createTransaction(
   prisma: PrismaClient,
   ctx: TenantContext,
   input: CreateTransactionInput
-) {
+): Promise<CreatedInventoryTx[]> {
   const warehouse = await prisma.warehouse.findFirst({
     where: { id: input.warehouseId },
     select: { id: true, organizationId: true },
@@ -142,65 +216,92 @@ export async function createTransaction(
   if (!ctx.isPlatformSuperadmin && ctx.organizationId !== input.organizationId)
     throw new Error("Cannot create transaction for another organization");
 
-  const tx = await prisma.$transaction(
+  const movementOut = isInventoryMovementOut(input.type);
+  const spreadOut = movementOut && input.quantityDelta < 0 && input.lengthMm === undefined;
+
+  return prisma.$transaction(
     async (tx) => {
       await acquireWarehouseInventoryXactLock(tx, input.warehouseId);
 
-      const created = await tx.inventoryTransaction.create({
-        data: {
-          warehouseId: input.warehouseId,
-          catalogPieceId: input.catalogPieceId,
-          quantityDelta: input.quantityDelta,
-          type: input.type,
-          referenceQuoteId: input.referenceQuoteId ?? undefined,
-          referenceProjectId: input.referenceProjectId ?? undefined,
-          notes: input.notes ?? undefined,
-          createdByUserId: input.createdByUserId ?? undefined,
-          organizationId: input.organizationId,
-        },
-      });
+      const baseTxData = {
+        warehouseId: input.warehouseId,
+        catalogPieceId: input.catalogPieceId,
+        type: input.type,
+        referenceQuoteId: input.referenceQuoteId ?? undefined,
+        referenceProjectId: input.referenceProjectId ?? undefined,
+        notes: input.notes ?? undefined,
+        createdByUserId: input.createdByUserId ?? undefined,
+        organizationId: input.organizationId,
+      };
 
-      const existing = await tx.inventoryLevel.findUnique({
-        where: {
-          warehouseId_catalogPieceId: {
+      if (spreadOut) {
+        const toRemove = -input.quantityDelta;
+        if (!(toRemove > 0) || !Number.isFinite(toRemove)) throw new Error("Invalid quantity for out movement");
+
+        const rows = await tx.inventoryLevel.findMany({
+          where: {
             warehouseId: input.warehouseId,
             catalogPieceId: input.catalogPieceId,
+            quantity: { gt: 0 },
           },
+          select: { id: true, lengthMm: true, quantity: true },
+        });
+        const ordered = sortLevelsForConsumption(rows);
+        let remaining = toRemove;
+        const created: CreatedInventoryTx[] = [];
+
+        for (const row of ordered) {
+          if (remaining <= 0) break;
+          const take = Math.min(row.quantity, remaining);
+          if (take <= 0) continue;
+
+          const invTx = await tx.inventoryTransaction.create({
+            data: {
+              ...baseTxData,
+              lengthMm: row.lengthMm,
+              quantityDelta: -take,
+            },
+          });
+          created.push(invTx);
+
+          await upsertLevelQuantity(tx, {
+            warehouseId: input.warehouseId,
+            catalogPieceId: input.catalogPieceId,
+            lengthMm: row.lengthMm,
+            delta: -take,
+          });
+          remaining -= take;
+        }
+
+        if (remaining > 0) throw new Error("Insufficient inventory");
+        return created;
+      }
+
+      const lengthMm = normalizeLengthMm(input.lengthMm ?? 0);
+
+      const invTx = await tx.inventoryTransaction.create({
+        data: {
+          ...baseTxData,
+          lengthMm,
+          quantityDelta: input.quantityDelta,
         },
       });
 
-      const newQuantity = (existing?.quantity ?? 0) + input.quantityDelta;
-      if (newQuantity < 0) throw new Error("Insufficient inventory");
+      await upsertLevelQuantity(tx, {
+        warehouseId: input.warehouseId,
+        catalogPieceId: input.catalogPieceId,
+        lengthMm,
+        delta: input.quantityDelta,
+      });
 
-      if (existing) {
-        await tx.inventoryLevel.update({
-          where: { id: existing.id },
-          data: { quantity: newQuantity, updatedAt: new Date() },
-        });
-      } else {
-        if (newQuantity === 0) {
-          // no need to create a zero row unless we want to track it
-        } else {
-          await tx.inventoryLevel.create({
-            data: {
-              warehouseId: input.warehouseId,
-              catalogPieceId: input.catalogPieceId,
-              quantity: newQuantity,
-            },
-          });
-        }
-      }
-
-      return created;
+      return [invTx];
     },
     { timeout: 135_000 }
   );
-
-  return tx;
 }
 
 /**
- * Apply one inventory transaction row per catalog piece, after merging positive `quantity` values by piece.
+ * Apply one inventory transaction per catalog piece **and length bucket**, after merging file lines.
  * Uses a per-warehouse transaction lock and re-reads levels before validating (all-or-nothing).
  */
 export async function createBulkTransactions(
@@ -219,15 +320,19 @@ export async function createBulkTransactions(
   if (!ctx.isPlatformSuperadmin && ctx.organizationId !== input.organizationId)
     throw new Error("Cannot create transaction for another organization");
 
-  const merged = new Map<string, number>();
+  const merged = new Map<string, { catalogPieceId: string; lengthMm: number; quantity: number }>();
   for (const line of input.lines) {
     if (!line.catalogPieceId || !(line.quantity > 0) || !Number.isFinite(line.quantity)) continue;
-    merged.set(line.catalogPieceId, (merged.get(line.catalogPieceId) ?? 0) + line.quantity);
+    const lengthMm = normalizeLengthMm(line.lengthMm);
+    const key = bulkBucketKey(line.catalogPieceId, lengthMm);
+    const prev = merged.get(key);
+    if (prev) prev.quantity += line.quantity;
+    else merged.set(key, { catalogPieceId: line.catalogPieceId, lengthMm, quantity: line.quantity });
   }
   if (merged.size === 0) throw new Error("No lines to apply");
 
   const sign = isInventoryMovementOut(input.type) ? -1 : 1;
-  const pieceIds = [...merged.keys()];
+  const pieceIds = [...new Set([...merged.values()].map((v) => v.catalogPieceId))];
 
   const pieces = await prisma.catalogPiece.findMany({
     where: { id: { in: pieceIds } },
@@ -243,28 +348,30 @@ export async function createBulkTransactions(
 
       const levelsNow = await tx.inventoryLevel.findMany({
         where: { warehouseId: input.warehouseId, catalogPieceId: { in: pieceIds } },
-        select: { id: true, catalogPieceId: true, quantity: true },
+        select: { id: true, catalogPieceId: true, lengthMm: true, quantity: true },
       });
-      const levelQty = new Map(levelsNow.map((l) => [l.catalogPieceId, l.quantity]));
+      const levelQty = new Map(levelsNow.map((l) => [bulkBucketKey(l.catalogPieceId, l.lengthMm), l.quantity]));
 
-      for (const [catalogPieceId, qty] of merged) {
-        const delta = sign * qty;
-        const current = levelQty.get(catalogPieceId) ?? 0;
+      for (const { catalogPieceId, lengthMm, quantity } of merged.values()) {
+        const delta = sign * quantity;
+        const current = levelQty.get(bulkBucketKey(catalogPieceId, lengthMm)) ?? 0;
         const newQty = current + delta;
         if (newQty < 0) {
           const label = pieceName.get(catalogPieceId) ?? catalogPieceId;
-          throw new Error(`Insufficient inventory for ${label}`);
+          const lenNote = lengthMm === 0 ? "" : ` @ ${lengthMm} mm`;
+          throw new Error(`Insufficient inventory for ${label}${lenNote}`);
         }
       }
 
-      for (const [catalogPieceId, qty] of merged) {
-        const delta = sign * qty;
+      for (const { catalogPieceId, lengthMm, quantity } of merged.values()) {
+        const delta = sign * quantity;
         if (delta === 0) continue;
 
         await tx.inventoryTransaction.create({
           data: {
             warehouseId: input.warehouseId,
             catalogPieceId,
+            lengthMm,
             quantityDelta: delta,
             type: input.type,
             referenceQuoteId: input.referenceQuoteId ?? undefined,
@@ -275,32 +382,12 @@ export async function createBulkTransactions(
           },
         });
 
-        const existing = await tx.inventoryLevel.findUnique({
-          where: {
-            warehouseId_catalogPieceId: {
-              warehouseId: input.warehouseId,
-              catalogPieceId,
-            },
-          },
+        await upsertLevelQuantity(tx, {
+          warehouseId: input.warehouseId,
+          catalogPieceId,
+          lengthMm,
+          delta,
         });
-
-        const newQuantity = (existing?.quantity ?? 0) + delta;
-        if (newQuantity < 0) throw new Error("Insufficient inventory");
-
-        if (existing) {
-          await tx.inventoryLevel.update({
-            where: { id: existing.id },
-            data: { quantity: newQuantity, updatedAt: new Date() },
-          });
-        } else if (newQuantity !== 0) {
-          await tx.inventoryLevel.create({
-            data: {
-              warehouseId: input.warehouseId,
-              catalogPieceId,
-              quantity: newQuantity,
-            },
-          });
-        }
       }
     },
     { timeout: txTimeoutMs }
@@ -444,9 +531,12 @@ export async function simulateForQuote(
       where: { warehouseId: wh.id, catalogPieceId: { in: required.map((r) => r.catalogPieceId) } },
       include: { catalogPiece: { select: { id: true, canonicalName: true, systemCode: true } } },
     });
+    const onHandByPiece = new Map<string, number>();
+    for (const l of levels) {
+      onHandByPiece.set(l.catalogPieceId, (onHandByPiece.get(l.catalogPieceId) ?? 0) + l.quantity);
+    }
     const levelsWithSim = requiredWithNames.map((req) => {
-      const level = levels.find((l) => l.catalogPieceId === req.catalogPieceId);
-      const onHand = level?.quantity ?? 0;
+      const onHand = onHandByPiece.get(req.catalogPieceId) ?? 0;
       const reqQty = requiredMap.get(req.catalogPieceId) ?? 0;
       const surplus = Math.max(0, onHand - reqQty);
       const shortage = Math.max(0, reqQty - onHand);
@@ -515,9 +605,9 @@ export async function affectVisionLatamInventoryByQuote(
     where: { id: quoteId },
     select: { projectId: true },
   });
-  const transactions = [];
+  const transactions: CreatedInventoryTx[] = [];
   for (const r of required) {
-    const t = await createTransaction(prisma, ctx, {
+    const batch = await createTransaction(prisma, ctx, {
       warehouseId: options.warehouseId,
       catalogPieceId: r.catalogPieceId,
       quantityDelta: -r.quantity,
@@ -528,7 +618,7 @@ export async function affectVisionLatamInventoryByQuote(
       createdByUserId: options.createdByUserId,
       organizationId: options.organizationId,
     });
-    transactions.push(t);
+    transactions.push(...batch);
   }
   return { created: transactions.length, transactions };
 }
