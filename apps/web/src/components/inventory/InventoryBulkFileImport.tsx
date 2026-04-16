@@ -12,6 +12,7 @@ type PreviewAggregated = {
   catalogPieceId: string;
   canonicalName: string;
   systemCode: string;
+  lengthMm: number;
   quantityFromFile: number;
   quantityDelta: number;
 };
@@ -229,21 +230,23 @@ export function InventoryBulkFileImport({
             <p className="text-xs text-destructive">{t("admin.inventory.bulkImport.nothingToApply")}</p>
           )}
           {preview.aggregated.length > 0 && (
-            <div className="overflow-x-auto max-h-48 overflow-y-auto rounded-md border border-border">
+            <div className="overflow-x-auto max-h-64 overflow-y-auto rounded-md border border-border">
               <table className="min-w-full text-xs">
                 <thead className="bg-muted sticky top-0">
                   <tr>
                     <th className="text-left px-2 py-1 font-medium">{t("admin.inventory.piece")}</th>
                     <th className="text-left px-2 py-1 font-medium">{t("admin.inventory.system")}</th>
+                    <th className="text-right px-2 py-1 font-medium">{t("admin.inventory.bulkImport.colLengthMm")}</th>
                     <th className="text-right px-2 py-1 font-medium">{t("admin.inventory.bulkImport.colQtyFile")}</th>
                     <th className="text-right px-2 py-1 font-medium">{t("admin.inventory.bulkImport.colDelta")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {preview.aggregated.map((row) => (
-                    <tr key={row.catalogPieceId} className="border-t border-border/60">
+                    <tr key={`${row.catalogPieceId}-${row.lengthMm}`} className="border-t border-border/60">
                       <td className="px-2 py-1">{row.canonicalName}</td>
                       <td className="px-2 py-1 text-muted-foreground">{row.systemCode}</td>
+                      <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{row.lengthMm}</td>
                       <td className="px-2 py-1 text-right tabular-nums">{row.quantityFromFile}</td>
                       <td className="px-2 py-1 text-right tabular-nums font-medium">
                         {row.quantityDelta >= 0 ? "+" : ""}
@@ -253,6 +256,9 @@ export function InventoryBulkFileImport({
                   ))}
                 </tbody>
               </table>
+              <p className="text-[11px] text-muted-foreground px-2 py-1 border-t border-border">
+                {t("admin.inventory.bulkImport.previewApplyNote")}
+              </p>
             </div>
           )}
           {preview.unmatched.length > 0 && (

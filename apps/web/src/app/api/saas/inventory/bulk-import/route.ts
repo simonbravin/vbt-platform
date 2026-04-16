@@ -126,7 +126,8 @@ async function postHandler(req: Request) {
   const unmatched: Unmatched[] = [];
   let invalidParseRows = 0;
   let matchedDataRows = 0;
-  const qtyByPiece = new Map<string, number>();
+  /** Per catalog piece, sum qty per wall length (mm) so the preview matches Revit-style schedules. */
+  const qtyByPieceAndLength = new Map<string, Map<number, number>>();
 
   for (const row of parsed.rows) {
     if (row.parseError) {
@@ -143,23 +144,51 @@ async function postHandler(req: Request) {
       continue;
     }
     matchedDataRows++;
-    qtyByPiece.set(match.pieceId, (qtyByPiece.get(match.pieceId) ?? 0) + row.rawQty);
+    const lengthMm = row.rawHeightMm;
+    let byLen = qtyByPieceAndLength.get(match.pieceId);
+    if (!byLen) {
+      byLen = new Map();
+      qtyByPieceAndLength.set(match.pieceId, byLen);
+    }
+    byLen.set(lengthMm, (byLen.get(lengthMm) ?? 0) + row.rawQty);
   }
 
   const sign = isInventoryMovementOut(type) ? -1 : 1;
-  const aggregated = [...qtyByPiece.entries()].map(([catalogPieceId, quantity]) => {
-    const p = pieceMetaById.get(catalogPieceId);
-    return {
-      catalogPieceId,
-      canonicalName: p?.canonicalName ?? catalogPieceId,
-      systemCode: p?.systemCode ?? "",
-      quantityFromFile: quantity,
-      quantityDelta: sign * quantity,
-    };
-  });
-  aggregated.sort((a, b) => a.canonicalName.localeCompare(b.canonicalName));
+  const aggregated: {
+    catalogPieceId: string;
+    canonicalName: string;
+    systemCode: string;
+    lengthMm: number;
+    quantityFromFile: number;
+    quantityDelta: number;
+  }[] = [];
 
-  const lines = aggregated.map((a) => ({ catalogPieceId: a.catalogPieceId, quantity: a.quantityFromFile }));
+  for (const [catalogPieceId, byLen] of qtyByPieceAndLength) {
+    const p = pieceMetaById.get(catalogPieceId);
+    const lengthsSorted = [...byLen.keys()].sort((a, b) => a - b);
+    for (const lengthMm of lengthsSorted) {
+      const quantity = byLen.get(lengthMm) ?? 0;
+      aggregated.push({
+        catalogPieceId,
+        canonicalName: p?.canonicalName ?? catalogPieceId,
+        systemCode: p?.systemCode ?? "",
+        lengthMm,
+        quantityFromFile: quantity,
+        quantityDelta: sign * quantity,
+      });
+    }
+  }
+  aggregated.sort(
+    (a, b) => a.canonicalName.localeCompare(b.canonicalName) || a.lengthMm - b.lengthMm
+  );
+
+  const lines = [...qtyByPieceAndLength.entries()]
+    .map(([catalogPieceId, byLen]) => {
+      let quantity = 0;
+      for (const q of byLen.values()) quantity += q;
+      return { catalogPieceId, quantity };
+    })
+    .filter((l) => l.quantity > 0);
 
   const noteParts = [`Bulk import: ${file.name}`];
   if (notes) noteParts.push(notes);

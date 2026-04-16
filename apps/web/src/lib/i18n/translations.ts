@@ -899,8 +899,11 @@ export const translations = {
     "admin.inventory.bulkImport.summaryLine":
       "Rows in file: {{total}} · invalid (parse): {{invalid}} · unmatched to catalog: {{unmatched}} · matched: {{matched}}",
     "admin.inventory.bulkImport.nothingToApply": "No catalog matches in this file. Fix types or catalog aliases, then preview again.",
+    "admin.inventory.bulkImport.colLengthMm": "Length (mm)",
     "admin.inventory.bulkImport.colQtyFile": "Qty (file)",
     "admin.inventory.bulkImport.colDelta": "Delta",
+    "admin.inventory.bulkImport.previewApplyNote":
+      "Preview is one row per catalog piece and length. Applying still posts one inventory movement per piece (total qty across all lengths in the file).",
     "admin.inventory.bulkImport.unmatchedToggle": "Rows without catalog match ({{count}}; first 80 listed)",
     "admin.inventory.bulkImport.unmatchedRow": "Row {{row}}: {{name}} (code: {{code}})",
     "admin.inventory.bulkImport.missingFileOrWarehouse": "Choose a warehouse and a file.",
@@ -3207,8 +3210,11 @@ export const translations = {
     "admin.inventory.bulkImport.summaryLine":
       "Filas en archivo: {{total}} · inválidas (parseo): {{invalid}} · sin match al catálogo: {{unmatched}} · con match: {{matched}}",
     "admin.inventory.bulkImport.nothingToApply": "No hay coincidencias con el catálogo. Revisá tipos o alias del catálogo y volvé a previsualizar.",
+    "admin.inventory.bulkImport.colLengthMm": "Longitud (mm)",
     "admin.inventory.bulkImport.colQtyFile": "Cant. (archivo)",
     "admin.inventory.bulkImport.colDelta": "Delta",
+    "admin.inventory.bulkImport.previewApplyNote":
+      "La vista previa es una fila por pieza de catálogo y medida. Al aplicar sigue habiendo un solo movimiento de inventario por pieza (cantidad total sumando todas las medidas del archivo).",
     "admin.inventory.bulkImport.unmatchedToggle": "Filas sin match al catálogo ({{count}}; se listan las primeras 80)",
     "admin.inventory.bulkImport.unmatchedRow": "Fila {{row}}: {{name}} (código: {{code}})",
     "admin.inventory.bulkImport.missingFileOrWarehouse": "Elegí bodega y archivo.",
