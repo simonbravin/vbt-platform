@@ -139,6 +139,8 @@ export async function listLevels(
   }
 
   const levelWhere = {
+    quantity: { gt: 0 },
+    lengthMm: { not: { equals: 0 } },
     ...(options.catalogPieceId && { catalogPieceId: options.catalogPieceId }),
     warehouse: warehouseWhere,
   };
@@ -157,6 +159,36 @@ export async function listLevels(
     prisma.inventoryLevel.count({ where: levelWhere }),
   ]);
   return { levels, total };
+}
+
+/**
+ * Deletes inventory_level rows for warehouses in scope when:
+ * - quantity is 0 or negative, or
+ * - lengthMm is 0 (legacy undifferentiated bucket; removes rows even if quantity > 0).
+ * Superadmin must pass `organizationId` when ctx.organizationId is null.
+ */
+export async function pruneZeroInventoryLevels(
+  prisma: PrismaClient,
+  ctx: TenantContext,
+  options: { organizationId?: string } = {}
+): Promise<{ deleted: number }> {
+  const warehouseWhere: { organizationId: string } = { organizationId: "" };
+  if (ctx.isPlatformSuperadmin) {
+    const oid = options.organizationId ?? ctx.organizationId;
+    if (!oid) throw new Error("organizationId is required to prune inventory levels");
+    warehouseWhere.organizationId = oid;
+  } else {
+    if (!ctx.organizationId) return { deleted: 0 };
+    warehouseWhere.organizationId = ctx.organizationId;
+  }
+
+  const result = await prisma.inventoryLevel.deleteMany({
+    where: {
+      warehouse: warehouseWhere,
+      OR: [{ quantity: { lte: 0 } }, { lengthMm: 0 }],
+    },
+  });
+  return { deleted: result.count };
 }
 
 async function upsertLevelQuantity(
@@ -179,12 +211,17 @@ async function upsertLevelQuantity(
   });
   const newQuantity = (existing?.quantity ?? 0) + params.delta;
   if (newQuantity < 0) throw new Error("Insufficient inventory");
+  const isEmptyBucket = newQuantity === 0 || (Number.isFinite(newQuantity) && Math.abs(newQuantity) < 1e-9);
   if (existing) {
-    await tx.inventoryLevel.update({
-      where: { id: existing.id },
-      data: { quantity: newQuantity, updatedAt: new Date() },
-    });
-  } else if (newQuantity !== 0) {
+    if (isEmptyBucket) {
+      await tx.inventoryLevel.delete({ where: { id: existing.id } });
+    } else {
+      await tx.inventoryLevel.update({
+        where: { id: existing.id },
+        data: { quantity: newQuantity, updatedAt: new Date() },
+      });
+    }
+  } else if (!isEmptyBucket) {
     await tx.inventoryLevel.create({
       data: {
         warehouseId: params.warehouseId,
@@ -528,7 +565,12 @@ export async function simulateForQuote(
 
   for (const wh of warehouses) {
     const levels = await prisma.inventoryLevel.findMany({
-      where: { warehouseId: wh.id, catalogPieceId: { in: required.map((r) => r.catalogPieceId) } },
+      where: {
+        warehouseId: wh.id,
+        catalogPieceId: { in: required.map((r) => r.catalogPieceId) },
+        quantity: { gt: 0 },
+        lengthMm: { not: { equals: 0 } },
+      },
       include: { catalogPiece: { select: { id: true, canonicalName: true, systemCode: true } } },
     });
     const onHandByPiece = new Map<string, number>();

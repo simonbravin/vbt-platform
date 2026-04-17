@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Warehouse, Plus, Package, Search, Settings, Download, Pencil } from "lucide-react";
+import { Warehouse, Package, Settings, Pencil, ChevronRight, ChevronDown, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
@@ -15,6 +15,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { downloadInventoryLevelsCsv } from "@/lib/inventory-csv-export";
+import {
+  PANEL_SYSTEM_CODES,
+  groupStockByWarehouseAndPiece,
+  sumQuantities,
+  distinctLengthMmSorted,
+  toggleSystemInSet,
+} from "@/lib/inventory-stock-group";
+import { InventoryStockToolbar } from "@/components/inventory/InventoryStockToolbar";
 
 const LEVELS_FETCH_LIMIT = 5000;
 
@@ -85,6 +93,11 @@ export function InventoryClient() {
   const [adjustNotes, setAdjustNotes] = useState("");
   const [adjustSaving, setAdjustSaving] = useState(false);
   const [adjustError, setAdjustError] = useState<string | null>(null);
+  const [tableSystemCodes, setTableSystemCodes] = useState<Set<string>>(() => new Set(PANEL_SYSTEM_CODES));
+  const [exportSystemCodes, setExportSystemCodes] = useState<Set<string>>(() => new Set(PANEL_SYSTEM_CODES));
+  const [expandedStockGroups, setExpandedStockGroups] = useState<Set<string>>(() => new Set());
+  const [pruneBusy, setPruneBusy] = useState(false);
+  const [pruneMessage, setPruneMessage] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -213,7 +226,7 @@ export function InventoryClient() {
       .finally(() => setAdjustSaving(false));
   };
 
-  const filteredLevels = useMemo(() => {
+  const searchFilteredLevels = useMemo(() => {
     if (!searchFilter.trim()) return levels;
     const q = searchFilter.trim().toLowerCase();
     return levels.filter(
@@ -225,10 +238,65 @@ export function InventoryClient() {
     );
   }, [levels, searchFilter]);
 
+  const normSystem = (code: string | undefined | null) => String(code ?? "").trim().toUpperCase();
+
+  const displayLevels = useMemo(
+    () =>
+      searchFilteredLevels.filter((l) => {
+        const code = normSystem(l.catalogPiece.systemCode);
+        if ((PANEL_SYSTEM_CODES as readonly string[]).includes(code)) return tableSystemCodes.has(code);
+        return true;
+      }),
+    [searchFilteredLevels, tableSystemCodes]
+  );
+
+  const exportLevels = useMemo(
+    () =>
+      searchFilteredLevels.filter((l) => {
+        const code = normSystem(l.catalogPiece.systemCode);
+        if ((PANEL_SYSTEM_CODES as readonly string[]).includes(code)) return exportSystemCodes.has(code);
+        return true;
+      }),
+    [searchFilteredLevels, exportSystemCodes]
+  );
+
+  const stockGroups = useMemo(() => groupStockByWarehouseAndPiece(displayLevels), [displayLevels]);
+
+  const toggleStockGroup = (key: string) => {
+    setExpandedStockGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const showLegacyMeasureBanner = useMemo(
     () => levels.some((l) => Number(l.quantity) > 0 && Math.round(Number(l.lengthMm ?? 0)) === 0),
     [levels]
   );
+
+  const handlePruneZeroLevels = async () => {
+    if (!window.confirm(t("admin.inventory.pruneZeroConfirm"))) return;
+    setPruneBusy(true);
+    setPruneMessage(null);
+    setError(null);
+    try {
+      const r = await fetch("/api/saas/inventory/prune-zero-levels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(typeof data.error === "string" ? data.error : "prune");
+      setPruneMessage(t("admin.inventory.pruneZeroSuccess", { count: Number(data.deleted) || 0 }));
+      loadLevels();
+    } catch {
+      setError(t("admin.inventory.pruneZeroError"));
+    } finally {
+      setPruneBusy(false);
+    }
+  };
 
   const lowStockThresholdRaw = process.env.NEXT_PUBLIC_INVENTORY_LOW_STOCK_THRESHOLD;
   const lowStockThreshold =
@@ -313,51 +381,52 @@ export function InventoryClient() {
       />
 
       <div className="surface-card-overflow">
-        <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Package className="h-4 w-4" /> {t("admin.inventory.stockByWarehouse")}
-          </h3>
-          <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={t("admin.inventory.filterPlaceholder")}
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-input bg-background text-sm"
-            />
-          </div>
+        <InventoryStockToolbar
+          title={
+            <>
+              <Package className="h-4 w-4 shrink-0" /> {t("admin.inventory.stockByWarehouse")}
+            </>
+          }
+          searchFilter={searchFilter}
+          onSearchFilterChange={setSearchFilter}
+          tableSystemCodes={tableSystemCodes}
+          exportSystemCodes={exportSystemCodes}
+          onToggleTableSystem={(code) => setTableSystemCodes((prev) => toggleSystemInSet(prev, code))}
+          onToggleExportSystem={(code) => setExportSystemCodes((prev) => toggleSystemInSet(prev, code))}
+          exportDisabled={exportLevels.length === 0}
+          onExport={() => {
+            downloadInventoryLevelsCsv(
+              exportLevels.map((l) => ({
+                warehouseName: l.warehouse.name,
+                pieceName: l.catalogPiece.canonicalName,
+                systemCode: l.catalogPiece.systemCode,
+                lengthMm: l.lengthMm,
+                quantity: l.quantity,
+                unit: l.unit ?? "",
+              })),
+              "inventory-stock"
+            );
+          }}
+          onAddItem={() => {
+            setError(null);
+            setAddItemDialogOpen(true);
+          }}
+        />
+        <div className="px-4 py-2 border-b border-border bg-muted/20 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-xs text-muted-foreground max-w-prose">{t("admin.inventory.pruneZeroHelp")}</p>
           <button
             type="button"
-            onClick={() => {
-              setError(null);
-              setAddItemDialogOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={pruneBusy}
+            onClick={handlePruneZeroLevels}
+            className="inline-flex shrink-0 items-center gap-2 self-start sm:self-auto rounded-lg border border-destructive/30 bg-background px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
-          </button>
-          <button
-            type="button"
-            disabled={filteredLevels.length === 0}
-            onClick={() => {
-              downloadInventoryLevelsCsv(
-                filteredLevels.map((l) => ({
-                  warehouseName: l.warehouse.name,
-                  pieceName: l.catalogPiece.canonicalName,
-                  systemCode: l.catalogPiece.systemCode,
-                  lengthMm: l.lengthMm,
-                  quantity: l.quantity,
-                  unit: l.unit ?? "",
-                })),
-                "inventory-stock"
-              );
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-input bg-background hover:bg-muted disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" /> {t("admin.inventory.exportStockCsv")}
+            <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {pruneBusy ? t("common.loading") : t("admin.inventory.pruneZeroButton")}
           </button>
         </div>
+        {pruneMessage && (
+          <div className="px-4 py-2 border-b border-border bg-emerald-500/10 text-sm text-foreground">{pruneMessage}</div>
+        )}
         {showLegacyMeasureBanner && (
           <div className="px-4 py-2 border-b border-border bg-muted/40 text-sm text-foreground">
             {t("admin.inventory.legacyMeasureBanner")}
@@ -370,6 +439,7 @@ export function InventoryClient() {
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
+                  <th className="w-10 px-2 py-2" aria-hidden />
                   <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                     {t("admin.inventory.warehouse")}
                   </th>
@@ -391,31 +461,95 @@ export function InventoryClient() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {filteredLevels.length === 0 ? (
+                {stockGroups.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       {levels.length === 0
                         ? t("admin.inventory.noItemsAddOne")
                         : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredLevels.map((l) => {
-                    const mm = Math.round(Number(l.lengthMm ?? 0));
-                    return (
-                      <tr key={l.id}>
-                        <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
-                        <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
-                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                  stockGroups.flatMap((g) => {
+                    const expanded = expandedStockGroups.has(g.key);
+                    const lengths = distinctLengthMmSorted(g.lines);
+                    const totalQty = sumQuantities(g.lines);
+                    const measureSummary =
+                      lengths.length <= 1
+                        ? String(lengths[0] ?? 0)
+                        : t("admin.inventory.groupMeasureCount", { count: lengths.length });
+                    const measureTitle =
+                      lengths.length > 1 ? lengths.map((m) => `${m} mm`).join(", ") : undefined;
+                    const summaryRow = (
+                      <tr
+                        key={`g-${g.key}`}
+                        className="bg-muted/25 hover:bg-muted/40 cursor-pointer"
+                        onClick={() => toggleStockGroup(g.key)}
+                      >
+                        <td className="px-2 py-2 text-center text-muted-foreground w-10">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-transparent">
+                            {expanded ? (
+                              <ChevronDown className="h-4 w-4" aria-hidden />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" aria-hidden />
+                            )}
+                          </span>
+                          <span className="sr-only">
+                            {expanded ? t("admin.inventory.groupCollapseRow") : t("admin.inventory.groupExpandRow")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-sm font-medium text-foreground">{g.warehouse.name}</td>
+                        <td className="px-4 py-2 text-sm font-medium text-foreground">{g.catalogPiece.canonicalName}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{g.catalogPiece.systemCode}</td>
                         <td
                           className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
-                          title={mm === 0 ? t("partner.inventory.measureZeroTooltip") : undefined}
+                          title={measureTitle}
                         >
-                          {mm}
+                          {measureSummary}
                         </td>
-                        <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
+                        <td className="px-4 py-2 text-sm text-right tabular-nums font-medium text-foreground">{totalQty}</td>
+                        <td className="px-4 py-2 text-sm text-right text-muted-foreground">—</td>
                       </tr>
                     );
+                    if (!expanded) return [summaryRow];
+                    const detailRows = g.lines.map((l) => {
+                      const mm = Math.round(Number(l.lengthMm ?? 0));
+                      return (
+                        <tr key={l.id} className="bg-card hover:bg-muted/20">
+                          <td className="w-10 px-2 py-2" />
+                          <td className="px-4 py-2 text-sm text-muted-foreground pl-6 border-l-2 border-primary/30">
+                            {l.warehouse.name}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.canonicalName}</td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                          <td
+                            className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
+                            title={mm === 0 ? t("partner.inventory.measureZeroTooltip") : undefined}
+                          >
+                            {mm}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
+                          <td className="px-4 py-2 text-sm text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdjustError(null);
+                                setAdjustLevel(l);
+                                setAdjustQty(0);
+                                setAdjustNotes("");
+                                setAdjustDirection("in");
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                            >
+                              <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              <span>{t("admin.inventory.actionAdjust")}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    });
+                    return [summaryRow, ...detailRows];
                   })
                 )}
               </tbody>

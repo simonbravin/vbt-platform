@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Package, Plus, Calculator, ArrowDownToLine, Search, Download, Pencil } from "lucide-react";
+import { Package, Plus, Calculator, ArrowDownToLine, Search, Pencil, ChevronRight, ChevronDown, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { InventoryBulkFileImport } from "@/components/inventory/InventoryBulkFileImport";
@@ -14,6 +14,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { downloadInventoryLevelsCsv } from "@/lib/inventory-csv-export";
+import {
+  PANEL_SYSTEM_CODES,
+  groupStockByWarehouseAndPiece,
+  sumQuantities,
+  distinctLengthMmSorted,
+  toggleSystemInSet,
+} from "@/lib/inventory-stock-group";
+import { InventoryStockToolbar } from "@/components/inventory/InventoryStockToolbar";
 
 const LEVELS_FETCH_LIMIT = 5000;
 
@@ -85,6 +93,11 @@ export function SuperadminInventoryClient() {
   const [adjustNotes, setAdjustNotes] = useState("");
   const [adjustSaving, setAdjustSaving] = useState(false);
   const [adjustError, setAdjustError] = useState<string | null>(null);
+  const [tableSystemCodes, setTableSystemCodes] = useState<Set<string>>(() => new Set(PANEL_SYSTEM_CODES));
+  const [exportSystemCodes, setExportSystemCodes] = useState<Set<string>>(() => new Set(PANEL_SYSTEM_CODES));
+  const [expandedStockGroups, setExpandedStockGroups] = useState<Set<string>>(() => new Set());
+  const [pruneBusy, setPruneBusy] = useState(false);
+  const [pruneMessage, setPruneMessage] = useState<string | null>(null);
 
   const vlOrgId = visionLatamOrg?.id ?? "";
 
@@ -286,7 +299,7 @@ export function SuperadminInventoryClient() {
     );
   };
 
-  const filteredLevels = useMemo(() => {
+  const searchFilteredLevels = useMemo(() => {
     if (!searchFilter.trim()) return levels;
     const q = searchFilter.trim().toLowerCase();
     return levels.filter(
@@ -297,6 +310,69 @@ export function SuperadminInventoryClient() {
         String(l.lengthMm ?? 0).includes(q)
     );
   }, [levels, searchFilter]);
+
+  const normSystem = (code: string | undefined | null) => String(code ?? "").trim().toUpperCase();
+
+  const displayLevels = useMemo(
+    () =>
+      searchFilteredLevels.filter((l) => {
+        const code = normSystem(l.catalogPiece.systemCode);
+        if ((PANEL_SYSTEM_CODES as readonly string[]).includes(code)) return tableSystemCodes.has(code);
+        return true;
+      }),
+    [searchFilteredLevels, tableSystemCodes]
+  );
+
+  const exportLevels = useMemo(
+    () =>
+      searchFilteredLevels.filter((l) => {
+        const code = normSystem(l.catalogPiece.systemCode);
+        if ((PANEL_SYSTEM_CODES as readonly string[]).includes(code)) return exportSystemCodes.has(code);
+        return true;
+      }),
+    [searchFilteredLevels, exportSystemCodes]
+  );
+
+  const stockGroups = useMemo(() => groupStockByWarehouseAndPiece(displayLevels), [displayLevels]);
+
+  const toggleStockGroup = (key: string) => {
+    setExpandedStockGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const reloadVlLevels = useCallback(() => {
+    if (!vlOrgId) return;
+    fetch(`/api/saas/inventory/levels?organizationId=${encodeURIComponent(vlOrgId)}&limit=${LEVELS_FETCH_LIMIT}`)
+      .then((r) => (r.ok ? r.json() : { levels: [] }))
+      .then((d) => setLevels(d.levels ?? []));
+  }, [vlOrgId]);
+
+  const handlePruneZeroLevels = async () => {
+    if (!vlOrgId) return;
+    if (!window.confirm(t("admin.inventory.pruneZeroConfirm"))) return;
+    setPruneBusy(true);
+    setPruneMessage(null);
+    setAffectResult(null);
+    try {
+      const r = await fetch("/api/saas/inventory/prune-zero-levels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: vlOrgId }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(typeof data.error === "string" ? data.error : "prune");
+      setPruneMessage(t("admin.inventory.pruneZeroSuccess", { count: Number(data.deleted) || 0 }));
+      reloadVlLevels();
+    } catch {
+      setAffectResult(t("admin.inventory.pruneZeroError"));
+    } finally {
+      setPruneBusy(false);
+    }
+  };
 
   const showLegacyMeasureBanner = useMemo(
     () => levels.some((l) => Number(l.quantity) > 0 && Math.round(Number(l.lengthMm ?? 0)) === 0),
@@ -381,50 +457,6 @@ export function SuperadminInventoryClient() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder={t("admin.inventory.filterPlaceholder")}
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setAffectResult(null);
-            setTxDialogError(null);
-            setAddItemDialogOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> {t("admin.inventory.addItem")}
-        </button>
-        <button
-          type="button"
-          disabled={filteredLevels.length === 0}
-          onClick={() => {
-            downloadInventoryLevelsCsv(
-              filteredLevels.map((l) => ({
-                warehouseName: l.warehouse.name,
-                pieceName: l.catalogPiece.canonicalName,
-                systemCode: l.catalogPiece.systemCode,
-                lengthMm: l.lengthMm,
-                quantity: l.quantity,
-                unit: l.unit ?? "",
-              })),
-              `vl-inventory-${visionLatamOrg.name ?? "stock"}`
-            );
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-input bg-background hover:bg-muted disabled:opacity-50"
-        >
-          <Download className="h-4 w-4" /> {t("admin.inventory.exportStockCsv")}
-        </button>
-      </div>
-
       {showLegacyMeasureBanner && (
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           {t("admin.inventory.legacyMeasureBanner")}
@@ -449,6 +481,48 @@ export function SuperadminInventoryClient() {
         <h3 className="px-4 py-2 text-sm font-semibold text-foreground border-b border-border bg-muted/30">
           {t("admin.inventory.myVlStockTitle")}
         </h3>
+        <InventoryStockToolbar
+          searchFilter={searchFilter}
+          onSearchFilterChange={setSearchFilter}
+          tableSystemCodes={tableSystemCodes}
+          exportSystemCodes={exportSystemCodes}
+          onToggleTableSystem={(code) => setTableSystemCodes((prev) => toggleSystemInSet(prev, code))}
+          onToggleExportSystem={(code) => setExportSystemCodes((prev) => toggleSystemInSet(prev, code))}
+          exportDisabled={exportLevels.length === 0}
+          onExport={() => {
+            downloadInventoryLevelsCsv(
+              exportLevels.map((l) => ({
+                warehouseName: l.warehouse.name,
+                pieceName: l.catalogPiece.canonicalName,
+                systemCode: l.catalogPiece.systemCode,
+                lengthMm: l.lengthMm,
+                quantity: l.quantity,
+                unit: l.unit ?? "",
+              })),
+              `vl-inventory-${visionLatamOrg.name ?? "stock"}`
+            );
+          }}
+          onAddItem={() => {
+            setAffectResult(null);
+            setTxDialogError(null);
+            setAddItemDialogOpen(true);
+          }}
+        />
+        <div className="px-4 py-2 border-b border-border bg-muted/20 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-xs text-muted-foreground max-w-prose">{t("admin.inventory.pruneZeroHelp")}</p>
+          <button
+            type="button"
+            disabled={pruneBusy || !vlOrgId}
+            onClick={handlePruneZeroLevels}
+            className="inline-flex shrink-0 items-center gap-2 self-start sm:self-auto rounded-lg border border-destructive/30 bg-background px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {pruneBusy ? t("common.loading") : t("admin.inventory.pruneZeroButton")}
+          </button>
+        </div>
+        {pruneMessage && (
+          <div className="px-4 py-2 border-b border-border bg-emerald-500/10 text-sm text-foreground">{pruneMessage}</div>
+        )}
         {loadingLevels ? (
           <div className="p-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
         ) : (
@@ -456,6 +530,7 @@ export function SuperadminInventoryClient() {
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
+                  <th className="w-10 px-2 py-2" aria-hidden />
                   <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                     {t("admin.inventory.warehouse")}
                   </th>
@@ -480,46 +555,95 @@ export function SuperadminInventoryClient() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {filteredLevels.length === 0 ? (
+                {stockGroups.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       {levels.length === 0 ? t("admin.inventory.noLevelsAddItem") : t("admin.inventory.filteredEmpty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredLevels.map((l) => {
-                    const mm = Math.round(Number(l.lengthMm ?? 0));
-                    return (
-                      <tr key={l.id}>
-                        <td className="px-4 py-2 text-sm text-foreground">{l.warehouse.name}</td>
-                        <td className="px-4 py-2 text-sm text-foreground">{l.catalogPiece.canonicalName}</td>
-                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                  stockGroups.flatMap((g) => {
+                    const expanded = expandedStockGroups.has(g.key);
+                    const lengths = distinctLengthMmSorted(g.lines);
+                    const totalQty = sumQuantities(g.lines);
+                    const measureSummary =
+                      lengths.length <= 1
+                        ? String(lengths[0] ?? 0)
+                        : t("admin.inventory.groupMeasureCount", { count: lengths.length });
+                    const measureTitle =
+                      lengths.length > 1 ? lengths.map((m) => `${m} mm`).join(", ") : undefined;
+                    const summaryRow = (
+                      <tr
+                        key={`g-${g.key}`}
+                        className="bg-muted/25 hover:bg-muted/40 cursor-pointer"
+                        onClick={() => toggleStockGroup(g.key)}
+                      >
+                        <td className="px-2 py-2 text-center text-muted-foreground w-10">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-transparent">
+                            {expanded ? (
+                              <ChevronDown className="h-4 w-4" aria-hidden />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" aria-hidden />
+                            )}
+                          </span>
+                          <span className="sr-only">
+                            {expanded ? t("admin.inventory.groupCollapseRow") : t("admin.inventory.groupExpandRow")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-sm font-medium text-foreground">{g.warehouse.name}</td>
+                        <td className="px-4 py-2 text-sm font-medium text-foreground">{g.catalogPiece.canonicalName}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{g.catalogPiece.systemCode}</td>
                         <td
                           className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
-                          title={mm === 0 ? t("admin.inventory.measureZeroTooltip") : undefined}
+                          title={measureTitle}
                         >
-                          {mm}
+                          {measureSummary}
                         </td>
-                        <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
-                        <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
-                        <td className="px-4 py-2 text-sm text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdjustError(null);
-                              setAdjustLevel(l);
-                              setAdjustQty(0);
-                              setAdjustNotes("");
-                              setAdjustDirection("in");
-                            }}
-                            className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
-                          >
-                            <Pencil className="h-3.5 w-3.5" aria-hidden />
-                            {t("admin.inventory.changeButton")}
-                          </button>
-                        </td>
+                        <td className="px-4 py-2 text-sm text-right tabular-nums font-medium text-foreground">{totalQty}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground">—</td>
+                        <td className="px-4 py-2 text-sm text-right text-muted-foreground">—</td>
                       </tr>
                     );
+                    if (!expanded) return [summaryRow];
+                    const detailRows = g.lines.map((l) => {
+                      const mm = Math.round(Number(l.lengthMm ?? 0));
+                      return (
+                        <tr key={l.id} className="bg-card hover:bg-muted/20">
+                          <td className="w-10 px-2 py-2" />
+                          <td className="px-4 py-2 text-sm text-muted-foreground pl-6 border-l-2 border-primary/30">
+                            {l.warehouse.name}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.canonicalName}</td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.catalogPiece.systemCode}</td>
+                          <td
+                            className="px-4 py-2 text-sm text-right tabular-nums text-muted-foreground"
+                            title={mm === 0 ? t("admin.inventory.measureZeroTooltip") : undefined}
+                          >
+                            {mm}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-right tabular-nums text-foreground">{l.quantity}</td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">{l.unit ?? "—"}</td>
+                          <td className="px-4 py-2 text-sm text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdjustError(null);
+                                setAdjustLevel(l);
+                                setAdjustQty(0);
+                                setAdjustNotes("");
+                                setAdjustDirection("in");
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                            >
+                              <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              <span>{t("admin.inventory.actionAdjust")}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    });
+                    return [summaryRow, ...detailRows];
                   })
                 )}
               </tbody>
