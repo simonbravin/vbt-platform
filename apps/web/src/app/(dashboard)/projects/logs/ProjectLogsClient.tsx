@@ -18,7 +18,9 @@ export function ProjectLogsClient() {
   const actionLabels: Record<string, string> = {
     PROJECT_CREATED: t("projects.logCreated"),
     PROJECT_UPDATED: t("projects.logUpdated"),
+    PROJECT_ARCHIVED: t("projects.logArchived"),
     PROJECT_DELETED: t("projects.logDeleted"),
+    PROJECT_PURGED: t("projects.logPurged"),
   };
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);

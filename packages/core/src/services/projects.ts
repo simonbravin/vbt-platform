@@ -1,8 +1,10 @@
-import type { PrismaClient, Project, ProjectStatus } from "@vbt/db";
+import type { Prisma, PrismaClient, Project, ProjectStatus } from "@vbt/db";
 import { orgScopeWhere, type TenantContext } from "./tenant-context";
 
 export type ListProjectsOptions = {
   status?: ProjectStatus;
+  /** When false/undefined and `status` is not set, excludes `lost` (archived) projects from the list. */
+  includeArchived?: boolean;
   clientId?: string;
   organizationId?: string;
   countryCode?: string;
@@ -17,9 +19,15 @@ export async function listProjects(
   options: ListProjectsOptions = {}
 ): Promise<{ projects: Project[]; total: number }> {
   const orgWhere = orgScopeWhere(ctx);
+  const statusWhere =
+    options.status != null
+      ? { status: options.status }
+      : options.includeArchived === true
+        ? {}
+        : { status: { not: "lost" as const } };
   const where = {
     ...orgWhere,
-    ...(options.status && { status: options.status }),
+    ...statusWhere,
     ...(options.clientId && { clientId: options.clientId }),
     ...(ctx.isPlatformSuperadmin && options.organizationId && { organizationId: options.organizationId }),
     ...(options.countryCode && { countryCode: options.countryCode }),
@@ -50,22 +58,68 @@ export async function listProjects(
   return { projects, total };
 }
 
+const projectByIdInclude = {
+  client: true,
+  assignedToUser: { select: { id: true, fullName: true, email: true } },
+  baselineQuote: {
+    select: { id: true, quoteNumber: true, version: true, totalPrice: true, status: true },
+  },
+  quotes: { orderBy: { version: "desc" as const }, take: 50 },
+  _count: { select: { sales: true, saleProjectLines: true } },
+} satisfies Prisma.ProjectInclude;
+
+export type ProjectByIdResult = Prisma.ProjectGetPayload<{ include: typeof projectByIdInclude }>;
+
 export async function getProjectById(
   prisma: PrismaClient,
   ctx: TenantContext,
   projectId: string
-): Promise<Project | null> {
+): Promise<ProjectByIdResult | null> {
   const orgWhere = orgScopeWhere(ctx);
   return prisma.project.findFirst({
     where: { id: projectId, ...orgWhere },
-    include: {
-      client: true,
-      assignedToUser: { select: { id: true, fullName: true, email: true } },
-      baselineQuote: {
-        select: { id: true, quoteNumber: true, version: true, totalPrice: true, status: true },
-      },
-      quotes: { orderBy: { version: "desc" }, take: 50 },
-    },
+    include: projectByIdInclude,
+  });
+}
+
+/** Thrown when a project cannot be permanently removed because sales reference it (DB `onDelete: Restrict`). */
+export class ProjectPermanentDeleteBlockedError extends Error {
+  readonly code = "PROJECT_HAS_SALES" as const;
+  constructor(message = "Project has linked sales or sale lines") {
+    super(message);
+    this.name = "ProjectPermanentDeleteBlockedError";
+  }
+}
+
+/**
+ * Hard-deletes a project when it has no sales / sale-project lines.
+ * Clears `baselineQuoteId` first, then deletes the row (cascades quotes, engineering, etc. per schema).
+ */
+export async function permanentlyDeleteProject(prisma: PrismaClient, ctx: TenantContext, projectId: string): Promise<void> {
+  const orgWhere = orgScopeWhere(ctx);
+  const existing = await prisma.project.findFirst({
+    where: { id: projectId, ...orgWhere },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new Error("Project not found");
+  }
+  const saleWhere = { projectId, ...orgScopeWhere(ctx) };
+  const [saleCount, lineCount] = await Promise.all([
+    prisma.sale.count({ where: saleWhere }),
+    prisma.saleProjectLine.count({
+      where: { projectId, project: orgWhere },
+    }),
+  ]);
+  if (saleCount > 0 || lineCount > 0) {
+    throw new ProjectPermanentDeleteBlockedError();
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.project.update({
+      where: { id: projectId },
+      data: { baselineQuoteId: null },
+    });
+    await tx.project.delete({ where: { id: projectId } });
   });
 }
 

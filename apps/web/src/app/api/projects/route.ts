@@ -36,6 +36,9 @@ export async function GET(req: Request) {
     const search = url.searchParams.get("search") ?? "";
     const statusParam = url.searchParams.get("status");
     const clientIdParam = url.searchParams.get("clientId");
+    const includeArchivedRaw = url.searchParams.get("includeArchived");
+    const includeArchived =
+      includeArchivedRaw === "true" || includeArchivedRaw === "1" ? true : undefined;
 
     const tenantCtx = {
       userId: ctx!.userId,
@@ -45,6 +48,7 @@ export async function GET(req: Request) {
     const result = await listProjects(prisma, tenantCtx, {
       search: search.trim() || undefined,
       status: statusParam as any,
+      includeArchived,
       clientId: clientIdParam ?? undefined,
       limit,
       offset: (page - 1) * limit,

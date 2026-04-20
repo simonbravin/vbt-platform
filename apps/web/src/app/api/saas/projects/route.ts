@@ -18,6 +18,7 @@ async function getHandler(req: Request) {
     const url = new URL(req.url);
     const parsed = listProjectsQuerySchema.safeParse({
       status: url.searchParams.get("status") || undefined,
+      includeArchived: url.searchParams.get("includeArchived") || undefined,
       clientId: url.searchParams.get("clientId") || undefined,
       organizationId: url.searchParams.get("organizationId") || undefined,
       countryCode: url.searchParams.get("countryCode") || undefined,
@@ -47,6 +48,7 @@ async function getHandler(req: Request) {
     };
     const result = await listProjects(prisma, tenantCtx, {
       status: parsed.data.status,
+      includeArchived: parsed.data.includeArchived,
       clientId: parsed.data.clientId,
       organizationId: parsed.data.organizationId,
       countryCode: parsed.data.countryCode,

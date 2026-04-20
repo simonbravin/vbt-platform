@@ -34,6 +34,7 @@ export default async function ProjectsPage() {
     const result = await listProjects(prisma, tenantCtx, {
       limit: 50,
       offset: 0,
+      includeArchived: false,
     });
     projects = result.projects;
     total = result.total;

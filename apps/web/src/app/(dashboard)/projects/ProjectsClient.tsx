@@ -77,6 +77,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
     const params = new URLSearchParams({ limit: "100" });
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (statusFilter) params.set("status", statusFilter);
+    else params.set("includeArchived", "false");
     fetch(`/api/saas/projects?${params}`)
       .then(async (r) => {
         try {

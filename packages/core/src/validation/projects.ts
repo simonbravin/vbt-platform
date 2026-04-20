@@ -35,8 +35,15 @@ export const updateProjectSchema = createProjectSchema
     baselineQuoteId: z.string().min(1).nullable().optional(),
   });
 
+const optionalBoolQuery = z
+  .string()
+  .optional()
+  .transform((s) => (s === undefined ? undefined : s === "true" || s === "1"));
+
 export const listProjectsQuerySchema = z.object({
   status: projectStatusEnum.optional(),
+  /** When true, list includes archived (`lost`) projects when `status` is not set. Default: omit or false. */
+  includeArchived: optionalBoolQuery,
   clientId: z.string().optional(),
   organizationId: z.string().optional(),
   countryCode: z.string().optional(),

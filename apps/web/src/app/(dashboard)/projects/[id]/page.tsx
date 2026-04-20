@@ -25,7 +25,10 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
       expectedCloseDate: project.expectedCloseDate?.toISOString?.() ?? null,
     };
 
-    return <ProjectDetailClient initialProject={serialized as any} />;
+    const canOrgAdmin =
+      (user as SessionUser).role === "org_admin" || (user as SessionUser).isPlatformSuperadmin === true;
+
+    return <ProjectDetailClient initialProject={serialized as any} canOrgAdmin={canOrgAdmin} />;
   } catch (e) {
     if ((e as Error)?.message === "NEXT_REDIRECT") throw e;
     notFound();

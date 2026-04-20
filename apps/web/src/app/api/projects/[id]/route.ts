@@ -114,7 +114,7 @@ export async function DELETE(
     await createActivityLog({
       organizationId: user.activeOrgId ?? undefined,
       userId: user.id,
-      action: "PROJECT_DELETED",
+      action: "PROJECT_ARCHIVED",
       entityType: "Project",
       entityId: params.id,
       metadata: { projectName: project.projectName },

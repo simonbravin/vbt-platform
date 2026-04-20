@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowLeft, FileText, Plus, Pencil, Trash2, ShoppingCart } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Pencil, Trash2, ShoppingCart, Archive } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -40,6 +40,7 @@ type Project = {
   baselineQuoteId?: string | null;
   baselineQuote?: { id: string; quoteNumber: string } | null;
   quotes: Quote[];
+  _count?: { sales: number; saleProjectLines: number };
 };
 
 type AuditEntry = { id: string; action: string; createdAt: string; userName: string | null; meta: { changed?: string[] } | null };
@@ -56,7 +57,13 @@ const QUOTE_STATUS_I18N: Record<string, string> = {
   archived: "quotes.archived",
 };
 
-export function ProjectDetailClient({ initialProject }: { initialProject: Project }) {
+export function ProjectDetailClient({
+  initialProject,
+  canOrgAdmin = false,
+}: {
+  initialProject: Project;
+  canOrgAdmin?: boolean;
+}) {
   const { t, locale } = useLanguage();
   const dateLocale = locale === "es" ? "es-419" : "en-US";
 
@@ -71,6 +78,10 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [purgeDialog, setPurgeDialog] = useState(false);
+  const [purgeAck, setPurgeAck] = useState(false);
+  const [purgeError, setPurgeError] = useState<string | null>(null);
+  const [purging, setPurging] = useState(false);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -290,7 +301,38 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
   const formatAction = (action: string, meta: { changed?: string[] } | null) => {
     if (action === "PROJECT_CREATED") return t("projects.logCreated");
     if (action === "PROJECT_UPDATED" && meta?.changed?.length) return `${t("projects.logUpdated")}: ${meta.changed.join(", ")}`;
+    if (action === "PROJECT_ARCHIVED") return t("projects.logArchived");
+    if (action === "PROJECT_DELETED") return t("projects.logDeleted");
+    if (action === "PROJECT_PURGED") return t("projects.logPurged");
     return action.replace(/_/g, " ").toLowerCase();
+  };
+
+  const purgeBlocked =
+    ((project._count?.sales ?? 0) > 0 || (project._count?.saleProjectLines ?? 0) > 0) || sales.length > 0;
+
+  const handlePurge = async () => {
+    setPurgeError(null);
+    setPurging(true);
+    try {
+      const res = await fetch(`/api/saas/projects/${project.id}/purge`, { method: "POST" });
+      let body: unknown = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+      if (!res.ok) {
+        setPurgeError(saasApiUserFacingMessage(body, t, t("auth.errorUnexpected")));
+        return;
+      }
+      setPurgeDialog(false);
+      setPurgeAck(false);
+      router.push("/projects");
+    } catch {
+      setPurgeError(t("auth.errorUnexpected"));
+    } finally {
+      setPurging(false);
+    }
   };
 
   return (
@@ -332,16 +374,18 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           >
             <Pencil className="w-4 h-4" /> {t("common.edit")}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteDialog(true);
-            }}
-            className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="w-4 h-4" /> {t("common.delete")}
-          </button>
+          {canOrgAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteDialog(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted/40"
+            >
+              <Archive className="w-4 h-4" /> {t("common.archive")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -351,12 +395,12 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           if (!open) setDeleteError(null);
           setDeleteDialog(open);
         }}
-        title={t("projects.deleteProjectTitle")}
-        description={t("projects.deleteProjectMsg", { name: projectName })}
-        confirmLabel={t("common.delete")}
+        title={t("projects.archiveProjectTitle")}
+        description={t("projects.archiveProjectMsg", { name: projectName })}
+        confirmLabel={t("common.archive")}
         cancelLabel={t("common.cancel")}
-        loadingLabel={t("projects.deleting")}
-        variant="danger"
+        loadingLabel={t("projects.archiving")}
+        variant="primary"
         loading={deleting}
         error={deleteError}
         onConfirm={handleDelete}
@@ -551,6 +595,93 @@ export function ProjectDetailClient({ initialProject }: { initialProject: Projec
           )}
         </div>
       </div>
+
+      {canOrgAdmin && (
+        <div className="surface-card border border-destructive/20 p-5">
+          <h2 className="font-semibold text-foreground mb-1">{t("projects.dangerZoneTitle")}</h2>
+          <p className="text-sm text-muted-foreground mb-4">{t("projects.dangerZoneIntro")}</p>
+          {purgeBlocked ? (
+            <p className="text-sm text-muted-foreground">{t("projects.purgeBlockedBody")}</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setPurgeError(null);
+                setPurgeAck(false);
+                setPurgeDialog(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4" /> {t("projects.purgeConfirmButton")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {purgeDialog && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="purge-dialog-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !purging) {
+              setPurgeDialog(false);
+              setPurgeAck(false);
+              setPurgeError(null);
+            }
+          }}
+        >
+          <div className="bg-card text-card-foreground rounded-lg max-w-md w-full p-6 border border-border/80 shadow-none" onClick={(e) => e.stopPropagation()}>
+            <h3 id="purge-dialog-title" className="font-semibold text-lg mb-2 text-foreground tracking-[-0.02em]">
+              {t("projects.purgeTitle")}
+            </h3>
+            <p className="text-muted-foreground text-caption mb-4">
+              {t("projects.purgeDescription", { name: projectName })}
+            </p>
+            <label className="flex items-start gap-2 text-sm text-foreground mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 rounded border-input"
+                checked={purgeAck}
+                onChange={(e) => setPurgeAck(e.target.checked)}
+                disabled={purging}
+              />
+              <span>{t("projects.purgeConfirmCheckbox")}</span>
+            </label>
+            {purgeError && (
+              <p className="text-caption text-destructive mb-4 border border-destructive/30 rounded-lg px-3 py-2 bg-destructive/5" role="alert">
+                {purgeError}
+              </p>
+            )}
+            <div className="flex gap-3 justify-end flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!purging) {
+                    setPurgeDialog(false);
+                    setPurgeAck(false);
+                    setPurgeError(null);
+                  }
+                }}
+                disabled={purging}
+                className="px-5 py-2.5 border border-border/80 rounded-full text-[17px] text-foreground hover:bg-muted disabled:opacity-50 font-normal"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handlePurge}
+                disabled={purging || !purgeAck}
+                className="px-5 py-2.5 bg-destructive text-destructive-foreground rounded-full text-[17px] font-normal hover:opacity-90 disabled:opacity-50 border border-transparent"
+              >
+                {purging ? t("projects.purging") : t("projects.purgeConfirmButton")}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Edit modal (portal so overlay covers full viewport including sidebar/header) */}
       {editOpen && typeof document !== "undefined" && createPortal(
