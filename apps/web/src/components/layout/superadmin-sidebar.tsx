@@ -61,8 +61,8 @@ interface NavItem {
 const superadminNavigation: NavItem[] = [
   { labelKey: "nav.superadmin.dashboard", href: "/superadmin/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.superadmin.partners", href: "/superadmin/partners", icon: Building2 },
-  { labelKey: "nav.superadmin.engineering", href: "/superadmin/engineering", icon: Wrench },
   { labelKey: "nav.superadmin.projects", href: "/superadmin/projects", icon: FolderOpen },
+  { labelKey: "nav.superadmin.engineering", href: "/superadmin/engineering", icon: Wrench },
   { labelKey: "nav.superadmin.quotes", href: "/superadmin/quotes", icon: ClipboardList },
   { labelKey: "nav.superadmin.sales", href: "/superadmin/sales", icon: ShoppingCart },
   { labelKey: "nav.superadmin.inventory", href: "/superadmin/admin/inventory", icon: Package },

@@ -54,8 +54,8 @@ interface NavItem {
 const navigation: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   { labelKey: "nav.clients", href: "/clients", icon: Building2 },
-  { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
   { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
+  { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
   { labelKey: "nav.quotes", href: "/quotes", icon: FileText },
   {
     labelKey: "nav.sales",
