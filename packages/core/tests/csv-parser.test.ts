@@ -78,4 +78,42 @@ OnlyPiece,5`;
     expect(r.rows[0].rawHeightMm).toBe(0);
     expect(r.headerMap.heightMm).toBeNull();
   });
+
+  it("parses Parts List style export with blank first header (Type inferred)", () => {
+    const csv = `Parts List 2,,,
+,Length,Qty
+SA2025_6in x 9in Form,3700,2
+SA2024_80mm x 22mm Spacer,600,6`;
+    const r = parseRevitCsv(csv);
+    expect(r.invalidRows).toBe(0);
+    expect(r.validRows).toBe(2);
+    expect(r.rows[0].rawPieceName).toContain("6in x 9in");
+    expect(r.rows[0].rawQty).toBe(2);
+    expect(r.rows[0].rawHeightMm).toBe(3700);
+    expect(r.rows[1].rawPieceName).toContain("Spacer");
+  });
+
+  it("parses Family and Type / Description columns", () => {
+    const csv = `Family and Type,Count,Length
+SA2024_6in x 9in Form,12,2900`;
+    const r1 = parseRevitCsv(csv);
+    expect(r1.invalidRows).toBe(0);
+    expect(r1.rows[0].rawPieceName).toContain("6in x 9in");
+
+    const csv2 = `Description,Cantidad,Medida (mm)
+SA2025_6in x 9in Form,3,4000`;
+    const r2 = parseRevitCsv(csv2);
+    expect(r2.invalidRows).toBe(0);
+    expect(r2.rows[0].rawPieceName).toContain("SA2025");
+    expect(r2.rows[0].rawHeightMm).toBe(4000);
+  });
+
+  it("maps Part Number to code, not piece name", () => {
+    const csv = `Description,Part Number,Qty,Length
+6in x 9in Form,#15552,2,3700`;
+    const r = parseRevitCsv(csv);
+    expect(r.invalidRows).toBe(0);
+    expect(r.rows[0].rawPieceName).toBe("6in x 9in Form");
+    expect(r.rows[0].rawPieceCode).toBe("#15552");
+  });
 });

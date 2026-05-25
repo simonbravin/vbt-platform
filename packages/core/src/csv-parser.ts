@@ -31,11 +31,37 @@ export interface ParsedCsvRow {
 
 // ─── Header mapping ───────────────────────────────────────────────────────────
 
-// Common header synonyms (lowercase)
-const PIECE_NAME_HEADERS = ["type", "piece name", "piecename", "name", "element", "piece", "perfil", "tipo"];
+// Common header synonyms (lowercase). Longer phrases are matched first in findHeader.
+const PIECE_NAME_HEADERS = [
+  "family and type",
+  "familia y tipo",
+  "family and type name",
+  "type name",
+  "typename",
+  "piece name",
+  "piecename",
+  "part type",
+  "tipo de pieza",
+  "tipo / pieza",
+  "description",
+  "descripcion",
+  "descripción",
+  "type",
+  "tipo",
+  "piece",
+  "pieza",
+  "perfil",
+  "name",
+  "element",
+  "item",
+  "component",
+  "member",
+];
 const PIECE_CODE_HEADERS = [
   "piece code",
   "piececode",
+  "part number",
+  "part no",
   "code",
   "code revit",
   "mark",
@@ -43,16 +69,20 @@ const PIECE_CODE_HEADERS = [
   "familia",
   "id",
 ];
-const QTY_HEADERS = ["count", "quantity", "qty", "cantidad", "count:", "number", "units", "unidades"];
+const QTY_HEADERS = ["count", "quantity", "qty", "cantidad", "cant.", "count:", "units", "unidades", "number"];
 const HEIGHT_HEADERS = [
   "height",
   "height_mm",
+  "height (mm)",
   "alto",
   "alto_mm",
   "largeur",
   "length",
   "length_mm",
+  "length (mm)",
   "longitud",
+  "medida",
+  "medida (mm)",
   "altura",
   "altura_mm",
 ];
@@ -65,15 +95,68 @@ const ALL_KNOWN_HEADERS = [
   ...HEIGHT_HEADERS,
 ];
 
+/** Avoid qty synonym "number" stealing Part Number / Matrix columns. */
+function headerPartialMatch(headerNorm: string, synonym: string): boolean {
+  if (synonym === "number" && (headerNorm.includes("part") || headerNorm.includes("matrix") || headerNorm.includes("mark"))) {
+    return false;
+  }
+  if (synonym === "part" && headerNorm.includes("number")) return false;
+  if (synonym === "piece" && headerNorm.includes("number")) return false;
+  if (synonym === "tipo" && headerNorm.includes("cant")) return false;
+  return headerNorm.includes(synonym) || synonym.includes(headerNorm);
+}
+
 function findHeader(headers: string[], synonyms: string[]): string | null {
   for (const h of headers) {
     if (synonyms.includes(h.toLowerCase().trim())) return h;
   }
-  // partial match
+  const byLength = [...synonyms].sort((a, b) => b.length - a.length);
   for (const h of headers) {
-    for (const s of synonyms) {
-      if (h.toLowerCase().includes(s) || s.includes(h.toLowerCase().trim())) return h;
+    const norm = h.toLowerCase().trim();
+    for (const s of byLength) {
+      if (headerPartialMatch(norm, s)) return h;
     }
+  }
+  return null;
+}
+
+/** Revit schedules often leave the Type column header blank (first cell empty). */
+function normalizeHeaderRow(row: string[]): string[] {
+  const out = row.map((c) => c.trim());
+  if (out[0] !== undefined && !out[0] && out.length > 1) {
+    const rest = out.slice(1).map((c) => c.toLowerCase());
+    const hasQtyOrLen = rest.some(
+      (c) =>
+        QTY_HEADERS.includes(c) ||
+        HEIGHT_HEADERS.includes(c) ||
+        QTY_HEADERS.some((s) => c.includes(s)) ||
+        HEIGHT_HEADERS.some((s) => c.includes(s))
+    );
+    if (hasQtyOrLen) out[0] = "Type";
+  }
+  return out;
+}
+
+/**
+ * When no piece-name header matched, use the first unassigned column that looks like Revit type text.
+ */
+function resolvePieceNameHeader(
+  headers: string[],
+  headerMap: { pieceName: string | null; pieceCode: string | null; qty: string | null; heightMm: string | null },
+  data: Record<string, string>[]
+): string | null {
+  if (headerMap.pieceName) return headerMap.pieceName;
+  const used = new Set(
+    [headerMap.pieceCode, headerMap.qty, headerMap.heightMm].filter((h): h is string => !!h)
+  );
+  for (const h of headers) {
+    if (used.has(h)) continue;
+    const samples = data
+      .slice(0, 8)
+      .map((r) => (r[h] ?? "").trim())
+      .filter(Boolean);
+    if (samples.length === 0) continue;
+    if (samples.some((v) => /[a-zA-Z]/.test(v) && !/^#?\d+([.,]\d+)?$/.test(v))) return h;
   }
   return null;
 }
@@ -141,7 +224,7 @@ export function parseRevitCsv(csvText: string): CsvParseResult {
   }
 
   // ── Step 2: filter out Revit meta rows (subtotals, grand total) ───────────
-  const headerRow = allRows[headerRowIdx];
+  const headerRow = normalizeHeaderRow(allRows[headerRowIdx]);
   const dataRows = allRows.slice(headerRowIdx + 1).filter((row) => !isRevitMetaRow(row));
 
   // ── Step 3: re-parse with proper headers ──────────────────────────────────
@@ -159,18 +242,22 @@ export function parseRevitCsv(csvText: string): CsvParseResult {
 
   const headers = parsed.meta.fields ?? [];
 
-  const headerMap = {
+  const headerMapBase = {
     pieceName: findHeader(headers, PIECE_NAME_HEADERS),
     pieceCode: findHeader(headers, PIECE_CODE_HEADERS),
     qty: findHeader(headers, QTY_HEADERS),
     heightMm: findHeader(headers, HEIGHT_HEADERS),
   };
 
+  const dataRecords = parsed.data as Record<string, string>[];
+  const pieceNameCol = resolvePieceNameHeader(headers, headerMapBase, dataRecords);
+  const headerMap = { ...headerMapBase, pieceName: pieceNameCol };
+
   const rows: ParsedCsvRow[] = [];
   let invalidRows = 0;
 
-  for (let i = 0; i < parsed.data.length; i++) {
-    const raw = parsed.data[i] as Record<string, string>;
+  for (let i = 0; i < dataRecords.length; i++) {
+    const raw = dataRecords[i];
     const rowNum = i + 1;
 
     const rawPieceName = headerMap.pieceName ? (raw[headerMap.pieceName] ?? "").trim() : "";
