@@ -588,7 +588,10 @@ export function QuoteWizard() {
     const afterPartnerOrder = Number(pricing.afterPartnerMarkupUsd ?? 0);
     const freightOrder = Number(pricing.freightUsd ?? 0);
     const cifOrder = Number(pricing.cifUsd ?? 0);
-    const marginOrder = afterPartnerOrder - exwOrder;
+    const baseOrder = isSuperadmin
+      ? exwOrder
+      : Number(pricing.basePriceForPartnerUsd ?? afterPartnerOrder);
+    const marginOrder = afterPartnerOrder - baseOrder;
     const perKit = (v: number) => v / kitCount;
     return {
       exwOrder,
@@ -600,7 +603,7 @@ export function QuoteWizard() {
       cifOrder,
       cifPerKit: perKit(cifOrder),
     };
-  }, [pricing, kitCount]);
+  }, [pricing, kitCount, isSuperadmin]);
   const landedTotalUsd = typeof pricing?.suggestedLandedUsd === "number" ? Number(pricing.suggestedLandedUsd) : null;
   const finalPerKit = landedTotalUsd != null && state.totalKits > 0 ? landedTotalUsd / state.totalKits : null;
   const finalPerContainer = landedTotalUsd != null && numContainers > 0 ? landedTotalUsd / numContainers : null;
@@ -1154,13 +1157,26 @@ export function QuoteWizard() {
                       </tr>
                     </thead>
                     <tbody className="text-muted-foreground">
+                      {isSuperadmin && (
+                        <tr className="border-b border-border/30">
+                          <td className="p-2">{t("quotes.exwFactoryCost")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwPerKit)}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwOrder)}</td>
+                        </tr>
+                      )}
+                      {!isSuperadmin && (
+                        <tr className="border-b border-border/30">
+                          <td className="p-2">{t("wizard.basePrice")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing?.basePriceForPartnerUsd ?? 0) / kitCount)}
+                          </td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing?.basePriceForPartnerUsd ?? 0))}
+                          </td>
+                        </tr>
+                      )}
                       <tr className="border-b border-border/30">
-                        <td className="p-2">{t("quotes.exwFactoryCost")}</td>
-                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwPerKit)}</td>
-                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwOrder)}</td>
-                      </tr>
-                      <tr className="border-b border-border/30">
-                        <td className="p-2">{isSuperadmin ? t("quotes.basePriceVisionLatam") : t("wizard.partnerMarkup")}</td>
+                        <td className="p-2">{t("wizard.partnerMarkup")}</td>
                         <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.marginPerKit)}</td>
                         <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.marginOrder)}</td>
                       </tr>

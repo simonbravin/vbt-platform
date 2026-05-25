@@ -576,11 +576,10 @@ export function ReportsClient({ countries, clients, canSendReport = true }: { co
                       <td className="px-4 py-3 text-muted-foreground">{p.country?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.status === "won" || p.status === "SOLD" ? "border border-primary/25 bg-primary/10 text-primary" :
-                          p.status === "lost" || p.status === "ARCHIVED" ? "bg-muted text-muted-foreground" :
-                          p.status === "quoting" || p.status === "QUOTE_SENT" ? "bg-primary/10 text-primary" :
-                          p.status === "qualified" || p.status === "QUOTED" ? "border border-border/80 bg-muted text-foreground" :
-                          p.status === "engineering" ? "bg-primary/10 text-primary" :
+                          p.status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
+                          p.status === "lost" ? "bg-muted text-muted-foreground" :
+                          p.status === "quoting" || p.status === "engineering" ? "bg-primary/10 text-primary" :
+                          p.status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
                           p.status === "on_hold" ? "bg-muted text-muted-foreground ring-1 ring-border/50" :
                           "bg-muted text-muted-foreground"
                         }`}>{projectStatusLabel(p.status)}</span>

@@ -148,6 +148,8 @@ export function ProjectDetailClient({
     setBaselineError(null);
   }, [project.id, project.baselineQuoteId, project.baselineQuote?.id]);
 
+  const projectQuotes = project.quotes ?? [];
+
   const saveBaseline = async () => {
     setBaselineSaving(true);
     setBaselineError(null);
@@ -284,7 +286,17 @@ export function ProjectDetailClient({
         return;
       }
       if (body && typeof body === "object" && "id" in body) {
-        setProject(body as Project);
+        setProject((prev) => {
+          const next = body as Project;
+          return {
+            ...prev,
+            ...next,
+            quotes: Array.isArray(next.quotes) ? next.quotes : prev.quotes ?? [],
+            _count: next._count ?? prev._count,
+            client: next.client ?? prev.client,
+            baselineQuote: next.baselineQuote ?? prev.baselineQuote,
+          };
+        });
       }
       setEditOpen(false);
       const auditRes = await fetch(`/api/saas/projects/${project.id}/audit`);
@@ -353,10 +365,11 @@ export function ProjectDetailClient({
             <div className="flex flex-wrap items-center gap-2 mt-1">
               {(project as any).status && (
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  (project as any).status === "won" || (project as any).status === "SOLD" ? "border border-primary/25 bg-primary/10 text-primary" :
-                  (project as any).status === "lost" || (project as any).status === "ARCHIVED" ? "bg-muted text-muted-foreground" :
-                  (project as any).status === "quoting" || (project as any).status === "QUOTE_SENT" ? "bg-primary/10 text-primary" :
-                  (project as any).status === "qualified" || (project as any).status === "QUOTED" ? "border border-border/80 bg-muted text-foreground" :
+                  (project as any).status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
+                  (project as any).status === "lost" ? "bg-muted text-muted-foreground" :
+                  (project as any).status === "quoting" || (project as any).status === "engineering" ? "bg-primary/10 text-primary" :
+                  (project as any).status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
+                  (project as any).status === "on_hold" ? "bg-muted text-muted-foreground ring-1 ring-border/50" :
                   "bg-muted text-muted-foreground"
                 }`}>{projectStatusLabel((project as any).status)}</span>
               )}
@@ -477,7 +490,7 @@ export function ProjectDetailClient({
                 value={baselineQuoteId}
                 onValueChange={setBaselineQuoteId}
                 emptyOptionLabel={t("projects.baselineQuoteNone")}
-                options={project.quotes.map((q) => ({
+                options={projectQuotes.map((q) => ({
                   value: q.id,
                   label: `${q.quoteNumber ?? q.id.slice(0, 8)}${q.version != null ? ` · v${q.version}` : ""}`,
                 }))}
@@ -500,7 +513,7 @@ export function ProjectDetailClient({
       {/* Quotes */}
       <div className="surface-card">
         <div className="p-5 border-b border-border/60 flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">{t("projects.quotesWithCount", { count: project.quotes.length })}</h2>
+          <h2 className="font-semibold text-foreground">{t("projects.quotesWithCount", { count: projectQuotes.length })}</h2>
           <Link
             href={`/quotes/wizard?projectId=${project.id}`}
             className="inline-flex items-center gap-2 rounded-full border border-transparent bg-primary px-4 py-2 text-[17px] font-normal text-primary-foreground hover:opacity-[0.88]"
@@ -508,14 +521,14 @@ export function ProjectDetailClient({
             <Plus className="w-3.5 h-3.5" /> {t("quotes.newQuote")}
           </Link>
         </div>
-        {project.quotes.length === 0 ? (
+        {projectQuotes.length === 0 ? (
           <div className="p-10 text-center">
             <FileText className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
             <p className="text-muted-foreground/70 text-sm">{t("projects.noQuotesForProject")}</p>
           </div>
         ) : (
           <div className="divide-y divide-border/40">
-            {project.quotes.map((q) => (
+            {projectQuotes.map((q) => (
               <Link key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between p-4 hover:bg-muted/40 gap-3">
                 <div>
                   <p className="font-medium text-foreground">{q.quoteNumber ?? q.id.slice(0, 8)}</p>
@@ -526,8 +539,10 @@ export function ProjectDetailClient({
                 <div className="text-right">
                   <p className="font-semibold text-foreground">{q.totalPrice != null ? formatCurrency(q.totalPrice) : "—"}</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    q.status === "sent" || q.status === "SENT" ? "border border-primary/25 bg-primary/10 text-primary" :
-                    q.status === "draft" || q.status === "DRAFT" ? "border border-border/80 bg-muted text-foreground" : "bg-muted text-muted-foreground"
+                    q.status === "sent" ? "border border-primary/25 bg-primary/10 text-primary" :
+                    q.status === "draft" ? "border border-border/80 bg-muted text-foreground" :
+                    q.status === "accepted" ? "border border-primary/25 bg-primary/10 text-primary" :
+                    "bg-muted text-muted-foreground"
                   }`}>{quoteStatusLabel(q.status)}</span>
                 </div>
               </Link>

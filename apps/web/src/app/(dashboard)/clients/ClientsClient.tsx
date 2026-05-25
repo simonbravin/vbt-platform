@@ -444,33 +444,33 @@ export function ClientsClient({
           ))}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border/60 bg-card">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border/60 bg-muted/30">
+        <div className="list-table-wrap">
+          <table className="list-table">
+            <thead>
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("common.name")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.legalName")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.country")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("clients.tableContact")}</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{t("projects.title")}</th>
-                <th className="w-10 px-4 py-3"></th>
+                <th>{t("common.name")}</th>
+                <th>{t("clients.legalName")}</th>
+                <th>{t("clients.country")}</th>
+                <th>{t("clients.tableContact")}</th>
+                <th className="text-center">{t("projects.title")}</th>
+                <th className="w-10" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody>
               {clients.map((c) => (
-                <tr key={c.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
+                <tr key={c.id}>
+                  <td>
                     <Link href={`/clients/${c.id}`} className="font-medium text-primary hover:underline">
                       {c.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.legalName ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.country?.name ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="text-muted-foreground">{c.legalName ?? "—"}</td>
+                  <td className="text-muted-foreground">{c.country?.name ?? "—"}</td>
+                  <td className="text-muted-foreground">
                     {[c.email, c.phone].filter(Boolean).join(" · ") || "—"}
                   </td>
-                  <td className="px-4 py-3 text-center">{c._count.projects}</td>
-                  <td className="px-4 py-3">
+                  <td className="text-center">{c._count.projects}</td>
+                  <td>
                     <button
                       type="button"
                       onClick={() => openEdit(c)}

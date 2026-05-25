@@ -4,8 +4,25 @@ import { getEffectiveActiveOrgId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
 import { getCountryName } from "@/lib/countries";
+import { quoteRowFobUsd } from "@vbt/core";
 
 const DEFAULT_LIMIT = 50;
+const QUOTE_FOB_SELECT = {
+  id: true,
+  quoteNumber: true,
+  totalPrice: true,
+  status: true,
+  updatedAt: true,
+  factoryCostTotal: true,
+  visionLatamMarkupPct: true,
+  partnerMarkupPct: true,
+  logisticsCost: true,
+  localTransportCost: true,
+  importCost: true,
+  technicalServiceCost: true,
+  taxRulesSnapshotJson: true,
+  numContainers: true,
+} as const;
 const MAX_LIMIT = 10000;
 
 export async function GET(req: Request) {
@@ -108,14 +125,12 @@ export async function GET(req: Request) {
       where,
       include: {
         client: { select: { id: true, name: true } },
-        baselineQuote: {
-          select: { id: true, quoteNumber: true, totalPrice: true, status: true, updatedAt: true },
-        },
+        baselineQuote: { select: QUOTE_FOB_SELECT },
         quotes: {
           orderBy: { updatedAt: "desc" },
           take: 1,
           where: { status: "accepted" },
-          select: { id: true, quoteNumber: true, totalPrice: true, status: true, updatedAt: true },
+          select: QUOTE_FOB_SELECT,
         },
         _count: { select: { quotes: true } },
       },
@@ -195,10 +210,9 @@ export async function GET(req: Request) {
         ? {
             id: (quoteForMeta as { id?: string })?.id ?? "",
             quoteNumber: (quoteForMeta as { quoteNumber?: string })?.quoteNumber ?? null,
-            fobUsd:
-              (quoteForMeta as { totalPrice?: number })?.totalPrice ??
-              (soldFallback as { totalPrice?: number })?.totalPrice ??
-              null,
+            fobUsd: quoteRowFobUsd(
+              (quoteForMeta ?? soldFallback) as Record<string, unknown> | null | undefined
+            ),
           }
         : null,
       soldAt:

@@ -47,22 +47,21 @@ export async function GET(
       return NextResponse.json({ error: "Quote not found" }, { status: 404 });
     }
 
-    const q = quote as any;
-    const snapshot = q.snapshot || {};
+    const q = quote as Record<string, unknown>;
     const project = quote.project as { projectName?: string; name?: string; client?: { name: string }; location?: string };
     const projectName = project.projectName ?? project.name ?? "";
-    const clientName = project.client?.name ?? (quote.project as any).client ?? undefined;
-    const lines = (quote.items ?? q.lines ?? []).map((l: any) => ({
-      description: l.description ?? l.itemDescription ?? "",
-      systemCode: l.systemCode ?? undefined,
-      qty: Number(l.qty ?? l.quantity) || 0,
-      heightMm: l.heightMm != null ? Number(l.heightMm) : undefined,
-      linearM: l.linearM != null ? Number(l.linearM) : undefined,
-      m2Line: l.m2Line != null ? Number(l.m2Line) : undefined,
-      unitPrice: Number(l.unitPrice ?? l.unitPriceUsd) || 0,
+    const clientName = project.client?.name ?? undefined;
+    const lines = (quote.items ?? []).map((l) => ({
+      description: l.description ?? "",
+      systemCode: undefined,
+      qty: Number(l.quantity) || 0,
+      heightMm: undefined,
+      linearM: undefined,
+      m2Line: undefined,
+      unitPrice: Number(l.unitPrice) || 0,
       markupPct: Number(l.markupPct) || 0,
-      lineTotalWithMarkup: Number(l.lineTotal ?? l.totalPrice) || 0,
-      isBelowMinRun: Boolean(l.isBelowMinRun),
+      lineTotalWithMarkup: Number(l.totalPrice) || 0,
+      isBelowMinRun: false,
       isIgnored: false,
     }));
 
@@ -85,11 +84,11 @@ export async function GET(
         month: "long",
         day: "numeric",
       }),
-      sentAt: q.sentAt ? new Date(q.sentAt).toLocaleDateString() : undefined,
+      sentAt: q.sentAt ? new Date(String(q.sentAt)).toLocaleDateString() : undefined,
       project: { name: projectName, client: clientName, location: project.location ?? undefined },
-      country: q.country ? { name: q.country.name, code: q.country.code } : undefined,
-      costMethod: q.quoteCostMethod ?? q.costMethod ?? "M2_TOTAL",
-      baseUom: q.baseUom ?? "M",
+      country: undefined,
+      costMethod: String(q.quoteCostMethod ?? q.costMethod ?? "M2_TOTAL"),
+      baseUom: String(q.baseUom ?? "M"),
       lines,
       wallAreaM2S80: Number(q.wallAreaM2S80) || 0,
       wallAreaM2S150: Number(q.wallAreaM2S150) || 0,
@@ -100,21 +99,21 @@ export async function GET(
       factoryCostUsd: 0,
       commissionPct: Number(q.commissionPct ?? financial.commissionPct) || 0,
       commissionFixed: Number(q.commissionFixed ?? financial.commissionFixed) || 0,
-      commissionAmount: Number(snapshot.commissionAmount) || 0,
-      fobUsd: Number(q.fobUsd ?? financial.fobUsd) || 0,
-      freightCostUsd: Number(q.freightCostUsd ?? financial.freightCostUsd) || 0,
+      commissionAmount: 0,
+      fobUsd: Number(financial.fobUsd) || 0,
+      freightCostUsd: Number(financial.freightCostUsd) || 0,
       numContainers: Number(q.numContainers) || 1,
       kitsPerContainer: Number(q.kitsPerContainer) || 0,
       totalKits: Number(q.totalKits) || 0,
-      cifUsd: Number(q.cifUsd ?? financial.cifUsd) || 0,
+      cifUsd: Number(financial.cifUsd) || 0,
       taxLines: (
         Array.isArray(q.taxLines) && q.taxLines.length > 0 ? q.taxLines : (pricingBlock.taxLines ?? [])
       ).map((tl: { label?: string; computedAmount?: number }) => ({
         label: tl.label ?? "",
         computedAmount: Number(tl.computedAmount) || 0,
       })),
-      taxesFeesUsd: Number(q.taxesFeesUsd ?? financial.taxesFeesUsd) || 0,
-      landedDdpUsd: Number(q.landedDdpUsd ?? financial.landedDdpUsd ?? quote.totalPrice) || 0,
+      taxesFeesUsd: Number(financial.taxesFeesUsd) || 0,
+      landedDdpUsd: Number(financial.landedDdpUsd ?? quote.totalPrice) || 0,
       concreteM3: Number(q.concreteM3) || 0,
       steelKgEst: Number(q.steelKgEst) || 0,
       notes: (quote as { notes?: string }).notes ?? undefined,

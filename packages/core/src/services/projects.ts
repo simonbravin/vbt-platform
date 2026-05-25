@@ -63,6 +63,9 @@ export async function listProjects(
         { projectName: { contains: options.search.trim(), mode: "insensitive" as const } },
         { projectCode: { contains: options.search.trim(), mode: "insensitive" as const } },
         { description: { contains: options.search.trim(), mode: "insensitive" as const } },
+        { city: { contains: options.search.trim(), mode: "insensitive" as const } },
+        { client: { name: { contains: options.search.trim(), mode: "insensitive" as const } } },
+        { client: { legalName: { contains: options.search.trim(), mode: "insensitive" as const } } },
       ],
     }),
   };
@@ -216,7 +219,7 @@ export async function updateProject(
   ctx: TenantContext,
   projectId: string,
   data: Partial<CreateProjectInput>
-): Promise<Project> {
+): Promise<ProjectByIdResult> {
   const orgWhere = orgScopeWhere(ctx);
   const existing = await prisma.project.findFirstOrThrow({
     where: { id: projectId, ...orgWhere },
@@ -270,5 +273,6 @@ export async function updateProject(
       ...(data.assignedToUserId !== undefined && { assignedToUserId: data.assignedToUserId }),
       ...(data.baselineQuoteId !== undefined && { baselineQuoteId: data.baselineQuoteId }),
     },
+    include: projectByIdInclude,
   });
 }

@@ -276,11 +276,11 @@ export function SalesClient() {
         />
       </div>
 
-      <div className="surface-card overflow-x-auto">
+      <div className="list-table-wrap overflow-x-auto">
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">{t("partner.sales.loading")}</div>
         ) : sales.length === 0 ? (
-          <div className="p-12 text-center">
+          <div className="list-table-empty">
             <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">{t("partner.sales.noSalesFound")}</p>
             <Link href="/sales/new" className="text-primary text-sm hover:underline mt-2 block">
@@ -288,37 +288,37 @@ export function SalesClient() {
             </Link>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="list-table">
             <thead>
-              <tr className="border-b border-border bg-muted/80">
-                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colSaleNumber")}</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colClient")}</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colProject")}</th>
-                <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colQty")}</th>
-                <th className="text-right px-2 py-2 font-medium text-foreground">{t("partner.sales.colPrice")}</th>
-                <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colSalesCondition")}</th>
-                <th className="text-left px-2 py-2 font-medium text-foreground">{t("partner.sales.colStatus")}</th>
-                <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colActions")}</th>
+              <tr>
+                <th>{t("partner.sales.colSaleNumber")}</th>
+                <th>{t("partner.sales.colClient")}</th>
+                <th>{t("partner.sales.colProject")}</th>
+                <th className="text-center">{t("partner.sales.colQty")}</th>
+                <th className="text-right">{t("partner.sales.colPrice")}</th>
+                <th className="text-center">{t("partner.sales.colSalesCondition")}</th>
+                <th>{t("partner.sales.colStatus")}</th>
+                <th>{t("partner.sales.colActions")}</th>
               </tr>
             </thead>
             <tbody>
               {sales.map((s) => (
-                <tr key={s.id} className="border-b border-border hover:bg-muted/50">
-                  <td className="px-4 py-2 font-medium text-primary">
+                <tr key={s.id}>
+                  <td className="font-medium text-primary">
                     <Link href={`/sales/${s.id}`} className="hover:underline">
                       {s.saleNumber ?? s.id.slice(0, 8)}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-foreground">{s.client.name}</td>
-                  <td className="px-4 py-2 text-foreground">
+                  <td>{s.client.name}</td>
+                  <td>
                     <Link href={`/projects/${s.projectId}`} className="text-primary hover:underline">
                       {s.project.name}
                     </Link>
                   </td>
-                  <td className="px-2 py-2 text-center text-foreground">{s.quantity}</td>
-                  <td className="px-2 py-2 text-right font-medium text-foreground">{formatCurrency(getInvoicedAmount(s))}</td>
-                  <td className="px-2 py-2 text-center text-foreground font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
-                  <td className="px-2 py-2">
+                  <td className="text-center">{s.quantity}</td>
+                  <td className="text-right font-medium tabular-nums">{formatCurrency(getInvoicedAmount(s))}</td>
+                  <td className="text-center font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
+                  <td>
                     <span
                       className={`inline-flex px-2 py-0.5 rounded-lg text-xs font-medium ${
                         s.status === "PAID" ? "border border-primary/25 bg-primary/10 text-primary" :

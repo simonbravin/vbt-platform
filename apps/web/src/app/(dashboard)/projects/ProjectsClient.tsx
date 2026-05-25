@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { FolderOpen, MapPin, User, Search } from "lucide-react";
 import { useLanguage, useT } from "@/lib/i18n/context";
@@ -8,9 +8,12 @@ import { formatCurrency } from "@/lib/utils";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-projects-view";
+
+type ProjectSortKey = "name" | "area" | "fob";
 
 const PROJECT_STATUSES = ["lead", "qualified", "quoting", "engineering", "won", "lost", "on_hold"] as const;
 
@@ -25,21 +28,6 @@ type Project = {
   estimatedWallAreaM2?: number | null;
   baselineFobUsd?: number;
   _count?: { quotes: number };
-};
-
-const statusLabel: Record<string, string> = {
-  lead: "Lead",
-  qualified: "Qualified",
-  quoting: "Quoting",
-  engineering: "Engineering",
-  won: "Won",
-  lost: "Lost",
-  on_hold: "On hold",
-  DRAFT: "Draft",
-  QUOTED: "Quoted",
-  QUOTE_SENT: "Quote sent",
-  SOLD: "Sold",
-  ARCHIVED: "Archived",
 };
 
 export function ProjectsClient({ projects: initialProjects, total: initialTotal }: { projects: Project[]; total: number }) {
@@ -57,6 +45,8 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | "">("");
   const [searching, setSearching] = useState(false);
+  const [sortKey, setSortKey] = useState<ProjectSortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
@@ -105,6 +95,34 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
   const baselineFob = (p: Project) =>
     typeof p.baselineFobUsd === "number" && Number.isFinite(p.baselineFobUsd) ? p.baselineFobUsd : 0;
 
+  const handleSort = useCallback((key: string) => {
+    const k = key as ProjectSortKey;
+    if (sortKey === k) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      setSortDir("asc");
+    }
+  }, [sortKey]);
+
+  const sortedProjects = useMemo(() => {
+    if (!sortKey) return projects;
+    const collator = new Intl.Collator(locale === "es" ? "es" : "en", { sensitivity: "base" });
+    const copy = [...projects];
+    copy.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name") {
+        cmp = collator.compare(displayName(a), displayName(b));
+      } else if (sortKey === "area") {
+        cmp = areaM2(a) - areaM2(b);
+      } else {
+        cmp = baselineFob(a) - baselineFob(b);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return copy;
+  }, [projects, sortKey, sortDir, locale]);
+
   const hasActiveFilters = Boolean(debouncedSearch) || Boolean(statusFilter);
 
   return (
@@ -152,7 +170,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
       </div>
 
       {projects.length === 0 ? (
-        <div className="surface-card p-12 text-center">
+        <div className="list-table-empty">
           <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
           <p className="text-muted-foreground">
             {hasActiveFilters ? t("projects.noSearchResults") : t("projects.noProjects")}
@@ -165,7 +183,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
         </div>
       ) : view === "cards" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          {projects.map((p) => (
+          {sortedProjects.map((p) => (
             <Link
               key={p.id}
               href={`/projects/${p.id}`}
@@ -183,7 +201,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                       p.status === "quoting" ? "bg-primary/10 text-primary" :
                       p.status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
                       "bg-muted text-foreground"
-                    }`}>{statusLabel[p.status] ?? p.status}</span>
+                    }`}>{projectStatusLabel(p.status)}</span>
                   )}
                   <span className="text-xs px-2 py-1 bg-muted text-foreground rounded-full">
                     {quoteCount(p)} quote{quoteCount(p) !== 1 ? "s" : ""}
@@ -217,28 +235,48 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
           ))}
         </div>
       ) : (
-        <div className="surface-card-overflow">
-          <table className="w-full text-sm">
-            <thead className="bg-muted border-b border-border">
+        <div className="list-table-wrap">
+          <table className="list-table">
+            <thead>
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.project")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.client")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.location")}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("common.status")}</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.areaM2")}</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.baselineFobCol")}</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">{t("projects.quotes")}</th>
+                <SortableTableHead
+                  label={t("projects.project")}
+                  sortKey="name"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                />
+                <th>{t("projects.client")}</th>
+                <th>{t("projects.location")}</th>
+                <th>{t("common.status")}</th>
+                <SortableTableHead
+                  label={t("projects.areaM2")}
+                  sortKey="area"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableTableHead
+                  label={t("projects.baselineFobCol")}
+                  sortKey="fob"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                />
+                <th className="text-center">{t("projects.quotes")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
-              {projects.map((p) => (
-                <tr key={p.id} className="hover:bg-muted transition-colors">
-                  <td className="px-4 py-3">
+            <tbody>
+              {sortedProjects.map((p) => (
+                <tr key={p.id}>
+                  <td>
                     <Link href={`/projects/${p.id}`} className="font-medium text-primary hover:underline">{displayName(p)}</Link>
                   </td>
-                  <td className="px-4 py-3 text-foreground">{displayClient(p) || <span className="text-muted-foreground/50">—</span>}</td>
-                  <td className="px-4 py-3 text-foreground">{(p.city || p.countryCode) ? [p.city, p.countryCode].filter(Boolean).join(", ") : <span className="text-muted-foreground/50">—</span>}</td>
-                  <td className="px-4 py-3">
+                  <td>{displayClient(p) || <span className="text-muted-foreground/50">—</span>}</td>
+                  <td>{(p.city || p.countryCode) ? [p.city, p.countryCode].filter(Boolean).join(", ") : <span className="text-muted-foreground/50">—</span>}</td>
+                  <td>
                     {p.status ? (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         p.status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
@@ -246,16 +284,16 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                         p.status === "quoting" ? "bg-primary/10 text-primary" :
                         p.status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
                         "bg-muted text-foreground"
-                      }`}>{statusLabel[p.status] ?? p.status}</span>
+                      }`}>{projectStatusLabel(p.status)}</span>
                     ) : (
                       <span className="text-muted-foreground/50">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-foreground">{areaM2(p) > 0 ? Number(areaM2(p)).toFixed(0) : "—"}</td>
-                  <td className="px-4 py-3 text-right text-foreground tabular-nums">
+                  <td className="text-center">{areaM2(p) > 0 ? Number(areaM2(p)).toFixed(0) : "—"}</td>
+                  <td className="text-right tabular-nums">
                     {formatCurrency(baselineFob(p), "USD", moneyLocale)}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="text-center">
                     <span className="text-xs px-2 py-0.5 bg-muted text-foreground rounded-full">{quoteCount(p)}</span>
                   </td>
                 </tr>

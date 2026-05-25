@@ -151,36 +151,36 @@ export function EngineeringListClient() {
             )}
           </div>
         ) : view === "table" ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border/60">
-              <thead className="bg-muted/30">
+          <div className="list-table-wrap overflow-x-auto">
+            <table className="list-table min-w-full">
+              <thead>
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.request")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.project")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("partner.engineering.status")}</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("engineering.list.colCreated")}</th>
+                  <th>{t("partner.engineering.request")}</th>
+                  <th>{t("partner.engineering.project")}</th>
+                  <th>{t("partner.engineering.status")}</th>
+                  <th>{t("engineering.list.colCreated")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60 bg-card">
+              <tbody>
                 {requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-muted/40">
-                    <td className="px-5 py-3">
-                      <Link href={`/engineering/${r.id}`} className="font-medium text-foreground hover:text-primary">
+                  <tr key={r.id}>
+                    <td>
+                      <Link href={`/engineering/${r.id}`} className="font-medium text-primary hover:underline">
                         {r.requestNumber}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-sm text-muted-foreground">
-                      <Link href={`/projects/${r.projectId}`} className="flex items-center gap-1 text-muted-foreground hover:text-primary">
+                    <td className="text-muted-foreground">
+                      <Link href={`/projects/${r.projectId}`} className="inline-flex items-center gap-1 text-primary hover:underline">
                         <FolderOpen className="h-3.5 w-3.5" />
                         {r.project?.projectName ?? r.projectId.slice(0, 8)}
                       </Link>
                     </td>
-                    <td className="px-5 py-3">
+                    <td>
                       <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-foreground">
                         {t(`partner.engineering.status.${r.status}`)}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-sm text-muted-foreground">
+                    <td className="text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString()}
                     </td>
                   </tr>

@@ -4,12 +4,7 @@
  *
  * Run: pnpm --filter @vbt/db run verify-neon
  *
- * Expected tables (from schema.prisma): users, password_reset_tokens, organizations,
- * warehouses, org_members, partner_profiles, partner_invites, partner_territories,
- * clients, contacts, projects, project_claims, quotes, quote_items, engineering_requests,
- * engineering_files, engineering_deliverables, document_categories, documents,
- * training_programs, training_modules, training_enrollments, activity_logs, platform_config.
- * Plus _prisma_migrations (not in schema, used by Prisma).
+ * Expected tables: all @@map names from schema.prisma (53 tables) plus _prisma_migrations.
  */
 import { PrismaClient } from "../../../../apps/web/.prisma/client";
 
@@ -19,6 +14,7 @@ const prisma = new PrismaClient();
 const EXPECTED_TABLES = [
   "users",
   "password_reset_tokens",
+  "email_verification_tokens",
   "organizations",
   "warehouses",
   "inventory_levels",
@@ -32,15 +28,36 @@ const EXPECTED_TABLES = [
   "projects",
   "project_claims",
   "quotes",
+  "revit_imports",
+  "revit_import_lines",
   "quote_items",
+  "billing_entities",
+  "sales",
+  "sale_project_lines",
+  "sale_invoices",
+  "payments",
   "engineering_requests",
+  "engineering_review_events",
   "engineering_files",
   "engineering_deliverables",
   "document_categories",
+  "document_allowed_organizations",
   "documents",
   "training_programs",
+  "training_program_allowed_organizations",
+  "training_live_sessions",
+  "training_session_enrollments",
   "training_modules",
   "training_enrollments",
+  "quiz_topics",
+  "quiz_questions",
+  "quiz_question_options",
+  "quiz_definitions",
+  "quiz_definition_topic_rules",
+  "quiz_allowed_organizations",
+  "quiz_attempts",
+  "quiz_attempt_answers",
+  "training_certificates",
   "activity_logs",
   "countries",
   "freight_profiles",

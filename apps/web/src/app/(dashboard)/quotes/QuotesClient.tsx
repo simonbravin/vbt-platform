@@ -186,7 +186,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
       </div>
 
       {quotes.length === 0 ? (
-        <div className="bg-background rounded-lg p-12 text-center border border-border/60 border-dashed">
+        <div className="list-table-empty border border-dashed border-border/60">
           <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
           <p className="text-muted-foreground">
             {search.trim() ? t("quotes.noSearchResults") : t("quotes.noQuotes")}
@@ -198,65 +198,53 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
           )}
         </div>
       ) : view === "table" ? (
-        <div className="bg-background rounded-lg border border-border/60 overflow-hidden">
-          <table className="w-full text-sm border-collapse">
+        <div className="list-table-wrap">
+          <table className="list-table">
             <thead>
-              <tr className="border-b border-border/60 bg-muted/40">
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("quotes.quoteNumber")}
-                </th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("quotes.project")}
-                </th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("quotes.destination")}
-                </th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("quotes.total")}
-                </th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("common.status")}
-                </th>
-                <th className="text-left px-3 py-2.5 text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t("quotes.date")}
-                </th>
-                <th className="text-left px-3 py-2.5 w-10" />
+              <tr>
+                <th>{t("quotes.quoteNumber")}</th>
+                <th>{t("quotes.project")}</th>
+                <th>{t("quotes.destination")}</th>
+                <th className="text-right">{t("quotes.total")}</th>
+                <th>{t("common.status")}</th>
+                <th>{t("quotes.date")}</th>
+                <th className="w-10" />
               </tr>
             </thead>
             <tbody>
               {quotes.map((q) => (
-                <tr key={q.id} className="border-b border-border/70 last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-3 py-2.5">
+                <tr key={q.id}>
+                  <td>
                     <Link
                       href={`/quotes/${q.id}`}
-                      className="font-mono font-semibold tabular-nums text-primary hover:underline underline-offset-2"
+                      className="font-medium tabular-nums text-primary hover:underline underline-offset-2"
                     >
                       {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
                     </Link>
                   </td>
-                  <td className="px-3 py-2.5">
-                    <p className="font-medium text-foreground text-sm">{q.project.projectName}</p>
+                  <td>
+                    <p className="font-medium">{q.project.projectName}</p>
                     {q.project.client?.name && <p className="text-muted-foreground text-xs">{q.project.client.name}</p>}
                   </td>
-                  <td className="px-3 py-2.5 text-foreground text-sm">
+                  <td>
                     {getCountryName(q.project.countryCode) || <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-3 py-2.5 font-mono tabular-nums font-semibold text-foreground">
+                  <td className="text-right tabular-nums font-semibold">
                     {formatCurrency(q.totalPrice)}
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-semibold uppercase tracking-wide border ${
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide border ${
                         STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
                       }`}
                     >
                       {t(STATUS_KEYS[q.status] ?? q.status)}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-muted-foreground text-xs font-mono tabular-nums">
+                  <td className="text-muted-foreground tabular-nums text-xs">
                     {new Date(q.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td>
                     <button
                       type="button"
                       onClick={() => handleDeleteClick(q)}
