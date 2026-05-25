@@ -581,15 +581,26 @@ export function QuoteWizard() {
     occupancyPerKitPct != null && occupancyPerKitPct > 100
       ? Math.max(1, Math.ceil(occupancyPerKitPct / 100))
       : null;
+  const kitCount = Math.max(1, state.totalKits || 0);
   const freightProgress = useMemo(() => {
     if (!pricing) return null;
-    const exw = Number(pricing.factoryExwUsd ?? 0);
-    const afterPartner = Number(pricing.afterPartnerMarkupUsd ?? 0);
-    const freightUsd = Number(pricing.freightUsd ?? 0);
-    const cifUsd = Number(pricing.cifUsd ?? 0);
-    const marginCommissionUsd = afterPartner - exw;
-    return { exw, marginCommissionUsd, freightUsd, cifUsd };
-  }, [pricing]);
+    const exwOrder = Number(pricing.factoryExwUsd ?? 0);
+    const afterPartnerOrder = Number(pricing.afterPartnerMarkupUsd ?? 0);
+    const freightOrder = Number(pricing.freightUsd ?? 0);
+    const cifOrder = Number(pricing.cifUsd ?? 0);
+    const marginOrder = afterPartnerOrder - exwOrder;
+    const perKit = (v: number) => v / kitCount;
+    return {
+      exwOrder,
+      exwPerKit: perKit(exwOrder),
+      marginOrder,
+      marginPerKit: perKit(marginOrder),
+      freightOrder,
+      freightPerKit: perKit(freightOrder),
+      cifOrder,
+      cifPerKit: perKit(cifOrder),
+    };
+  }, [pricing, kitCount]);
   const landedTotalUsd = typeof pricing?.suggestedLandedUsd === "number" ? Number(pricing.suggestedLandedUsd) : null;
   const finalPerKit = landedTotalUsd != null && state.totalKits > 0 ? landedTotalUsd / state.totalKits : null;
   const finalPerContainer = landedTotalUsd != null && numContainers > 0 ? landedTotalUsd / numContainers : null;
@@ -921,6 +932,14 @@ export function QuoteWizard() {
                       ? t("wizard.previewUpdating")
                       : "—"}
               </p>
+              {snap &&
+                typeof snap.factoryCostUsd === "number" &&
+                state.totalKits > 1 &&
+                Number.isFinite(Number(snap.factoryCostUsd)) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("wizard.orderTotalLabel")}: {fmt(Number(snap.factoryCostUsd) * state.totalKits)}
+                  </p>
+                )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -988,15 +1007,29 @@ export function QuoteWizard() {
                     />
                     <span className="text-sm text-muted-foreground">%</span>
                   </div>
-                  {pricing && typeof pricing.basePriceForPartnerUsd === "number" && (
-                    <p className="text-xs text-muted-foreground sm:text-right">
-                      {t("wizard.partnerMarkupAmountHint", {
-                        amount: fmt(
-                          (pricing.basePriceForPartnerUsd as number) * (Math.max(0, state.partnerMarkupPct) / 100)
-                        ),
-                      })}
-                    </p>
-                  )}
+                  {pricing &&
+                    typeof pricing.basePriceForPartnerUsd === "number" &&
+                    typeof pricing.factoryExwUsd === "number" &&
+                    typeof pricing.afterPartnerMarkupUsd === "number" && (
+                      <div className="text-xs text-muted-foreground sm:text-right space-y-0.5">
+                        <p>
+                          {t("wizard.partnerMarkupPerKit", {
+                            amount: fmt(
+                              ((Number(pricing.afterPartnerMarkupUsd) - Number(pricing.factoryExwUsd)) / kitCount)
+                            ),
+                          })}
+                        </p>
+                        {state.totalKits > 1 && (
+                          <p>
+                            {t("wizard.partnerMarkupPerOrder", {
+                              amount: fmt(
+                                Number(pricing.afterPartnerMarkupUsd) - Number(pricing.factoryExwUsd)
+                              ),
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    )}
                 </div>
                 {quoteDefaults != null &&
                   quoteDefaults.partnerMarkupMinPct != null &&
@@ -1116,25 +1149,30 @@ export function QuoteWizard() {
                     <thead>
                       <tr className="border-b border-border bg-muted/25 text-left text-xs text-muted-foreground">
                         <th className="p-2 font-medium">{t("wizard.priceLadderConcept")}</th>
-                        <th className="p-2 font-medium text-right whitespace-nowrap">{t("wizard.priceLadderRunningTotal")}</th>
+                        <th className="p-2 font-medium text-right whitespace-nowrap">{t("wizard.priceLadderPerKit")}</th>
+                        <th className="p-2 font-medium text-right whitespace-nowrap">{t("wizard.priceLadderOrder")}</th>
                       </tr>
                     </thead>
                     <tbody className="text-muted-foreground">
                       <tr className="border-b border-border/30">
                         <td className="p-2">{t("quotes.exwFactoryCost")}</td>
-                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exw)}</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwPerKit)}</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.exwOrder)}</td>
                       </tr>
                       <tr className="border-b border-border/30">
                         <td className="p-2">{isSuperadmin ? t("quotes.basePriceVisionLatam") : t("wizard.partnerMarkup")}</td>
-                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.marginCommissionUsd)}</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.marginPerKit)}</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.marginOrder)}</td>
                       </tr>
                       <tr className="border-b border-border/30">
                         <td className="p-2">{t("quotes.freight")}</td>
-                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.freightUsd)}</td>
+                        <td className="p-2 text-right tabular-nums text-muted-foreground">—</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.freightOrder)}</td>
                       </tr>
                       <tr className="font-semibold text-foreground">
                         <td className="p-2">{t("quotes.cif")}</td>
-                        <td className="p-2 text-right tabular-nums">{fmt(freightProgress.cifUsd)}</td>
+                        <td className="p-2 text-right tabular-nums">{fmt(freightProgress.cifPerKit)}</td>
+                        <td className="p-2 text-right tabular-nums">{fmt(freightProgress.cifOrder)}</td>
                       </tr>
                     </tbody>
                   </table>

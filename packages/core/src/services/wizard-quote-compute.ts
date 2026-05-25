@@ -288,13 +288,21 @@ export async function computeWizardQuoteArtifacts(
     taxRules,
   });
 
-  const items = data.costMethod === "CSV" ? wizardSnapshotLinesToItems(snapshot.lines) : [];
+  const itemsPerKit = data.costMethod === "CSV" ? wizardSnapshotLinesToItems(snapshot.lines) : [];
 
-  if (data.costMethod === "CSV" && items.length === 0) {
+  if (data.costMethod === "CSV" && itemsPerKit.length === 0) {
     throw new Error("WIZARD_CSV_NO_LINES");
   }
 
   const totalKitsSafe = Math.max(0, Math.floor(Number(data.totalKits) || 0));
+  /** Wall/CSV costs in snapshot are per kit; pricing and persist use full order totals. */
+  const kitMultiplier = totalKitsSafe > 0 ? totalKitsSafe : 1;
+  const orderItems = itemsPerKit.map((it) => ({
+    ...it,
+    quantity: Math.max(0, Number(it.quantity) || 0) * kitMultiplier,
+  }));
+  const items = orderItems;
+
   const technicalServiceCost =
     (Number(data.commissionFixed) || 0) + (Number(data.commissionFixedPerKit) || 0) * totalKitsSafe;
 
@@ -318,8 +326,8 @@ export async function computeWizardQuoteArtifacts(
   const visionLatamMarkupPctForCanon = isPlatformSuperadmin ? pricingInputs.visionLatamMarkupPct : 0;
 
   const canon = canonicalizeSaaSQuotePayload({
-    items: hasLines ? items : [],
-    headerFactoryExwUsd: hasLines ? undefined : snapshot.factoryCostUsd,
+    items: hasLines ? orderItems : [],
+    headerFactoryExwUsd: hasLines ? undefined : snapshot.factoryCostUsd * kitMultiplier,
     visionLatamMarkupPct: visionLatamMarkupPctForCanon,
     partnerMarkupPct: pricingInputs.partnerMarkupPct,
     logisticsCostUsd: pricingInputs.logisticsCostUsd,
