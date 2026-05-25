@@ -68,15 +68,15 @@ function describeWizardTaxLine(
               : "wizard.taxBaseOther";
   const baseName = t(baseKey);
 
-  if (ratePct !== undefined) {
-    return t("wizard.taxDetailPercent", { pct: String(ratePct), baseName, baseAmt: fmt(baseAmount) });
-  }
   if (base === "FIXED_PER_CONTAINER" && fixedAmount !== undefined) {
     return t("wizard.taxDetailFixedPerContainer", {
       perContainer: fmt(fixedAmount),
       n: numContainers,
       baseName,
     });
+  }
+  if (ratePct !== undefined && ratePct !== 0) {
+    return t("wizard.taxDetailPercent", { pct: String(ratePct), baseName, baseAmt: fmt(baseAmount) });
   }
   if (fixedAmount !== undefined) {
     return t("wizard.taxDetailFixedTotal", { amt: fmt(fixedAmount), baseName });
@@ -1197,6 +1197,82 @@ export function QuoteWizard() {
                     <thead>
                       <tr className="border-b border-border bg-muted/30 text-left">
                         <th className="p-2 font-medium">{t("wizard.financialSummary")}</th>
+                        <th className="p-2 font-medium text-right">{t("wizard.financialAmountColumn")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-muted-foreground">
+                      {pricing && isSuperadmin && typeof pricing.factoryExwUsd === "number" && (
+                        <tr className="border-b border-border/40">
+                          <td className="p-2">{t("quotes.exwFactoryCost")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing.factoryExwUsd))}
+                          </td>
+                        </tr>
+                      )}
+                      {pricing &&
+                        !isSuperadmin &&
+                        typeof pricing.basePriceForPartnerUsd === "number" && (
+                          <tr className="border-b border-border/40">
+                            <td className="p-2">{t("wizard.basePrice")}</td>
+                            <td className="p-2 text-right tabular-nums text-foreground">
+                              {fmt(Number(pricing.basePriceForPartnerUsd))}
+                            </td>
+                          </tr>
+                        )}
+                      {pricing &&
+                        typeof pricing.afterPartnerMarkupUsd === "number" &&
+                        (typeof pricing.factoryExwUsd === "number" ||
+                          typeof pricing.basePriceForPartnerUsd === "number") && (
+                          <tr className="border-b border-border/40">
+                            <td className="p-2">{t("wizard.partnerMarkup")}</td>
+                            <td className="p-2 text-right tabular-nums text-foreground">
+                              {fmt(
+                                Number(pricing.afterPartnerMarkupUsd) -
+                                  Number(
+                                    isSuperadmin
+                                      ? pricing.factoryExwUsd
+                                      : pricing.basePriceForPartnerUsd ?? 0
+                                  )
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      <tr className="border-b border-border/40">
+                        <td className="p-2">{t("quotes.freight")}</td>
+                        <td className="p-2 text-right tabular-nums text-foreground">
+                          {fmt(Number(preview.data?.freightTotalUsd ?? 0))}
+                        </td>
+                      </tr>
+                      {pricing && typeof pricing.cifUsd === "number" && (
+                        <tr className="border-b border-border/40">
+                          <td className="p-2">{t("quotes.cif")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing.cifUsd))}
+                          </td>
+                        </tr>
+                      )}
+                      {pricing && typeof pricing.ruleTaxesUsd === "number" && (
+                        <tr className="border-b border-border/40">
+                          <td className="p-2">{t("quotes.totalTaxesLabel")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing.ruleTaxesUsd))}
+                          </td>
+                        </tr>
+                      )}
+                      {pricing && typeof pricing.suggestedLandedUsd === "number" && (
+                        <tr className="font-semibold text-foreground">
+                          <td className="p-2">{t("wizard.landedDdpTotal")}</td>
+                          <td className="p-2 text-right tabular-nums">{fmt(pricing.suggestedLandedUsd as number)}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-border/60">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30 text-left">
+                        <th className="p-2 font-medium">{t("wizard.projectDataSummary")}</th>
                         <th className="p-2 font-medium text-right">{t("wizard.projectColumn")}</th>
                       </tr>
                     </thead>
@@ -1223,50 +1299,6 @@ export function QuoteWizard() {
                         <td className="p-2">{t("wizard.wallArea")}</td>
                         <td className="p-2 text-right">{Number(snap.wallAreaM2Total ?? 0).toFixed(2)}</td>
                       </tr>
-                      {pricing && isSuperadmin && typeof pricing.factoryExwUsd === "number" && (
-                        <tr className="border-b border-border/40">
-                          <td className="p-2">{t("quotes.exwFactoryCost")}</td>
-                          <td className="p-2 text-right tabular-nums text-foreground">
-                            {fmt(Number(pricing.factoryExwUsd))}
-                          </td>
-                        </tr>
-                      )}
-                      {pricing &&
-                        !isSuperadmin &&
-                        typeof pricing.basePriceForPartnerUsd === "number" && (
-                          <tr className="border-b border-border/40">
-                            <td className="p-2">{t("quotes.basePriceVisionLatam")}</td>
-                            <td className="p-2 text-right tabular-nums text-foreground">
-                              {fmt(Number(pricing.basePriceForPartnerUsd))}
-                            </td>
-                          </tr>
-                        )}
-                      {pricing &&
-                        typeof pricing.afterPartnerMarkupUsd === "number" &&
-                        (typeof pricing.factoryExwUsd === "number" ||
-                          typeof pricing.basePriceForPartnerUsd === "number") && (
-                          <tr className="border-b border-border/40">
-                            <td className="p-2">{t("wizard.partnerMarkup")}</td>
-                            <td className="p-2 text-right tabular-nums text-foreground">
-                              {fmt(
-                                Number(pricing.afterPartnerMarkupUsd) -
-                                  Number(
-                                    isSuperadmin
-                                      ? pricing.factoryExwUsd
-                                      : pricing.basePriceForPartnerUsd ?? 0
-                                  )
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      {pricing && typeof pricing.cifUsd === "number" && (
-                        <tr className="border-b border-border/40">
-                          <td className="p-2">{t("quotes.cif")}</td>
-                          <td className="p-2 text-right tabular-nums text-foreground">
-                            {fmt(Number(pricing.cifUsd))}
-                          </td>
-                        </tr>
-                      )}
                       <tr className="border-b border-border/40">
                         <td className="p-2">{t("wizard.concreteFillWalls")}</td>
                         <td className="p-2 text-right">{Number(snap.concreteM3 ?? 0).toFixed(2)} m³</td>
@@ -1276,19 +1308,9 @@ export function QuoteWizard() {
                         <td className="p-2 text-right">{Number(snap.steelKgEst ?? 0).toFixed(0)} kg</td>
                       </tr>
                       <tr className="border-b border-border/40">
-                        <td className="p-2">{t("quotes.freight")}</td>
-                        <td className="p-2 text-right">{fmt(Number(preview.data?.freightTotalUsd ?? 0))}</td>
-                      </tr>
-                      <tr className="border-b border-border/40">
                         <td className="p-2">{t("wizard.containersLabel")}</td>
                         <td className="p-2 text-right">{String(snap.numContainers)}</td>
                       </tr>
-                      {pricing && typeof pricing.suggestedLandedUsd === "number" && (
-                        <tr className="font-semibold text-foreground">
-                          <td className="p-2">{t("wizard.landedDdpTotal")}</td>
-                          <td className="p-2 text-right">{fmt(pricing.suggestedLandedUsd as number)}</td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
