@@ -565,17 +565,21 @@ export function QuoteWizard() {
   const pricing = preview.data?.pricing as Record<string, unknown> | undefined;
   const numContainers = typeof snap?.numContainers === "number" ? Number(snap.numContainers) : 0;
   const kitsPerContainer = typeof snap?.kitsPerContainer === "number" ? Number(snap.kitsPerContainer) : null;
-  const occupiedSystem = useMemo(() => {
-    const s80 = Number(snap?.wallAreaM2S80 ?? 0);
-    const s150 = Number(snap?.wallAreaM2S150 ?? 0);
-    const s200 = Number(snap?.wallAreaM2S200 ?? 0);
-    if (s80 >= s150 && s80 >= s200) return { area: s80, cap: Number(fcl?.containerWallAreaM2S80 ?? 0) };
-    if (s150 >= s80 && s150 >= s200) return { area: s150, cap: Number(fcl?.containerWallAreaM2S150 ?? 0) };
-    return { area: s200, cap: Number(fcl?.containerWallAreaM2S200 ?? 0) };
-  }, [fcl?.containerWallAreaM2S150, fcl?.containerWallAreaM2S200, fcl?.containerWallAreaM2S80, snap?.wallAreaM2S150, snap?.wallAreaM2S200, snap?.wallAreaM2S80]);
-  const occupancyPct =
-    numContainers > 0 && occupiedSystem.cap > 0 && occupiedSystem.area > 0
-      ? (occupiedSystem.area / (numContainers * occupiedSystem.cap)) * 100
+  const occupancyPerKitPct =
+    typeof fcl?.occupancyPerKitPct === "number" && Number.isFinite(Number(fcl.occupancyPerKitPct))
+      ? Number(fcl.occupancyPerKitPct)
+      : null;
+  const occupancyTotalPct =
+    typeof fcl?.occupancyTotalPct === "number" && Number.isFinite(Number(fcl.occupancyTotalPct))
+      ? Number(fcl.occupancyTotalPct)
+      : null;
+  const m2PerKitTotal =
+    typeof fcl?.m2PerKitTotal === "number" && Number.isFinite(Number(fcl.m2PerKitTotal))
+      ? Number(fcl.m2PerKitTotal)
+      : null;
+  const containersPerKitHint =
+    occupancyPerKitPct != null && occupancyPerKitPct > 100
+      ? Math.max(1, Math.ceil(occupancyPerKitPct / 100))
       : null;
   const freightProgress = useMemo(() => {
     if (!pricing) return null;
@@ -871,9 +875,10 @@ export function QuoteWizard() {
 
             <div>
               <p className="text-sm font-medium text-foreground mb-2">{t("wizard.wallM2ReadOnlyTitle")}</p>
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-xs text-muted-foreground mb-1">
                 {state.costMethod === "CSV" ? t("wizard.wallM2FromCsv") : t("wizard.wallM2FromStep1")}
               </p>
+              <p className="text-xs text-muted-foreground mb-3">{t("wizard.wallM2PerKitHint")}</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt80")}</label>
@@ -1027,10 +1032,27 @@ export function QuoteWizard() {
                           : "—"}
                       </span>
                     </li>
+                    {m2PerKitTotal != null && m2PerKitTotal > 0 && (
+                      <li>
+                        {t("wizard.m2PerKitLabel")}:{" "}
+                        <span className="text-foreground font-medium">{m2PerKitTotal.toFixed(2)} m²</span>
+                      </li>
+                    )}
                     <li>
-                      {t("wizard.containerOccupancyPct")}:{" "}
+                      {t("wizard.occupancyPerKitPct")}:{" "}
                       <span className="text-foreground font-medium">
-                        {occupancyPct != null ? `${occupancyPct.toFixed(1)}%` : "—"}
+                        {occupancyPerKitPct != null ? `${occupancyPerKitPct.toFixed(1)}%` : "—"}
+                      </span>
+                    </li>
+                    {containersPerKitHint != null && containersPerKitHint > 1 && (
+                      <li className="text-xs text-amber-700 dark:text-amber-400">
+                        {t("wizard.occupancyPerKitOver100Hint", { containers: containersPerKitHint })}
+                      </li>
+                    )}
+                    <li>
+                      {t("wizard.occupancyTotalPct")}:{" "}
+                      <span className="text-foreground font-medium">
+                        {occupancyTotalPct != null ? `${occupancyTotalPct.toFixed(1)}%` : "—"}
                       </span>
                     </li>
                   </ul>

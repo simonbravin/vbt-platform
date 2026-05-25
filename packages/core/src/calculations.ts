@@ -331,6 +331,16 @@ export type FclDerivationInput = {
 export type FclDerivationResult = {
   numContainers: number;
   kitsPerContainer: number;
+  /** Fraction of one container used by one kit (sum of m²_sistema / cap_sistema). */
+  slotsPerKit?: number;
+  /** slotsPerKit × totalKits — container-equivalents for the order. */
+  totalSlots?: number;
+  /** slotsPerKit × 100; may exceed 100 when one kit needs multiple containers. */
+  occupancyPerKitPct?: number;
+  /** Average fill across allocated containers: totalSlots / numContainers × 100. */
+  occupancyTotalPct?: number;
+  /** Sum of per-kit wall m² (S80 + S150 + S200). */
+  m2PerKitTotal?: number;
 };
 
 /**
@@ -353,10 +363,17 @@ export function deriveFclContainersAndMetrics(input: FclDerivationInput): FclDer
   return { numContainers, kitsPerContainer };
 }
 
-/** FCL from wall m² per system vs configurable m² capacity per container (dominant system drives count). */
+/**
+ * FCL from wall m² **per kit** by system vs configurable m² capacity per container.
+ * Each system's share adds: m2S80/cap80 + m2S150/cap150 + m2S200/cap200 → slotsPerKit.
+ * Order containers: ceil(slotsPerKit × totalKits).
+ */
 export type FclWallM2Input = {
+  /** Wall m² per kit for S80. */
   m2S80: number;
+  /** Wall m² per kit for S150. */
   m2S150: number;
+  /** Wall m² per kit for S200. */
   m2S200: number;
   areaM2PerContainerS80: number;
   areaM2PerContainerS150: number;
@@ -366,21 +383,40 @@ export type FclWallM2Input = {
 
 export function deriveFclContainersFromWallM2(input: FclWallM2Input): FclDerivationResult {
   const kits = Math.max(0, Math.floor(Number(input.totalKits) || 0));
-  const parts: number[] = [];
   const a80 = Math.max(1e-6, Number(input.areaM2PerContainerS80) || 320);
   const a150 = Math.max(1e-6, Number(input.areaM2PerContainerS150) || 420);
   const a200 = Math.max(1e-6, Number(input.areaM2PerContainerS200) || 380);
   const m80 = Math.max(0, Number(input.m2S80) || 0);
   const m150 = Math.max(0, Number(input.m2S150) || 0);
   const m200 = Math.max(0, Number(input.m2S200) || 0);
-  if (m80 > 0) parts.push(Math.ceil(m80 / a80));
-  if (m150 > 0) parts.push(Math.ceil(m150 / a150));
-  if (m200 > 0) parts.push(Math.ceil(m200 / a200));
-  const fromWall = parts.length ? Math.max(...parts) : 0;
+
+  let slotsPerKit = 0;
+  if (m80 > 0) slotsPerKit += m80 / a80;
+  if (m150 > 0) slotsPerKit += m150 / a150;
+  if (m200 > 0) slotsPerKit += m200 / a200;
+
+  const m2PerKitTotal = m80 + m150 + m200;
+  const totalSlots = slotsPerKit * kits;
+
   let numContainers = 1;
-  if (kits > 0) {
-    numContainers = Math.max(1, fromWall);
+  if (kits > 0 && slotsPerKit > 0) {
+    numContainers = Math.max(1, Math.ceil(totalSlots));
+  } else if (kits > 0) {
+    numContainers = 1;
   }
+
   const kitsPerContainer = numContainers > 0 && kits > 0 ? kits / numContainers : 0;
-  return { numContainers, kitsPerContainer };
+  const occupancyPerKitPct = slotsPerKit * 100;
+  const occupancyTotalPct =
+    numContainers > 0 && totalSlots > 0 ? (totalSlots / numContainers) * 100 : 0;
+
+  return {
+    numContainers,
+    kitsPerContainer,
+    slotsPerKit,
+    totalSlots,
+    occupancyPerKitPct,
+    occupancyTotalPct,
+    m2PerKitTotal,
+  };
 }

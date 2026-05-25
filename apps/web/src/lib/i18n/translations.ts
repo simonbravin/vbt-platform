@@ -630,7 +630,8 @@ export const translations = {
     "wizard.step3MaterialPricingTitle": "Step 3: Material & pricing",
     "wizard.step3MaterialPricingDesc":
       "Wall m² per system comes from your CSV import or from Step 1. Set destination country, partner margin %, and kit count. The live preview reflects FCL containers and the full price stack.",
-    "wizard.wallM2ReadOnlyTitle": "Wall area by system (m²)",
+    "wizard.wallM2ReadOnlyTitle": "Wall area by system (m² per kit)",
+    "wizard.wallM2PerKitHint": "Each value is wall m² for one kit (one CSV / Revit unit). Total order area = per kit × total kits.",
     "wizard.wallM2FromCsv": "Values are computed from the imported CSV and catalog mapping.",
     "wizard.wallM2FromStep1": "Values were entered in Step 1 for the M²-by-system method.",
     "wizard.fclWallCapacityLine":
@@ -702,6 +703,11 @@ export const translations = {
     "wizard.containerLogistics": "Container Logistics",
     "wizard.totalKitsLabel": "Total Kits",
     "wizard.kitsPerContainer": "Kits per Container",
+    "wizard.m2PerKitLabel": "Total wall m² per kit",
+    "wizard.occupancyPerKitPct": "Occupancy per kit",
+    "wizard.occupancyTotalPct": "Total shipment occupancy",
+    "wizard.occupancyPerKitOver100Hint":
+      "This kit needs about {{containers}} full containers (per-kit occupancy exceeds 100%).",
     "wizard.containerOccupancyPct": "Container occupancy",
     "wizard.containersLabel": "Containers",
     "wizard.commissionVisionLatam": "Commission (Vision Latam)",
@@ -2038,6 +2044,9 @@ export const translations = {
     "pdf.quote.sectionLogistics": "Logistics (to CIF)",
     "pdf.quote.kitsPerContainer": "kits/container",
     "pdf.quote.containerOccupancy": "Container occupancy (vol.)",
+    "pdf.quote.containerOccupancyPerKit": "Occupancy per kit (wall m²)",
+    "pdf.quote.containerOccupancyTotal": "Total shipment occupancy",
+    "pdf.quote.wallAreaPerKitNote": "m² per kit",
     "pdf.quote.freight": "Freight",
     "pdf.quote.sectionFinancial": "Financial Summary",
     "pdf.quote.basePriceVisionLatam": "Base price (Vision Latam)",
@@ -3069,7 +3078,9 @@ export const translations = {
     "wizard.step3MaterialPricingTitle": "Paso 3: Material y precio",
     "wizard.step3MaterialPricingDesc":
       "Los m² por sistema vienen del CSV importado o del Paso 1. Definí país de destino, margen partner % y cantidad de kits. La vista previa refleja contenedores FCL y el desglose de precio.",
-    "wizard.wallM2ReadOnlyTitle": "Área de muro por sistema (m²)",
+    "wizard.wallM2ReadOnlyTitle": "Área de muro por sistema (m² por kit)",
+    "wizard.wallM2PerKitHint":
+      "Cada valor es m² de muro de un kit (una unidad CSV / Revit). Área total del pedido = por kit × total kits.",
     "wizard.wallM2FromCsv": "Los valores se calculan desde el CSV importado y el mapeo al catálogo.",
     "wizard.wallM2FromStep1": "Los valores se ingresaron en el Paso 1 (método m² por sistema).",
     "wizard.fclWallCapacityLine":
@@ -3141,6 +3152,11 @@ export const translations = {
     "wizard.containerLogistics": "Logística de contenedores",
     "wizard.totalKitsLabel": "Total kits",
     "wizard.kitsPerContainer": "Kits por contenedor",
+    "wizard.m2PerKitLabel": "m² de muro total por kit",
+    "wizard.occupancyPerKitPct": "Ocupación por kit",
+    "wizard.occupancyTotalPct": "Ocupación total del envío",
+    "wizard.occupancyPerKitOver100Hint":
+      "Este kit requiere aprox. {{containers}} contenedores completos (ocupación por kit supera 100%).",
     "wizard.containerOccupancyPct": "Ocupación de contenedores",
     "wizard.containersLabel": "Contenedores",
     "wizard.commissionVisionLatam": "Comisión (Vision Latam)",
@@ -4478,6 +4494,9 @@ export const translations = {
     "pdf.quote.sectionLogistics": "Logística (hasta CIF)",
     "pdf.quote.kitsPerContainer": "kits/contenedor",
     "pdf.quote.containerOccupancy": "Ocupación contenedor (vol.)",
+    "pdf.quote.containerOccupancyPerKit": "Ocupación por kit (m² muro)",
+    "pdf.quote.containerOccupancyTotal": "Ocupación total del envío",
+    "pdf.quote.wallAreaPerKitNote": "m² por kit",
     "pdf.quote.freight": "Flete",
     "pdf.quote.sectionFinancial": "Resumen financiero",
     "pdf.quote.basePriceVisionLatam": "Precio base (Vision Latam)",

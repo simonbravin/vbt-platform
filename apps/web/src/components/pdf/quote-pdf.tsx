@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { deriveFclContainersFromWallM2 } from "@vbt/core";
 import { getT } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 
@@ -350,6 +351,7 @@ function SumRow({
 // ─── Main PDF Document ────────────────────────────────────────────────────────
 
 const DEFAULT_CONTAINER_VOLUME_M3 = 70;
+const DEFAULT_WALL_M2_CAP = { s80: 320, s150: 420, s200: 380 } as const;
 
 export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; options?: QuotePdfOptions }) {
   const locale: Locale = options?.locale === "es" ? "es" : "en";
@@ -361,7 +363,28 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
   const showUnitPrice = options.showUnitPrice ?? true;
   const numCont = Math.max(Number(data.numContainers) || 1, 1);
   const totalVol = Number(data.totalVolumeM3) ?? 0;
-  const occupancyPct = totalVol > 0 ? Math.min(100, (totalVol / (numCont * DEFAULT_CONTAINER_VOLUME_M3)) * 100) : null;
+  const totalKits = Math.max(0, Math.floor(Number(data.totalKits) || 0));
+  const wallFcl = deriveFclContainersFromWallM2({
+    m2S80: Number(data.wallAreaM2S80) || 0,
+    m2S150: Number(data.wallAreaM2S150) || 0,
+    m2S200: Number(data.wallAreaM2S200) || 0,
+    areaM2PerContainerS80: DEFAULT_WALL_M2_CAP.s80,
+    areaM2PerContainerS150: DEFAULT_WALL_M2_CAP.s150,
+    areaM2PerContainerS200: DEFAULT_WALL_M2_CAP.s200,
+    totalKits: totalKits > 0 ? totalKits : 1,
+  });
+  const hasWallM2 =
+    (Number(data.wallAreaM2S80) || 0) > 0 ||
+    (Number(data.wallAreaM2S150) || 0) > 0 ||
+    (Number(data.wallAreaM2S200) || 0) > 0;
+  const occupancyPerKitPct = hasWallM2 ? wallFcl.occupancyPerKitPct : null;
+  const occupancyTotalPct = hasWallM2
+    ? numCont > 0 && (wallFcl.totalSlots ?? 0) > 0
+      ? ((wallFcl.totalSlots ?? 0) / numCont) * 100
+      : wallFcl.occupancyTotalPct
+    : null;
+  const occupancyVolPct =
+    totalVol > 0 ? Math.min(100, (totalVol / (numCont * DEFAULT_CONTAINER_VOLUME_M3)) * 100) : null;
 
   return (
     <Document
@@ -423,6 +446,7 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
         {/* ── Wall Area Summary ─────────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("pdf.quote.sectionWallArea")}</Text>
+          <Text style={{ fontSize: 7, color: "#888", marginBottom: 6 }}>{t("pdf.quote.wallAreaPerKitNote")}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoBox}>
               <Text style={styles.infoBoxLabel}>{t("pdf.quote.s80")}</Text>
@@ -513,8 +537,20 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
               label={t("pdf.quote.containers")}
               value={`${data.numContainers} × ${data.kitsPerContainer} ${t("pdf.quote.kitsPerContainer")}`}
             />
-            {occupancyPct != null && (
-              <SumRow label={t("pdf.quote.containerOccupancy")} value={`${safeFmtN(occupancyPct, 1)}%`} />
+            {occupancyPerKitPct != null && (
+              <SumRow
+                label={t("pdf.quote.containerOccupancyPerKit")}
+                value={`${safeFmtN(occupancyPerKitPct, 1)}%`}
+              />
+            )}
+            {occupancyTotalPct != null && (
+              <SumRow
+                label={t("pdf.quote.containerOccupancyTotal")}
+                value={`${safeFmtN(occupancyTotalPct, 1)}%`}
+              />
+            )}
+            {!hasWallM2 && occupancyVolPct != null && (
+              <SumRow label={t("pdf.quote.containerOccupancy")} value={`${safeFmtN(occupancyVolPct, 1)}%`} />
             )}
             <SumRow label={t("pdf.quote.freight")} value={safeFmt(data.freightCostUsd)} />
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />

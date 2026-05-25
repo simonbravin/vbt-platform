@@ -238,7 +238,19 @@ export async function computeWizardQuoteArtifacts(
   const numContainersMerged = kits > 0 ? Math.max(wallFcl.numContainers, volFcl.numContainers, 1) : 1;
   const kitsPerContainerMerged =
     numContainersMerged > 0 && kits > 0 ? kits / numContainersMerged : 0;
-  const fclBase = { numContainers: numContainersMerged, kitsPerContainer: kitsPerContainerMerged };
+  const totalSlots = wallFcl.totalSlots ?? 0;
+  const fclBase = {
+    numContainers: numContainersMerged,
+    kitsPerContainer: kitsPerContainerMerged,
+    slotsPerKit: wallFcl.slotsPerKit,
+    totalSlots: wallFcl.totalSlots,
+    occupancyPerKitPct: wallFcl.occupancyPerKitPct,
+    occupancyTotalPct:
+      numContainersMerged > 0 && totalSlots > 0
+        ? (totalSlots / numContainersMerged) * 100
+        : wallFcl.occupancyTotalPct,
+    m2PerKitTotal: wallFcl.m2PerKitTotal,
+  };
 
   let freightTotalUsd = Math.max(0, Number(data.freightCostUsd) || 0);
   if (data.freightProfileId?.trim()) {
