@@ -558,15 +558,10 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
           </View>
         </View>
 
-        {/* ── Financial Summary (from FOB) ───────────────────────────────── */}
+        {/* ── Financial Summary (client-facing: from FOB only) ─────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("pdf.quote.sectionFinancial")}</Text>
           <View style={styles.summaryBox}>
-            {data.basePriceForPartner != null ? (
-              <SumRow label={t("pdf.quote.basePriceVisionLatam")} value={safeFmt(data.basePriceForPartner)} />
-            ) : (
-              <SumRow label={t("pdf.quote.exwFactoryCost")} value={safeFmt(data.factoryCostUsd)} />
-            )}
             <SumRow label="FOB" value={safeFmt(data.fobUsd)} bold />
             <SumRow
               label={`${t("pdf.quote.freight")} (${data.numContainers} ${data.numContainers !== 1 ? t("pdf.quote.containersLabelPlural") : t("pdf.quote.containersLabel")})`}

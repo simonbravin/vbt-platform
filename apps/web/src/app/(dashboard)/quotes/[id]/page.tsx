@@ -511,23 +511,31 @@ export default function QuoteDetailPage() {
             <div className="space-y-0 text-sm tabular-nums">
               {(() => {
                 const showExw = p.factoryExwUsd != null && p.factoryExwUsd !== undefined;
-                const firstRow = showExw
-                  ? { label: t("quotes.exwFactoryCost"), value: p.factoryExwUsd, bold: false as boolean }
-                  : {
-                      label: t("quotes.basePriceVisionLatam"),
-                      value: p.basePriceForPartnerUsd ?? quote.basePriceForPartner,
-                      bold: false as boolean,
-                    };
+                const baseUsd = p.basePriceForPartnerUsd ?? quote.basePriceForPartner;
+                const fobUsd = p.afterPartnerMarkupUsd;
                 const nc = Number(quote.numContainers) || 1;
-                const rows: { label: string; value: unknown; bold?: boolean }[] = [
-                  firstRow,
-                  { label: t("quotes.fob"), value: p.afterPartnerMarkupUsd, bold: true },
+                const rows: { label: string; value: unknown; bold?: boolean }[] = [];
+
+                if (showExw) {
+                  rows.push({ label: t("quotes.exwFactoryCost"), value: p.factoryExwUsd });
+                } else if (baseUsd != null) {
+                  rows.push({ label: t("wizard.basePrice"), value: baseUsd });
+                  if (fobUsd != null) {
+                    const marginUsd = Number(fobUsd) - Number(baseUsd);
+                    if (Number.isFinite(marginUsd) && marginUsd !== 0) {
+                      rows.push({ label: t("quotes.partnerCommissionMargin"), value: marginUsd });
+                    }
+                  }
+                }
+
+                rows.push(
+                  { label: t("quotes.fob"), value: fobUsd, bold: true },
                   { label: t("quotes.freightContainers", { count: nc }), value: p.freightUsd },
                   { label: t("quotes.cif"), value: p.cifUsd, bold: true },
                   { label: t("quotes.totalTaxesFees"), value: p.ruleTaxesUsd },
                   { label: t("quotes.technicalServiceLine"), value: p.technicalServiceUsd },
-                  { label: t("quotes.landed"), value: p.suggestedLandedUsd ?? p.landedTotalUsd, bold: true },
-                ];
+                  { label: t("quotes.landed"), value: p.suggestedLandedUsd ?? p.landedTotalUsd, bold: true }
+                );
                 return rows;
               })().map((row) => (
                 <div

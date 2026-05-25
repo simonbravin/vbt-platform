@@ -66,15 +66,6 @@ export async function GET(
       isIgnored: false,
     }));
 
-    const factoryTotal = Number(q.factoryCostUsd ?? quote.factoryCostTotal) || 0;
-    let factoryCostUsdPdf = factoryTotal;
-    let basePriceForPartner: number | undefined;
-    if (!isPlatformSuperadmin) {
-      const pct = Number(quote.visionLatamMarkupPct ?? 0);
-      basePriceForPartner = factoryTotal * (1 + pct / 100);
-      factoryCostUsdPdf = 0;
-    }
-
     let financial: Record<string, unknown>;
     try {
       financial = toLegacySalesQuoteShape(JSON.parse(JSON.stringify(quote)) as Record<string, unknown>);
@@ -106,8 +97,7 @@ export async function GET(
       wallAreaM2Total: Number(q.wallAreaM2Total) || 0,
       totalWeightKgCored: q.totalWeightKg != null ? Number(q.totalWeightKg) : undefined,
       totalVolumeM3: q.totalVolumeM3 != null ? Number(q.totalVolumeM3) : undefined,
-      factoryCostUsd: factoryCostUsdPdf,
-      ...(basePriceForPartner != null && { basePriceForPartner }),
+      factoryCostUsd: 0,
       commissionPct: Number(q.commissionPct ?? financial.commissionPct) || 0,
       commissionFixed: Number(q.commissionFixed ?? financial.commissionFixed) || 0,
       commissionAmount: Number(snapshot.commissionAmount) || 0,
