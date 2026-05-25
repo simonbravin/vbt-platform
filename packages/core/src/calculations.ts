@@ -205,10 +205,6 @@ export function computeTaxLines(input: TaxEngineInput): TaxLineResult[] {
   const { cifUsd, fobUsd, numContainers, rules } = input;
   const sorted = [...rules].sort((a, b) => a.order - b.order);
 
-  // Track accumulated amounts for BASE_IMPONIBLE
-  let dutyTotal = 0;
-  let statisticTotal = 0;
-
   const results: TaxLineResult[] = [];
 
   for (const rule of sorted) {
@@ -220,9 +216,6 @@ export function computeTaxLines(input: TaxEngineInput): TaxLineResult[] {
       case "CIF":
         baseAmount = cifUsd;
         computedAmount = cifUsd * ((rule.ratePct ?? 0) / 100);
-        // Track for base_imponible calculation
-        if (rule.label.toLowerCase().includes("duty")) dutyTotal = computedAmount;
-        if (rule.label.toLowerCase().includes("statistic")) statisticTotal = computedAmount;
         break;
 
       case "FOB":
@@ -231,8 +224,11 @@ export function computeTaxLines(input: TaxEngineInput): TaxLineResult[] {
         break;
 
       case "BASE_IMPONIBLE": {
-        // BASE_IMPONIBLE = CIF + duty + statistic (from previous lines)
-        const baseImponible = cifUsd + dutyTotal + statisticTotal;
+        // CIF + all prior aduana lines computed on CIF (arancel, estadística, etc.) — label language agnostic
+        const cifAddons = results
+          .filter((r) => r.base === "CIF")
+          .reduce((sum, r) => sum + r.computedAmount, 0);
+        const baseImponible = cifUsd + cifAddons;
         baseAmount = baseImponible;
         computedAmount = baseImponible * ((rule.ratePct ?? 0) / 100);
         break;

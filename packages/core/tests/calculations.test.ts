@@ -147,6 +147,23 @@ describe("computeTaxLines - Argentina", () => {
     expect(lines[1].computedAmount).toBeCloseTo(stat);
     expect(lines[2].computedAmount).toBeCloseTo(baseImp * 0.21);
   });
+
+  it("BASE_IMPONIBLE includes prior CIF lines with Spanish labels (no duty/statistic substring)", () => {
+    const cif = 911726.86;
+    const arRulesEs = [
+      { order: 1, label: "Tasa Estadistica", base: "CIF" as const, ratePct: 2.5 },
+      { order: 2, label: "Derecho de Importación", base: "CIF" as const, ratePct: 18 },
+      { order: 3, label: "IVA", base: "BASE_IMPONIBLE" as const, ratePct: 21 },
+    ];
+    const lines = computeTaxLines({ cifUsd: cif, fobUsd: 800000, numContainers: 20, rules: arRulesEs });
+    const stat = cif * 0.025;
+    const duty = cif * 0.18;
+    const baseImp = cif + stat + duty;
+    expect(lines[0].computedAmount).toBeCloseTo(stat, 0);
+    expect(lines[1].computedAmount).toBeCloseTo(duty, 0);
+    expect(lines[2].baseAmount).toBeCloseTo(baseImp, 0);
+    expect(lines[2].computedAmount).toBeCloseTo(baseImp * 0.21, 0);
+  });
 });
 
 describe("computeConcreteAndSteel", () => {

@@ -1223,6 +1223,50 @@ export function QuoteWizard() {
                         <td className="p-2">{t("wizard.wallArea")}</td>
                         <td className="p-2 text-right">{Number(snap.wallAreaM2Total ?? 0).toFixed(2)}</td>
                       </tr>
+                      {pricing && isSuperadmin && typeof pricing.factoryExwUsd === "number" && (
+                        <tr className="border-b border-border/40">
+                          <td className="p-2">{t("quotes.exwFactoryCost")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing.factoryExwUsd))}
+                          </td>
+                        </tr>
+                      )}
+                      {pricing &&
+                        !isSuperadmin &&
+                        typeof pricing.basePriceForPartnerUsd === "number" && (
+                          <tr className="border-b border-border/40">
+                            <td className="p-2">{t("quotes.basePriceVisionLatam")}</td>
+                            <td className="p-2 text-right tabular-nums text-foreground">
+                              {fmt(Number(pricing.basePriceForPartnerUsd))}
+                            </td>
+                          </tr>
+                        )}
+                      {pricing &&
+                        typeof pricing.afterPartnerMarkupUsd === "number" &&
+                        (typeof pricing.factoryExwUsd === "number" ||
+                          typeof pricing.basePriceForPartnerUsd === "number") && (
+                          <tr className="border-b border-border/40">
+                            <td className="p-2">{t("wizard.partnerMarkup")}</td>
+                            <td className="p-2 text-right tabular-nums text-foreground">
+                              {fmt(
+                                Number(pricing.afterPartnerMarkupUsd) -
+                                  Number(
+                                    isSuperadmin
+                                      ? pricing.factoryExwUsd
+                                      : pricing.basePriceForPartnerUsd ?? 0
+                                  )
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      {pricing && typeof pricing.cifUsd === "number" && (
+                        <tr className="border-b border-border/40">
+                          <td className="p-2">{t("quotes.cif")}</td>
+                          <td className="p-2 text-right tabular-nums text-foreground">
+                            {fmt(Number(pricing.cifUsd))}
+                          </td>
+                        </tr>
+                      )}
                       <tr className="border-b border-border/40">
                         <td className="p-2">{t("wizard.concreteFillWalls")}</td>
                         <td className="p-2 text-right">{Number(snap.concreteM3 ?? 0).toFixed(2)} m³</td>
@@ -1260,6 +1304,21 @@ export function QuoteWizard() {
                           </tr>
                         </thead>
                         <tbody className="text-muted-foreground">
+                          {typeof pricing.cifUsd === "number" && (
+                            <tr className="border-b border-border/30 bg-muted/10">
+                              <td className="p-2 align-top">
+                                <div className="space-y-0.5">
+                                  <span className="block font-medium text-foreground">{t("quotes.cif")}</span>
+                                  <span className="block text-xs text-muted-foreground leading-snug">
+                                    {t("wizard.taxBreakdownCifHint")}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-2 text-right tabular-nums font-medium text-foreground">
+                                {fmt(Number(pricing.cifUsd))}
+                              </td>
+                            </tr>
+                          )}
                           {(pricing.taxLines as Array<Record<string, unknown>>).map((taxLn, idx) => {
                             const ncPrev = typeof snap?.numContainers === "number" ? snap.numContainers : 1;
                             return (
