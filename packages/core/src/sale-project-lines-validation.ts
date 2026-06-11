@@ -4,12 +4,17 @@ export type ProjectBaselineRow = {
   baselineQuoteId: string | null;
 };
 
+export type SaleProjectLineInput = {
+  projectId: string;
+  quoteId?: string | null;
+};
+
 /**
- * Validates multi-project sale line project ids: no duplicates, all exist in `projects`,
- * same client as the sale, and each has a baseline quote configured.
+ * Validates multi-project sale lines: no duplicates, projects exist, same client,
+ * and each line has a quote (explicit on the line or baseline on the project).
  */
 export function validateSaleProjectLinesBaselineAndClient(
-  lines: { projectId: string }[],
+  lines: SaleProjectLineInput[],
   projects: ProjectBaselineRow[],
   expectedClientId: string
 ): void {
@@ -22,6 +27,7 @@ export function validateSaleProjectLinesBaselineAndClient(
     throw new Error("One or more projects were not found");
   }
   const byId = new Map(projects.map((p) => [p.id, p]));
+  const lineByProject = new Map(lines.map((l) => [l.projectId, l]));
   for (const id of unique) {
     const p = byId.get(id);
     if (!p) {
@@ -30,8 +36,10 @@ export function validateSaleProjectLinesBaselineAndClient(
     if (p.clientId !== expectedClientId) {
       throw new Error("All projects must belong to the selected client");
     }
-    if (!p.baselineQuoteId) {
-      throw new Error("Each project must have a baseline quote set before it can be included in a sale");
+    const line = lineByProject.get(id);
+    const resolvedQuoteId = line?.quoteId?.trim() || p.baselineQuoteId;
+    if (!resolvedQuoteId) {
+      throw new Error("Each project line must include a quote or have a baseline quote on the project");
     }
   }
 }

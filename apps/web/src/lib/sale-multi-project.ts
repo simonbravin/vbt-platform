@@ -7,7 +7,11 @@ import {
 import { formatQuoteForSaaSApiWithSnapshot } from "@vbt/core/pricing";
 import { saasQuoteRowToLegacySaleShape, type LegacySaleQuoteRow } from "@/lib/saas-quote-legacy-sale-shape";
 
-export type ProjectLineInput = { projectId: string; containerSharePct?: number | null };
+export type ProjectLineInput = {
+  projectId: string;
+  quoteId?: string | null;
+  containerSharePct?: number | null;
+};
 
 export type ResolvedSaleProjectLine = {
   projectId: string;
@@ -17,7 +21,7 @@ export type ResolvedSaleProjectLine = {
 };
 
 /**
- * Validates projects (same client, baseline quote set), resolves baseline quote per line,
+ * Validates projects (same client, quote per line or baseline), resolves quote per line,
  * and aggregates financials the same way as single-quote New Sale (per-quote × quantity, then sum).
  */
 export async function resolveMultiProjectSaleLines(
@@ -50,12 +54,16 @@ export async function resolveMultiProjectSaleLines(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const proj = projects.find((p) => p.id === line.projectId)!;
+    const resolvedQuoteId = line.quoteId?.trim() || proj.baselineQuoteId;
+    if (!resolvedQuoteId) {
+      throw new Error("Each project line must include a quote or have a baseline quote on the project");
+    }
     const quote = await prisma.quote.findFirst({
-      where: { id: proj.baselineQuoteId!, organizationId, projectId: line.projectId },
+      where: { id: resolvedQuoteId, organizationId, projectId: line.projectId },
       include: { items: { orderBy: { sortOrder: "asc" } } },
     });
     if (!quote) {
-      throw new Error("Baseline quote not found for a project");
+      throw new Error("Quote not found for a project line");
     }
     const formatted = formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw });
     const legacy = saasQuoteRowToLegacySaleShape(formatted);

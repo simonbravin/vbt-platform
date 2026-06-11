@@ -23,6 +23,7 @@ import { parseSaleListDateEnd, parseSaleListDateStart } from "@/lib/sale-list-da
 
 const projectLineSchema = z.object({
   projectId: z.string().min(1),
+  quoteId: z.string().min(1).optional(),
   containerSharePct: z.number().min(0).max(100).nullable().optional(),
 });
 

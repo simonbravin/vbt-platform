@@ -25,6 +25,24 @@ type Entity = { id: string; name: string; slug: string };
 
 type InvoiceLine = { entityId: string; amountUsd: number; dueDate: string; sequence: number; referenceNumber: string; notes: string };
 
+function pickDefaultQuoteId(project: Project | undefined, list: Quote[]): string {
+  const baselineId = project?.baselineQuoteId ?? project?.baselineQuote?.id;
+  if (baselineId && list.some((q) => q.id === baselineId)) return baselineId;
+  return list[0]?.id ?? "";
+}
+
+function quoteToFinancialRow(q: Quote): SaleQuoteFinancialRow {
+  return {
+    factoryCostUsd: q.factoryCostUsd,
+    commissionPct: q.commissionPct,
+    fobUsd: q.fobUsd,
+    freightCostUsd: q.freightCostUsd,
+    cifUsd: q.cifUsd,
+    taxesFeesUsd: q.taxesFeesUsd,
+    landedDdpUsd: q.landedDdpUsd,
+  };
+}
+
 export type NewSaleClientProps = {
   /** Superadmin: target partner org. Omit for distributor session. */
   scopedOrganizationId?: string;
@@ -65,8 +83,13 @@ export function NewSaleClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [multiHasDraftBaseline, setMultiHasDraftBaseline] = useState(false);
+  const [quotesByProject, setQuotesByProject] = useState<Record<string, Quote[]>>({});
+  const [quoteIdByProject, setQuoteIdByProject] = useState<Record<string, string>>({});
+  const [multiQuotesLoading, setMultiQuotesLoading] = useState(false);
   /** Evita reasignar cotización tras elección manual del usuario en el mismo proyecto. */
   const quotePickInitializedForProjectRef = useRef<string | null>(null);
+  const projectsRef = useRef(projects);
+  projectsRef.current = projects;
 
   useEffect(() => {
     const orgParam = scopedOrganizationId
@@ -158,57 +181,97 @@ export function NewSaleClient({
 
   useEffect(() => {
     if (selectedProjectIds.length < 2 || !clientId) {
+      setQuotesByProject({});
+      setQuoteIdByProject({});
       setMultiHasDraftBaseline(false);
+      setMultiQuotesLoading(false);
       return;
     }
     let cancelled = false;
+    setMultiQuotesLoading(true);
     (async () => {
-      const rows: SaleQuoteFinancialRow[] = [];
-      let anyDraft = false;
+      const orgQ = scopedOrganizationId ? `&organizationId=${encodeURIComponent(scopedOrganizationId)}` : "";
+      const loadedQuotes: Record<string, Quote[]> = {};
+
       for (const pid of selectedProjectIds) {
-        const proj = projects.find((p) => p.id === pid);
-        const bid = proj?.baselineQuoteId ?? proj?.baselineQuote?.id;
-        if (!bid) continue;
-        const qUrl = `/api/saas/quotes/${bid}${
-          scopedOrganizationId ? `?organizationId=${encodeURIComponent(scopedOrganizationId)}` : ""
-        }`;
-        const res = await fetch(qUrl);
+        const res = await fetch(`/api/saas/quotes?projectId=${pid}&limit=50${orgQ}`);
         const raw = await res.json().catch(() => ({}));
-        if (!res.ok || cancelled) continue;
-        if (normalizeQuoteStatus((raw as { status?: string }).status) === "draft") {
-          anyDraft = true;
-        }
-        const legacy = saasQuoteRowToLegacySaleShape(raw as Record<string, unknown>);
-        rows.push({
-          factoryCostUsd: legacy.factoryCostUsd,
-          commissionPct: legacy.commissionPct,
-          fobUsd: legacy.fobUsd,
-          freightCostUsd: legacy.freightCostUsd,
-          cifUsd: legacy.cifUsd,
-          taxesFeesUsd: legacy.taxesFeesUsd,
-          landedDdpUsd: legacy.landedDdpUsd,
-        });
+        if (cancelled) return;
+        const list = (Array.isArray(raw) ? raw : raw.quotes ?? []).map((row: Record<string, unknown>) =>
+          saasQuoteRowToLegacySaleShape(row)
+        );
+        loadedQuotes[pid] = list;
       }
+
       if (cancelled) return;
-      if (rows.length !== selectedProjectIds.length) {
-        setMultiHasDraftBaseline(false);
-        return;
-      }
-      setMultiHasDraftBaseline(anyDraft);
-      const agg = aggregateSaleFinancialsFromQuoteRows(rows, quantity);
-      setExwUsd(agg.exwUsd);
-      setCommissionPct(agg.commissionPct);
-      setCommissionAmountUsd(agg.commissionAmountUsd);
-      setFobUsd(agg.fobUsd);
-      setFreightUsd(agg.freightUsd);
-      setCifUsd(agg.cifUsd);
-      setTaxesFeesUsd(agg.taxesFeesUsd);
-      setLandedDdpUsd(agg.landedDdpUsd);
-    })();
+      setQuotesByProject((prev) => {
+        const next = { ...prev };
+        for (const pid of selectedProjectIds) {
+          next[pid] = loadedQuotes[pid] ?? [];
+        }
+        for (const key of Object.keys(next)) {
+          if (!selectedProjectIds.includes(key)) delete next[key];
+        }
+        return next;
+      });
+      setQuoteIdByProject((prev) => {
+        const next = { ...prev };
+        for (const pid of selectedProjectIds) {
+          const list = loadedQuotes[pid] ?? [];
+          if (next[pid] && list.some((q) => q.id === next[pid])) continue;
+          next[pid] = pickDefaultQuoteId(projectsRef.current.find((p) => p.id === pid), list);
+        }
+        for (const key of Object.keys(next)) {
+          if (!selectedProjectIds.includes(key)) delete next[key];
+        }
+        return next;
+      });
+      setMultiQuotesLoading(false);
+    })().catch(() => {
+      if (!cancelled) setMultiQuotesLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [selectedProjectIds, quantity, projects, clientId, scopedOrganizationId]);
+  }, [selectedProjectIds, clientId, scopedOrganizationId]);
+
+  const multiQuotesReady = useMemo(() => {
+    if (selectedProjectIds.length < 2) return true;
+    if (multiQuotesLoading) return false;
+    return selectedProjectIds.every((pid) => {
+      const list = quotesByProject[pid] ?? [];
+      const qid = quoteIdByProject[pid];
+      return list.length > 0 && Boolean(qid) && list.some((q) => q.id === qid);
+    });
+  }, [selectedProjectIds, quotesByProject, quoteIdByProject, multiQuotesLoading]);
+
+  useEffect(() => {
+    if (selectedProjectIds.length < 2) {
+      setMultiHasDraftBaseline(false);
+      return;
+    }
+    if (!multiQuotesReady) return;
+    const rows: SaleQuoteFinancialRow[] = [];
+    let anyDraft = false;
+    for (const pid of selectedProjectIds) {
+      const qid = quoteIdByProject[pid];
+      const q = (quotesByProject[pid] ?? []).find((x) => x.id === qid);
+      if (!q) return;
+      if (normalizeQuoteStatus(q.status) === "draft") anyDraft = true;
+      rows.push(quoteToFinancialRow(q));
+    }
+    if (rows.length !== selectedProjectIds.length) return;
+    setMultiHasDraftBaseline(anyDraft);
+    const agg = aggregateSaleFinancialsFromQuoteRows(rows, quantity);
+    setExwUsd(agg.exwUsd);
+    setCommissionPct(agg.commissionPct);
+    setCommissionAmountUsd(agg.commissionAmountUsd);
+    setFobUsd(agg.fobUsd);
+    setFreightUsd(agg.freightUsd);
+    setCifUsd(agg.cifUsd);
+    setTaxesFeesUsd(agg.taxesFeesUsd);
+    setLandedDdpUsd(agg.landedDdpUsd);
+  }, [selectedProjectIds, quoteIdByProject, quotesByProject, quantity, multiQuotesReady]);
 
   useEffect(() => {
     if (selectedProjectIds.length !== 1) return;
@@ -243,24 +306,42 @@ export function NewSaleClient({
     return landedDdpUsd;
   };
 
-  const projectHasBaseline = (p: Project) => Boolean(p.baselineQuoteId ?? p.baselineQuote?.id);
-
-  const isProjectDisabledForMulti = (p: Project) => {
-    if (selectedProjectIds.includes(p.id)) return false;
-    if (selectedProjectIds.length === 0) return false;
-    return !projectHasBaseline(p);
-  };
-
   const toggleProjectSelection = (id: string) => {
     if (selectedProjectIds.includes(id)) {
       setSelectedProjectIds((prev) => prev.filter((x) => x !== id));
+      setQuoteIdByProject((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setQuotesByProject((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       return;
     }
-    const proj = projectsForClient.find((p) => p.id === id);
-    if (!proj) return;
-    if (selectedProjectIds.length >= 1 && !projectHasBaseline(proj)) return;
     setSelectedProjectIds((prev) => [...prev, id]);
   };
+
+  const multiLineBreakdown = useMemo(() => {
+    if (selectedProjectIds.length < 2) return [];
+    const mult = quantity;
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    return selectedProjectIds.map((pid) => {
+      const proj = projects.find((p) => p.id === pid);
+      const label = proj?.projectName ?? proj?.name ?? pid.slice(0, 8);
+      const qid = quoteIdByProject[pid] ?? "";
+      const q = (quotesByProject[pid] ?? []).find((x) => x.id === qid);
+      return {
+        projectId: pid,
+        label,
+        quoteId: qid,
+        landedDdpUsd: q ? round2(q.landedDdpUsd * mult) : null,
+        fobUsd: q ? round2(q.fobUsd * mult) : null,
+      };
+    });
+  }, [selectedProjectIds, quoteIdByProject, quotesByProject, quantity, projects]);
 
   const showDraftQuoteWarning = useMemo(() => {
     if (selectedProjectIds.length >= 2) return multiHasDraftBaseline;
@@ -288,10 +369,19 @@ export function NewSaleClient({
       return;
     }
     if (selectedProjectIds.length >= 2) {
-      for (const id of selectedProjectIds) {
-        const p = projects.find((x) => x.id === id);
-        if (!p || !projectHasBaseline(p)) {
-          setError(t("partner.sales.new.projectNeedsBaseline"));
+      if (multiQuotesLoading) {
+        setError(t("partner.sales.new.multiQuotesLoading"));
+        return;
+      }
+      for (const pid of selectedProjectIds) {
+        const list = quotesByProject[pid] ?? [];
+        if (list.length === 0) {
+          setError(t("partner.sales.new.projectNoQuotes"));
+          return;
+        }
+        const qid = quoteIdByProject[pid];
+        if (!qid || !list.some((q) => q.id === qid)) {
+          setError(t("partner.sales.new.projectNeedsQuote"));
           return;
         }
       }
@@ -335,7 +425,10 @@ export function NewSaleClient({
           })),
       };
       if (isMulti) {
-        payload.projectLines = selectedProjectIds.map((pid) => ({ projectId: pid }));
+        payload.projectLines = selectedProjectIds.map((pid) => ({
+          projectId: pid,
+          quoteId: quoteIdByProject[pid],
+        }));
       } else {
         payload.projectId = selectedProjectIds[0];
         payload.quoteId = quoteId || undefined;
@@ -396,6 +489,8 @@ export function NewSaleClient({
                 setClientId(v);
                 setSelectedProjectIds([]);
                 setQuoteId("");
+                setQuotesByProject({});
+                setQuoteIdByProject({});
                 quotePickInitializedForProjectRef.current = null;
               }}
               emptyOptionLabel={t("partner.sales.new.selectClient")}
@@ -415,7 +510,6 @@ export function NewSaleClient({
               <ul className="max-h-52 space-y-2 overflow-y-auto rounded-lg border border-border/60 p-3">
                 {projectsForClient.map((p) => {
                   const label = p.projectName ?? p.name ?? p.id.slice(0, 8);
-                  const disabled = isProjectDisabledForMulti(p);
                   const checked = selectedProjectIds.includes(p.id);
                   return (
                     <li key={p.id} className="flex items-start gap-2 text-sm">
@@ -423,15 +517,11 @@ export function NewSaleClient({
                         type="checkbox"
                         id={`sale-proj-${p.id}`}
                         checked={checked}
-                        disabled={disabled}
                         onChange={() => toggleProjectSelection(p.id)}
                         className="mt-1"
                       />
-                      <label htmlFor={`sale-proj-${p.id}`} className={disabled ? "text-muted-foreground" : "cursor-pointer text-foreground"}>
+                      <label htmlFor={`sale-proj-${p.id}`} className="cursor-pointer text-foreground">
                         {label}
-                        {disabled && (
-                          <span className="ml-2 text-xs text-muted-foreground">({t("partner.sales.new.projectNeedsBaselineShort")})</span>
-                        )}
                       </label>
                     </li>
                   );
@@ -439,6 +529,70 @@ export function NewSaleClient({
               </ul>
             )}
           </div>
+          {selectedProjectIds.length >= 2 && (
+            <div className="md:col-span-2 space-y-2">
+              <p className="text-xs text-muted-foreground">{t("partner.sales.new.multiQuoteHint")}</p>
+              {multiQuotesLoading && (
+                <p className="text-xs text-muted-foreground">{t("partner.sales.new.multiQuotesLoading")}</p>
+              )}
+              <div className="overflow-x-auto rounded-lg border border-border/60">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/60 bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="px-3 py-2 font-medium">{t("partner.sales.new.multiColProject")}</th>
+                      <th className="px-3 py-2 font-medium">{t("partner.sales.new.multiColQuote")}</th>
+                      <th className="px-3 py-2 font-medium text-right">{t("partner.sales.new.multiColFob")}</th>
+                      <th className="px-3 py-2 font-medium text-right">{t("partner.sales.new.multiColDdp")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {multiLineBreakdown.map((row) => (
+                      <tr key={row.projectId} className="border-b border-border/40 last:border-0">
+                        <td className="px-3 py-2 font-medium text-foreground">{row.label}</td>
+                        <td className="px-3 py-2 min-w-[200px]">
+                          {(quotesByProject[row.projectId] ?? []).length === 0 ? (
+                            <span className="text-xs text-muted-foreground">{t("partner.sales.new.projectNoQuotes")}</span>
+                          ) : (
+                            <FilterSelect
+                              value={row.quoteId}
+                              onValueChange={(v) =>
+                                setQuoteIdByProject((prev) => ({ ...prev, [row.projectId]: v }))
+                              }
+                              emptyOptionLabel={t("partner.sales.new.selectQuote")}
+                              options={(quotesByProject[row.projectId] ?? []).map((q) => ({
+                                value: q.id,
+                                label: quoteOptionLabel(q),
+                              }))}
+                              aria-label={t("partner.sales.new.multiColQuote")}
+                              triggerClassName="h-9 w-full min-w-0 max-w-full text-sm"
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {row.fobUsd != null ? formatCurrency(row.fobUsd) : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums font-medium">
+                          {row.landedDdpUsd != null ? formatCurrency(row.landedDdpUsd) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {multiLineBreakdown.length > 1 && (
+                    <tfoot>
+                      <tr className="bg-muted/20">
+                        <td colSpan={3} className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
+                          {t("partner.sales.new.multiTotalDdp")}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums font-semibold text-foreground">
+                          {formatCurrency(landedDdpUsd)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+          )}
           {selectedProjectIds.length === 1 && (
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">{t("partner.sales.new.quoteOptional")}</label>
@@ -664,7 +818,7 @@ export function NewSaleClient({
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || (selectedProjectIds.length >= 2 && !multiQuotesReady)}
           className="rounded-full border border-transparent bg-primary px-5 py-2.5 text-[17px] font-normal text-primary-foreground hover:opacity-[0.88] disabled:opacity-50"
         >
           {saving ? t("common.saving") : t("partner.sales.new.createSale")}
