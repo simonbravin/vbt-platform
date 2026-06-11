@@ -270,12 +270,15 @@ async function salesPostHandler(req: Request) {
     const [project, quoteRow] = await Promise.all([
       prisma.project.findFirst({ where: { id: data.projectId!, organizationId }, select: { id: true } }),
       data.quoteId
-        ? prisma.quote.findFirst({ where: { id: data.quoteId, organizationId }, select: { id: true } })
+        ? prisma.quote.findFirst({
+            where: { id: data.quoteId, organizationId, projectId: data.projectId! },
+            select: { id: true },
+          })
         : Promise.resolve(null),
     ]);
     if (!project) throw new ApiHttpError(400, "SALES_PROJECT_NOT_FOUND", "Project not found for this organization.");
     if (data.quoteId && !quoteRow) {
-      throw new ApiHttpError(400, "SALES_QUOTE_NOT_FOUND", "Quote not found for this organization.");
+      throw new ApiHttpError(400, "SALES_QUOTE_PROJECT_MISMATCH", "Quote not found for this project.");
     }
     primaryProjectId = data.projectId!;
     headerQuoteId = data.quoteId ?? null;

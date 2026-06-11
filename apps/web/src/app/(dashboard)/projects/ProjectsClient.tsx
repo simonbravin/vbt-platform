@@ -45,8 +45,8 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | "">("");
   const [searching, setSearching] = useState(false);
-  const [sortKey, setSortKey] = useState<ProjectSortKey | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<ProjectSortKey | null>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);

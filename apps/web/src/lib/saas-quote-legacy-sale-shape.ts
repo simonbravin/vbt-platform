@@ -5,6 +5,7 @@
 export type LegacySaleQuoteRow = {
   id: string;
   quoteNumber: string | null;
+  status?: string;
   factoryCostUsd: number;
   commissionPct: number;
   commissionFixed: number;
@@ -41,6 +42,7 @@ export function saasQuoteRowToLegacySaleShape(q: Record<string, unknown>): Legac
   return {
     id: String(q.id ?? ""),
     quoteNumber: q.quoteNumber != null ? String(q.quoteNumber) : null,
+    status: typeof q.status === "string" ? q.status : undefined,
     factoryCostUsd,
     commissionPct: partnerMarkupPct,
     commissionFixed: 0,

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { INVOICED_BASIS_OPTIONS } from "@/lib/sales";
 import { saasQuoteRowToLegacySaleShape, type LegacySaleQuoteRow } from "@/lib/saas-quote-legacy-sale-shape";
-import { aggregateSaleFinancialsFromQuoteRows, type SaleQuoteFinancialRow } from "@vbt/core";
+import { aggregateSaleFinancialsFromQuoteRows, normalizeQuoteStatus, type SaleQuoteFinancialRow } from "@vbt/core";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -64,6 +64,9 @@ export function NewSaleClient({
   const [invoices, setInvoices] = useState<InvoiceLine[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [multiHasDraftBaseline, setMultiHasDraftBaseline] = useState(false);
+  /** Evita reasignar cotización tras elección manual del usuario en el mismo proyecto. */
+  const quotePickInitializedForProjectRef = useRef<string | null>(null);
 
   useEffect(() => {
     const orgParam = scopedOrganizationId
@@ -83,16 +86,23 @@ export function NewSaleClient({
       .then((d) => setEntities(Array.isArray(d) ? d : []));
   }, [scopedOrganizationId]);
 
-  const qId = searchParams.get("quoteId");
-  const pId = searchParams.get("projectId");
-  const cId = searchParams.get("clientId");
+  const urlQuoteId = searchParams.get("quoteId");
+  const urlProjectId = searchParams.get("projectId");
+  const urlClientId = searchParams.get("clientId");
   const projectId = selectedProjectIds[0] ?? "";
 
   useEffect(() => {
-    if (pId) setSelectedProjectIds([pId]);
-    if (cId) setClientId(cId);
-    if (qId) setQuoteId(qId);
-  }, [qId, pId, cId]);
+    if (urlProjectId) setSelectedProjectIds([urlProjectId]);
+    if (urlClientId) setClientId(urlClientId);
+    if (urlQuoteId) {
+      setQuoteId(urlQuoteId);
+      if (urlProjectId) quotePickInitializedForProjectRef.current = urlProjectId;
+    }
+  }, [urlQuoteId, urlProjectId, urlClientId]);
+
+  useEffect(() => {
+    quotePickInitializedForProjectRef.current = null;
+  }, [projectId]);
 
   const projectsForClient = clientId
     ? projects.filter((p) => p.clientId === clientId || !p.clientId)
@@ -101,9 +111,13 @@ export function NewSaleClient({
   useEffect(() => {
     if (!projectId || selectedProjectIds.length !== 1) {
       setQuotes([]);
-      if (selectedProjectIds.length !== 1) setQuoteId("");
+      if (selectedProjectIds.length !== 1) {
+        setQuoteId("");
+        quotePickInitializedForProjectRef.current = null;
+      }
       return;
     }
+    let cancelled = false;
     fetch(
       `/api/saas/quotes?projectId=${projectId}&limit=50${
         scopedOrganizationId ? `&organizationId=${encodeURIComponent(scopedOrganizationId)}` : ""
@@ -111,21 +125,46 @@ export function NewSaleClient({
     )
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return;
         const raw = Array.isArray(d) ? d : d.quotes ?? [];
         const list = raw.map((row: Record<string, unknown>) => saasQuoteRowToLegacySaleShape(row));
         setQuotes(list);
-        const fromUrl = searchParams.get("quoteId");
-        if (fromUrl && list.some((x: { id: string }) => x.id === fromUrl)) setQuoteId(fromUrl);
-        else if (!searchParams.get("quoteId")) setQuoteId("");
+
+        if (urlQuoteId && list.some((x: { id: string }) => x.id === urlQuoteId)) {
+          setQuoteId(urlQuoteId);
+          quotePickInitializedForProjectRef.current = projectId;
+          return;
+        }
+        if (quotePickInitializedForProjectRef.current === projectId) return;
+
+        const proj = projects.find((p) => p.id === projectId);
+        const baselineId = proj?.baselineQuoteId ?? proj?.baselineQuote?.id;
+        if (baselineId && list.some((x: { id: string }) => x.id === baselineId)) {
+          setQuoteId(baselineId);
+        } else if (list.length > 0) {
+          setQuoteId(list[0]!.id);
+        } else {
+          setQuoteId("");
+        }
+        quotePickInitializedForProjectRef.current = projectId;
       })
-      .catch(() => setQuotes([]));
-  }, [projectId, selectedProjectIds.length, searchParams, scopedOrganizationId]);
+      .catch(() => {
+        if (!cancelled) setQuotes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, selectedProjectIds.length, urlQuoteId, scopedOrganizationId, projects]);
 
   useEffect(() => {
-    if (selectedProjectIds.length < 2 || !clientId) return;
+    if (selectedProjectIds.length < 2 || !clientId) {
+      setMultiHasDraftBaseline(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       const rows: SaleQuoteFinancialRow[] = [];
+      let anyDraft = false;
       for (const pid of selectedProjectIds) {
         const proj = projects.find((p) => p.id === pid);
         const bid = proj?.baselineQuoteId ?? proj?.baselineQuote?.id;
@@ -136,6 +175,9 @@ export function NewSaleClient({
         const res = await fetch(qUrl);
         const raw = await res.json().catch(() => ({}));
         if (!res.ok || cancelled) continue;
+        if (normalizeQuoteStatus((raw as { status?: string }).status) === "draft") {
+          anyDraft = true;
+        }
         const legacy = saasQuoteRowToLegacySaleShape(raw as Record<string, unknown>);
         rows.push({
           factoryCostUsd: legacy.factoryCostUsd,
@@ -147,7 +189,12 @@ export function NewSaleClient({
           landedDdpUsd: legacy.landedDdpUsd,
         });
       }
-      if (cancelled || rows.length !== selectedProjectIds.length) return;
+      if (cancelled) return;
+      if (rows.length !== selectedProjectIds.length) {
+        setMultiHasDraftBaseline(false);
+        return;
+      }
+      setMultiHasDraftBaseline(anyDraft);
       const agg = aggregateSaleFinancialsFromQuoteRows(rows, quantity);
       setExwUsd(agg.exwUsd);
       setCommissionPct(agg.commissionPct);
@@ -196,12 +243,42 @@ export function NewSaleClient({
     return landedDdpUsd;
   };
 
-  const toggleProjectSelection = (id: string) => {
-    const proj = projectsForClient.find((p) => p.id === id);
-    const hasBase = Boolean(proj?.baselineQuoteId ?? proj?.baselineQuote?.id);
-    if (!hasBase) return;
-    setSelectedProjectIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const projectHasBaseline = (p: Project) => Boolean(p.baselineQuoteId ?? p.baselineQuote?.id);
+
+  const isProjectDisabledForMulti = (p: Project) => {
+    if (selectedProjectIds.includes(p.id)) return false;
+    if (selectedProjectIds.length === 0) return false;
+    return !projectHasBaseline(p);
   };
+
+  const toggleProjectSelection = (id: string) => {
+    if (selectedProjectIds.includes(id)) {
+      setSelectedProjectIds((prev) => prev.filter((x) => x !== id));
+      return;
+    }
+    const proj = projectsForClient.find((p) => p.id === id);
+    if (!proj) return;
+    if (selectedProjectIds.length >= 1 && !projectHasBaseline(proj)) return;
+    setSelectedProjectIds((prev) => [...prev, id]);
+  };
+
+  const showDraftQuoteWarning = useMemo(() => {
+    if (selectedProjectIds.length >= 2) return multiHasDraftBaseline;
+    if (selectedProjectIds.length !== 1 || !quoteId) return false;
+    const q = quotes.find((x) => x.id === quoteId);
+    return normalizeQuoteStatus(q?.status) === "draft";
+  }, [selectedProjectIds.length, quoteId, quotes, multiHasDraftBaseline]);
+
+  const quoteOptionLabel = useCallback(
+    (q: Quote) => {
+      const base = `${q.quoteNumber ?? q.id.slice(0, 8)} – ${formatCurrency(q.landedDdpUsd)}`;
+      if (normalizeQuoteStatus(q.status) === "draft") {
+        return `${base} (${t("partner.sales.new.quoteDraftSuffix")})`;
+      }
+      return base;
+    },
+    [t]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,11 +287,13 @@ export function NewSaleClient({
       setError(t("partner.sales.new.errorClientProjectRequired"));
       return;
     }
-    for (const id of selectedProjectIds) {
-      const p = projects.find((x) => x.id === id);
-      if (!(p?.baselineQuoteId ?? p?.baselineQuote?.id)) {
-        setError(t("partner.sales.new.projectNeedsBaseline"));
-        return;
+    if (selectedProjectIds.length >= 2) {
+      for (const id of selectedProjectIds) {
+        const p = projects.find((x) => x.id === id);
+        if (!p || !projectHasBaseline(p)) {
+          setError(t("partner.sales.new.projectNeedsBaseline"));
+          return;
+        }
       }
     }
     const validationErr = validateFinancials();
@@ -279,8 +358,8 @@ export function NewSaleClient({
       const data = text ? (() => { try { return JSON.parse(text); } catch { return {}; } })() : {};
       if (!res.ok) throw new Error((data as { error?: string }).error ?? t("partner.sales.new.failedToCreate"));
       router.push(successPath((data as { id: string }).id));
-    } catch (err: any) {
-      setError(err.message ?? t("partner.sales.new.failedToSave"));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("partner.sales.new.failedToSave"));
     } finally {
       setSaving(false);
     }
@@ -300,6 +379,12 @@ export function NewSaleClient({
         </div>
       )}
 
+      {showDraftQuoteWarning && (
+        <div className="rounded-lg border border-alert-warningBorder bg-alert-warning p-3 text-sm text-foreground">
+          {t("partner.sales.new.draftQuoteWarning")}
+        </div>
+      )}
+
       <div className="surface-card p-6 space-y-4">
         <h2 className="font-semibold text-foreground">{t("partner.sales.new.sectionDetails")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -311,6 +396,7 @@ export function NewSaleClient({
                 setClientId(v);
                 setSelectedProjectIds([]);
                 setQuoteId("");
+                quotePickInitializedForProjectRef.current = null;
               }}
               emptyOptionLabel={t("partner.sales.new.selectClient")}
               options={clients.map((c) => ({ value: c.id, label: c.name }))}
@@ -329,7 +415,7 @@ export function NewSaleClient({
               <ul className="max-h-52 space-y-2 overflow-y-auto rounded-lg border border-border/60 p-3">
                 {projectsForClient.map((p) => {
                   const label = p.projectName ?? p.name ?? p.id.slice(0, 8);
-                  const hasBase = Boolean(p.baselineQuoteId ?? p.baselineQuote?.id);
+                  const disabled = isProjectDisabledForMulti(p);
                   const checked = selectedProjectIds.includes(p.id);
                   return (
                     <li key={p.id} className="flex items-start gap-2 text-sm">
@@ -337,13 +423,13 @@ export function NewSaleClient({
                         type="checkbox"
                         id={`sale-proj-${p.id}`}
                         checked={checked}
-                        disabled={!hasBase}
+                        disabled={disabled}
                         onChange={() => toggleProjectSelection(p.id)}
                         className="mt-1"
                       />
-                      <label htmlFor={`sale-proj-${p.id}`} className={hasBase ? "cursor-pointer text-foreground" : "text-muted-foreground"}>
+                      <label htmlFor={`sale-proj-${p.id}`} className={disabled ? "text-muted-foreground" : "cursor-pointer text-foreground"}>
                         {label}
-                        {!hasBase && (
+                        {disabled && (
                           <span className="ml-2 text-xs text-muted-foreground">({t("partner.sales.new.projectNeedsBaselineShort")})</span>
                         )}
                       </label>
@@ -358,11 +444,14 @@ export function NewSaleClient({
               <label className="block text-sm font-medium text-foreground mb-1">{t("partner.sales.new.quoteOptional")}</label>
               <FilterSelect
                 value={quoteId}
-                onValueChange={setQuoteId}
+                onValueChange={(v) => {
+                  setQuoteId(v);
+                  if (projectId) quotePickInitializedForProjectRef.current = projectId;
+                }}
                 emptyOptionLabel={t("partner.sales.new.quoteNoneManual")}
                 options={quotes.map((q) => ({
                   value: q.id,
-                  label: `${q.quoteNumber ?? q.id.slice(0, 8)} – ${formatCurrency(q.landedDdpUsd)}`,
+                  label: quoteOptionLabel(q),
                 }))}
                 aria-label={t("partner.sales.new.quoteOptional")}
                 triggerClassName="h-10 w-full min-w-0 max-w-full text-sm"

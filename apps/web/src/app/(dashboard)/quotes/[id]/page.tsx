@@ -366,6 +366,12 @@ export default function QuoteDetailPage() {
         </div>
       </div>
 
+      {normalizeQuoteStatus(quote.status) === "draft" && quote.projectId && (
+        <div className="rounded-lg border border-alert-warningBorder bg-alert-warning p-3 text-sm text-foreground">
+          {t("quotes.createSaleDraftWarning")}
+        </div>
+      )}
+
       {duplicateError && (
         <div className="p-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30 font-medium">
           {duplicateError}
