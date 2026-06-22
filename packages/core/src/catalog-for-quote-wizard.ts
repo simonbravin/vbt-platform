@@ -19,11 +19,12 @@ export type CatalogPieceRow = {
   pricePerM2Cored: number | null;
 };
 
-function systemToCode(sc: string): "S80" | "S150" | "S200" | null {
+export function systemToCode(sc: string): "S80" | "S150" | "S200" | null {
   const u = sc.trim().toUpperCase();
-  if (u === "S80" || u === "80" || u.endsWith("80")) return "S80";
-  if (u === "S150" || u === "150" || u.endsWith("150")) return "S150";
+  // Longer codes first so values like S150/S200 are not captured by endsWith("80").
   if (u === "S200" || u === "200" || u.endsWith("200")) return "S200";
+  if (u === "S150" || u === "150" || u.endsWith("150")) return "S150";
+  if (u === "S80" || u === "80" || u.endsWith("80")) return "S80";
   return null;
 }
 

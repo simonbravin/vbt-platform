@@ -48,7 +48,6 @@ type Initial = {
   engineeringFeeMode: string;
   status: string;
   visionLatamCommissionPct: string;
-  visionLatamCommissionFixedUsd: string;
   moduleVisibility: Record<string, boolean> | null;
   enabledSystems: string[] | null;
   requireDeliveredEngineeringForQuotes: boolean;
@@ -105,7 +104,6 @@ export function EditPartnerForm({
         engineeringFeeMode: form.engineeringFeeMode || null,
         status: form.status,
         visionLatamCommissionPct: form.visionLatamCommissionPct.trim() ? parseFloat(form.visionLatamCommissionPct) : null,
-        visionLatamCommissionFixedUsd: form.visionLatamCommissionFixedUsd.trim() ? parseFloat(form.visionLatamCommissionFixedUsd) : null,
         moduleVisibility: visibility,
         enabledSystems: enabledSystems.length === 3 ? null : enabledSystems.length > 0 ? enabledSystems : null,
         requireDeliveredEngineeringForQuotes: form.requireDeliveredEngineeringForQuotes,
@@ -284,21 +282,6 @@ export function EditPartnerForm({
             className="input-native mt-1"
           />
           <p className="mt-0.5 text-xs text-muted-foreground">{t("superadmin.partner.commissionPctHelp")}</p>
-        </div>
-        <div>
-          <label htmlFor="visionLatamCommissionFixedUsd" className="block text-sm font-medium text-foreground">
-            {t("superadmin.partner.commissionFixedFieldLabel")}
-          </label>
-          <input
-            id="visionLatamCommissionFixedUsd"
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder={t("admin.inventory.optional")}
-            value={form.visionLatamCommissionFixedUsd}
-            onChange={(e) => setForm((f) => ({ ...f, visionLatamCommissionFixedUsd: e.target.value }))}
-            className="input-native mt-1"
-          />
         </div>
         <div className="sm:col-span-2">
           <h4 className="text-sm font-medium text-foreground mb-2">{t("superadmin.partner.moduleVisibilityTitle")}</h4>

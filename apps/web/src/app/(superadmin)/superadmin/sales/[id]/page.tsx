@@ -34,6 +34,7 @@ export default async function SuperadminSaleDetailPage({ params }: { params: { i
         afterDeleteHref="/superadmin/sales"
         editHref={null}
         quoteLinkPrefix="/superadmin/quotes"
+        showSuperadminCommissionBreakdown
       />
     </div>
   );

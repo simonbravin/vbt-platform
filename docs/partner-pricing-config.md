@@ -29,6 +29,14 @@ We **did not** add new Prisma columns: country-specific behavior and SaaS fee de
    - Default partner markup and fee USD amounts from merged JSON + country override.
    - `allowedPartnerMarkupMinPct` / `allowedPartnerMarkupMaxPct`: partner columns if set, else platform `defaultMarginMinPct` / `defaultMarginMaxPct`, else `null` (no clamp).
 
+## Vision Latam commission (canonical)
+
+- **Mechanism:** percentage applied to **total factory EXW** (`factoryCostTotal`) when pricing SaaS quotes: `basePriceForPartner = factory × (1 + VL%/100)`.
+- **Storage:** `partner_profiles.vision_latam_commission_pct` (override) → `platform_config.pricing.visionLatamCommissionPct` (default **20%**) → persisted on quote as `vision_latam_markup_pct`.
+- **Not used in pricing:** `partner_profiles.vision_latam_commission_fixed_usd` (deprecated; column retained for historical data only).
+
+Legacy `quote_defaults.commissionFixed` / wizard fixed fees are separate (technical service / taxes), not Vision Latam markup.
+
 ## Precedence rules
 
 ### Creating a quote (`POST /api/saas/quotes`)

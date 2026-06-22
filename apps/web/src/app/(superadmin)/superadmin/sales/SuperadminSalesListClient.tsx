@@ -27,7 +27,14 @@ type Sale = {
   createdAt: string;
   client: { id: string; name: string };
   project: { id: string; name: string };
-  quote: { id: string; quoteNumber: string | null } | null;
+  quote: {
+    id: string;
+    quoteNumber: string | null;
+    visionLatamMarkupPct?: number | null;
+    vlCommissionUsd?: number | null;
+    partnerMarkupPct?: number | null;
+    partnerMarginUsd?: number | null;
+  } | null;
   organization?: { id: string; name: string };
   _count: { invoices: number; payments: number };
 };
@@ -294,6 +301,9 @@ export function SuperadminSalesListClient() {
                 <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colProject")}</th>
                 <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colQty")}</th>
                 <th className="text-right px-2 py-2 font-medium text-foreground">{t("partner.sales.colPrice")}</th>
+                <th className="text-right px-2 py-2 font-medium text-foreground">{t("superadmin.salesList.colVlPct")}</th>
+                <th className="text-right px-2 py-2 font-medium text-foreground">{t("superadmin.salesList.colVlCommission")}</th>
+                <th className="text-right px-2 py-2 font-medium text-foreground">{t("superadmin.salesList.colPartnerMarkupPct")}</th>
                 <th className="text-center px-2 py-2 font-medium text-foreground">{t("partner.sales.colSalesCondition")}</th>
                 <th className="text-left px-2 py-2 font-medium text-foreground">{t("partner.sales.colStatus")}</th>
                 <th className="text-left px-4 py-2 font-medium text-foreground">{t("partner.sales.colActions")}</th>
@@ -316,6 +326,15 @@ export function SuperadminSalesListClient() {
                   </td>
                   <td className="px-2 py-2 text-center text-foreground">{s.quantity}</td>
                   <td className="px-2 py-2 text-right font-medium text-foreground">{formatCurrency(getInvoicedAmount(s))}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-foreground">
+                    {s.quote?.visionLatamMarkupPct != null ? `${s.quote.visionLatamMarkupPct}%` : "—"}
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-foreground">
+                    {s.quote?.vlCommissionUsd != null ? formatCurrency(s.quote.vlCommissionUsd) : "—"}
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-foreground">
+                    {s.quote?.partnerMarkupPct != null ? `${s.quote.partnerMarkupPct}%` : "—"}
+                  </td>
                   <td className="px-2 py-2 text-center text-foreground font-medium">{(s.invoicedBasis || "DDP").toUpperCase()}</td>
                   <td className="px-2 py-2">
                     <span

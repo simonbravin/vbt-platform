@@ -1,21 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getTenantContext, requirePlatformSuperadmin, TenantError, tenantErrorStatus } from "@/lib/tenant";
-import { getPlatformConfig, updatePlatformConfig, type PlatformConfigJson } from "@vbt/core";
+import {
+  getPlatformConfig,
+  updatePlatformConfig,
+  getEffectivePlatformPricingForAdmin,
+  type UpdatePlatformConfigInput,
+} from "@vbt/core";
 import { z } from "zod";
+
+const nullablePct = z.number().min(0).max(100).nullable().optional();
+const nullableMoney = z.number().min(0).nullable().optional();
+const nullableRate = z.number().min(0).nullable().optional();
 
 const patchSchema = z.object({
   pricing: z
     .object({
-      defaultMarginMinPct: z.number().min(0).max(100).optional(),
-      defaultMarginMaxPct: z.number().min(0).max(100).optional(),
-      defaultEntryFeeUsd: z.number().min(0).optional(),
-      defaultTrainingFeeUsd: z.number().min(0).optional(),
-      visionLatamCommissionPct: z.number().min(0).max(100).optional(),
-      rateS80: z.number().min(0).optional(),
-      rateS150: z.number().min(0).optional(),
-      rateS200: z.number().min(0).optional(),
-      rateGlobal: z.number().min(0).optional(),
+      defaultMarginMinPct: nullablePct,
+      defaultMarginMaxPct: nullablePct,
+      defaultEntryFeeUsd: nullableMoney,
+      defaultTrainingFeeUsd: nullableMoney,
+      visionLatamCommissionPct: nullablePct,
+      rateS80: nullableRate,
+      rateS150: nullableRate,
+      rateS200: nullableRate,
+      rateGlobal: nullableRate,
       baseUom: z.enum(["M", "FT"]).optional(),
       minRunFt: z.number().min(0).optional(),
     })
@@ -23,7 +32,15 @@ const patchSchema = z.object({
   moduleVisibility: z.record(z.boolean()).optional(),
 });
 
-const EMPTY_CONFIG = { pricing: {}, moduleVisibility: {} };
+async function buildAdminConfigResponse(tenantCtx: {
+  userId: string;
+  organizationId: string | null;
+  isPlatformSuperadmin: true;
+}) {
+  const config = await getPlatformConfig(prisma, tenantCtx);
+  const effectivePricing = await getEffectivePlatformPricingForAdmin(prisma);
+  return { ...config, effectivePricing };
+}
 
 export async function GET() {
   try {
@@ -32,19 +49,18 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     await requirePlatformSuperadmin();
-    const tenantCtx = {
+    const payload = await buildAdminConfigResponse({
       userId: ctx.userId,
       organizationId: ctx.activeOrgId ?? null,
       isPlatformSuperadmin: true,
-    };
-    const config = await getPlatformConfig(prisma, tenantCtx);
-    return NextResponse.json(config);
+    });
+    return NextResponse.json(payload);
   } catch (e) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
     console.error("platform-config GET error:", e);
-    return NextResponse.json(EMPTY_CONFIG);
+    return NextResponse.json({ error: "Failed to load configuration" }, { status: 500 });
   }
 }
 
@@ -66,13 +82,16 @@ export async function PATCH(req: Request) {
     const tenantCtx = {
       userId: ctx.userId,
       organizationId: ctx.activeOrgId ?? null,
-      isPlatformSuperadmin: true,
+      isPlatformSuperadmin: true as const,
     };
-    const input: Partial<PlatformConfigJson> = {};
-    if (parsed.data.pricing) input.pricing = parsed.data.pricing;
+    const input: UpdatePlatformConfigInput = {};
+    if (parsed.data.pricing) {
+      input.pricing = parsed.data.pricing as UpdatePlatformConfigInput["pricing"];
+    }
     if (parsed.data.moduleVisibility) input.moduleVisibility = parsed.data.moduleVisibility;
-    const config = await updatePlatformConfig(prisma, tenantCtx, input);
-    return NextResponse.json(config);
+    await updatePlatformConfig(prisma, tenantCtx, input);
+    const payload = await buildAdminConfigResponse(tenantCtx);
+    return NextResponse.json(payload);
   } catch (e) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });

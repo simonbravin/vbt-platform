@@ -328,23 +328,13 @@ export function PartnerDetailClient({
                 {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionPctLabel")}</p>
+                <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionPctFieldLabel")}</p>
                 <p className="mt-0.5 font-medium text-foreground">
                   {partner.partnerProfile?.visionLatamCommissionPct != null
                     ? `${partner.partnerProfile.visionLatamCommissionPct}%`
                     : t("superadmin.partner.commissionUsesGlobal")}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("superadmin.partner.commissionFixedUsdLabel")}</p>
-                <p className="mt-0.5 font-medium text-foreground">
-                  {partner.partnerProfile?.visionLatamCommissionFixedUsd != null
-                    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-                        partner.partnerProfile.visionLatamCommissionFixedUsd
-                      )
-                    : "—"}
                 </p>
               </div>
               <div>

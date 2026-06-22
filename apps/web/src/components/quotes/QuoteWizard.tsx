@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n/context";
 import { FilterSelect, SearchableFilterSelect } from "@/components/ui/filter-select";
 import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
 import { initialQuoteWizardState, type QuoteWizardState } from "@/components/quotes/wizard-types";
+import { systemToCode } from "@vbt/core";
 
 type ProjectOpt = {
   id: string;
@@ -87,8 +88,73 @@ function describeWizardTaxLine(
 type PreviewState = {
   loading: boolean;
   error: string | null;
+  errorCode: string | null;
   data: Record<string, unknown> | null;
 };
+
+function aggregateM2FromImportLines(
+  lines: Array<{
+    isIgnored?: boolean;
+    m2Line?: number | null;
+    catalogPieceId?: string | null;
+    catalogPiece?: { id?: string; systemCode?: string; system_code?: string } | null;
+  }>
+): { m2S80: number; m2S150: number; m2S200: number; mappedWithoutM2: number } {
+  let s80 = 0;
+  let s150 = 0;
+  let s200 = 0;
+  let mappedWithoutM2 = 0;
+  for (const line of lines) {
+    if (line.isIgnored) continue;
+    const mappedId = line.catalogPieceId ?? line.catalogPiece?.id ?? null;
+    if (mappedId && (!line.m2Line || line.m2Line <= 0)) {
+      mappedWithoutM2 += 1;
+    }
+    if (!line.m2Line) continue;
+    const sys = systemToCode(line.catalogPiece?.systemCode ?? line.catalogPiece?.system_code ?? "");
+    if (sys === "S80") s80 += line.m2Line;
+    else if (sys === "S150") s150 += line.m2Line;
+    else if (sys === "S200") s200 += line.m2Line;
+  }
+  return {
+    m2S80: +s80.toFixed(2),
+    m2S150: +s150.toFixed(2),
+    m2S200: +s200.toFixed(2),
+    mappedWithoutM2,
+  };
+}
+
+function WizardPreviewError({
+  error,
+  errorCode,
+  isSuperadmin,
+  t,
+}: {
+  error: string;
+  errorCode: string | null;
+  isSuperadmin: boolean;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const isTaxConfigError = errorCode === "NO_TAX_RULE_SET" || errorCode === "COUNTRY_NOT_FOUND";
+  if (isTaxConfigError) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+        <p className="text-destructive">{error}</p>
+        {isSuperadmin ? (
+          <Link
+            href="/superadmin/admin/taxes"
+            className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+          >
+            {t("wizard.configureTaxRulesLink")}
+          </Link>
+        ) : (
+          <p className="mt-1 text-xs text-muted-foreground">{t("wizard.contactAdminTaxRules")}</p>
+        )}
+      </div>
+    );
+  }
+  return <p className="text-sm text-destructive">{error}</p>;
+}
 
 export function QuoteWizard() {
   const t = useT();
@@ -121,7 +187,13 @@ export function QuoteWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importLinesOpen, setImportLinesOpen] = useState(false);
-  const [preview, setPreview] = useState<PreviewState>({ loading: false, error: null, data: null });
+  const [preview, setPreview] = useState<PreviewState>({
+    loading: false,
+    error: null,
+    errorCode: null,
+    data: null,
+  });
+  const [importMappedWithoutM2, setImportMappedWithoutM2] = useState(0);
   const previewReq = useRef(0);
   const partnerMarkupSyncedForDest = useRef<string | null>(null);
 
@@ -294,21 +366,12 @@ export function QuoteWizard() {
       })
       .then((data) => {
         if (!data) return;
-        let s80 = 0;
-        let s150 = 0;
-        let s200 = 0;
-        for (const line of data.lines ?? []) {
-          if (!line.isIgnored && line.m2Line) {
-            const sys = line.catalogPiece?.systemCode ?? line.catalogPiece?.system_code;
-            if (sys === "S80") s80 += line.m2Line;
-            else if (sys === "S150") s150 += line.m2Line;
-            else if (sys === "S200") s200 += line.m2Line;
-          }
-        }
+        const agg = aggregateM2FromImportLines(data.lines ?? []);
+        setImportMappedWithoutM2(agg.mappedWithoutM2);
         update({
-          m2S80: +s80.toFixed(2),
-          m2S150: +s150.toFixed(2),
-          m2S200: +s200.toFixed(2),
+          m2S80: agg.m2S80,
+          m2S150: agg.m2S150,
+          m2S200: agg.m2S200,
         });
       })
       .catch(() => {});
@@ -322,7 +385,7 @@ export function QuoteWizard() {
 
     const handle = window.setTimeout(() => {
       const seq = ++previewReq.current;
-      setPreview((p) => ({ ...p, loading: true, error: null }));
+      setPreview((p) => ({ ...p, loading: true, error: null, errorCode: null }));
 
       void (async () => {
         try {
@@ -351,19 +414,21 @@ export function QuoteWizard() {
           const data = (await res.json()) as Record<string, unknown>;
           if (seq !== previewReq.current) return;
           if (!res.ok) {
-            const msg =
-              typeof data?.message === "string"
-                ? data.message
-                : typeof data?.error === "string"
-                  ? data.error
-                  : t("wizard.previewLoadFailed");
-            setPreview({ loading: false, error: msg, data: null });
+            const errObj = data?.error;
+            const errorCode =
+              typeof errObj === "object" && errObj && typeof (errObj as { code?: unknown }).code === "string"
+                ? (errObj as { code: string }).code
+                : typeof data?.code === "string"
+                  ? data.code
+                  : null;
+            const msg = saasApiUserFacingMessage(data, t, t("wizard.previewLoadFailed"));
+            setPreview({ loading: false, error: msg, errorCode, data: null });
             return;
           }
-          setPreview({ loading: false, error: null, data });
+          setPreview({ loading: false, error: null, errorCode: null, data });
         } catch {
           if (seq !== previewReq.current) return;
-          setPreview({ loading: false, error: t("wizard.previewLoadFailed"), data: null });
+          setPreview({ loading: false, error: t("wizard.previewLoadFailed"), errorCode: null, data: null });
         }
       })();
     }, 420);
@@ -489,21 +554,12 @@ export function QuoteWizard() {
       });
     }
     const imp = await fetch(`/api/import/${state.revitImportId}`).then((r) => r.json());
-    let s80 = 0;
-    let s150 = 0;
-    let s200 = 0;
-    for (const line of imp.lines ?? []) {
-      if (!line.isIgnored && line.m2Line) {
-        const sys = line.catalogPiece?.systemCode;
-        if (sys === "S80") s80 += line.m2Line;
-        else if (sys === "S150") s150 += line.m2Line;
-        else if (sys === "S200") s200 += line.m2Line;
-      }
-    }
+    const agg = aggregateM2FromImportLines(imp.lines ?? []);
+    setImportMappedWithoutM2(agg.mappedWithoutM2);
     update({
-      m2S80: +s80.toFixed(2),
-      m2S150: +s150.toFixed(2),
-      m2S200: +s200.toFixed(2),
+      m2S80: agg.m2S80,
+      m2S150: agg.m2S150,
+      m2S200: agg.m2S200,
     });
   };
 
@@ -914,15 +970,41 @@ export function QuoteWizard() {
                 </div>
               </div>
               {quoteDefaults && (
-                <p className="text-xs text-muted-foreground mt-3">
-                  {t("wizard.fclWallCapacityLine", {
-                    s80: String(quoteDefaults.containerWallAreaM2S80 ?? "—"),
-                    s150: String(quoteDefaults.containerWallAreaM2S150 ?? "—"),
-                    s200: String(quoteDefaults.containerWallAreaM2S200 ?? "—"),
-                  })}
+                <>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {t("wizard.fclWallCapacityLine", {
+                      s80: String(quoteDefaults.containerWallAreaM2S80 ?? "—"),
+                      s150: String(quoteDefaults.containerWallAreaM2S150 ?? "—"),
+                      s200: String(quoteDefaults.containerWallAreaM2S200 ?? "—"),
+                    })}
+                  </p>
+                  <div className="mt-3 rounded-lg border border-border/60 bg-muted/10 px-3 py-2">
+                    <p className="text-xs font-medium text-foreground">{t("wizard.effectiveRatesTitle")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t("wizard.effectiveRatesLine", {
+                        s80: fmt(quoteDefaults.effectiveRateS80),
+                        s150: fmt(quoteDefaults.effectiveRateS150),
+                        s200: fmt(quoteDefaults.effectiveRateS200),
+                      })}
+                    </p>
+                  </div>
+                </>
+              )}
+              {state.costMethod === "CSV" && importMappedWithoutM2 > 0 && (
+                <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
+                  {t("wizard.catalogWidthMissingHint", { count: importMappedWithoutM2 })}
                 </p>
               )}
             </div>
+
+            {preview.error ? (
+              <WizardPreviewError
+                error={preview.error}
+                errorCode={preview.errorCode}
+                isSuperadmin={isSuperadmin}
+                t={t}
+              />
+            ) : null}
 
             <div className="rounded-lg border border-border/60 bg-muted/10 px-4 py-3 text-sm">
               <p className="font-medium text-foreground">{t("wizard.estimatedFactoryExw")}</p>
@@ -1053,7 +1135,14 @@ export function QuoteWizard() {
             <div className="rounded-lg border border-border/60 bg-muted/15 p-4 space-y-3 text-sm">
               <p className="font-medium text-foreground">{t("wizard.previewSummary")}</p>
               {preview.loading && <p className="text-muted-foreground">{t("wizard.previewUpdating")}</p>}
-              {preview.error && <p className="text-destructive text-sm">{preview.error}</p>}
+              {preview.error && (
+                <WizardPreviewError
+                  error={preview.error}
+                  errorCode={preview.errorCode}
+                  isSuperadmin={isSuperadmin}
+                  t={t}
+                />
+              )}
               {!preview.loading && !preview.error && snap && fcl && (
                 <>
                   <ul className="space-y-1 text-muted-foreground">

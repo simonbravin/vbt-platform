@@ -14,6 +14,10 @@ import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
 
 const DUE_SOON_DAYS = 7;
 
+function fmtUsdOrDash(value: number | null | undefined): string {
+  return value != null && Number.isFinite(value) ? formatCurrency(value) : "—";
+}
+
 function getInvoiceDueStatus(dueDate: string | null): "overdue" | "due_soon" | null {
   if (!dueDate) return null;
   const d = new Date(dueDate);
@@ -55,7 +59,16 @@ type Sale = {
     containerSharePct?: number | null;
     quote?: { id: string; quoteNumber: string | null } | null;
   }>;
-  quote: { id: string; quoteNumber: string | null } | null;
+  quote: {
+    id: string;
+    quoteNumber: string | null;
+    visionLatamMarkupPct?: number | null;
+    vlCommissionUsd?: number | null;
+    partnerMarkupPct?: number | null;
+    partnerMarginUsd?: number | null;
+    factoryExwUsd?: number | null;
+    basePriceForPartnerUsd?: number | null;
+  } | null;
   invoices: { id: string; entityId: string; amountUsd: number; dueDate: string | null; sequence: number; referenceNumber: string | null; notes: string | null; entity: { name: string; slug: string } }[];
   payments: { id: string; entityId: string; amountUsd: number; amountLocal: number | null; currencyLocal: string | null; exchangeRate: number | null; paidAt: string; notes: string | null; entity: { name: string; slug: string } }[];
   invoiceStatusByEntity?: Record<string, { paid: number; invoiced: number; status: string }>;
@@ -68,6 +81,8 @@ export type SaleDetailClientProps = {
   /** `undefined`: `/sales/[saleId]/edit`. `null`: hide edit. */
   editHref?: string | null;
   quoteLinkPrefix?: string;
+  /** When true, show Vision Latam vs partner margin breakdown (superadmin sales). */
+  showSuperadminCommissionBreakdown?: boolean;
 };
 
 export function SaleDetailClient({
@@ -76,6 +91,7 @@ export function SaleDetailClient({
   afterDeleteHref = "/sales",
   editHref: editHrefProp,
   quoteLinkPrefix = "/quotes",
+  showSuperadminCommissionBreakdown = false,
 }: SaleDetailClientProps) {
   const t = useT();
   const resolvedEditHref = editHrefProp === undefined ? `/sales/${saleId}/edit` : editHrefProp;
@@ -447,21 +463,53 @@ export function SaleDetailClient({
         <div className="surface-card p-6">
           <h2 className="font-semibold text-foreground mb-4">{t("partner.sales.detail.financialSummary")}</h2>
           <div className="space-y-2 text-sm">
-            {[
-              [t("partner.sales.new.fin.exw"), sale.exwUsd],
-              [t("partner.sales.new.fin.commissionPct"), `${sale.commissionPct}%`],
-              [t("partner.sales.new.fin.commissionAmount"), sale.commissionAmountUsd],
-              [t("partner.sales.new.fin.fob"), sale.fobUsd, true],
-              [t("partner.sales.new.fin.freight"), sale.freightUsd],
-              [t("partner.sales.new.fin.cif"), sale.cifUsd, true],
-              [t("partner.sales.new.fin.taxesFees"), sale.taxesFeesUsd],
-              [t("partner.sales.new.fin.landedDdp"), sale.landedDdpUsd, true],
-            ].map(([label, val, bold]) => (
-              <div key={String(label)} className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
-                <span className="text-muted-foreground">{label}</span>
-                <span>{typeof val === "number" ? formatCurrency(val) : val}</span>
-              </div>
-            ))}
+            {showSuperadminCommissionBreakdown && sale.quote ? (
+              <>
+                {[
+                  [t("superadmin.salesDetail.factoryExw"), sale.quote.factoryExwUsd ?? sale.exwUsd],
+                  [t("superadmin.salesDetail.vlCommissionPct"), `${sale.quote.visionLatamMarkupPct ?? 0}%`],
+                  [t("superadmin.salesDetail.vlCommissionAmount"), sale.quote.vlCommissionUsd],
+                  [t("superadmin.salesDetail.basePriceForPartner"), sale.quote.basePriceForPartnerUsd],
+                  [
+                    t("superadmin.salesDetail.partnerMarkupPct"),
+                    sale.quote.partnerMarkupPct != null ? `${sale.quote.partnerMarkupPct}%` : "—",
+                  ],
+                  [t("superadmin.salesDetail.partnerMarginAmount"), sale.quote.partnerMarginUsd],
+                  [t("partner.sales.new.fin.fob"), sale.fobUsd, true],
+                  [t("partner.sales.new.fin.freight"), sale.freightUsd],
+                  [t("partner.sales.new.fin.cif"), sale.cifUsd, true],
+                  [t("partner.sales.new.fin.taxesFees"), sale.taxesFeesUsd],
+                  [t("partner.sales.new.fin.landedDdp"), sale.landedDdpUsd, true],
+                ].map(([label, val, bold]) => (
+                  <div key={String(label)} className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
+                    <span className="text-muted-foreground">{label}</span>
+                    <span>
+                      {typeof val === "number"
+                        ? bold
+                          ? formatCurrency(val)
+                          : fmtUsdOrDash(val)
+                        : val}
+                    </span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              [
+                [t("partner.sales.new.fin.exw"), sale.exwUsd],
+                [t("partner.sales.new.fin.commissionPct"), `${sale.commissionPct}%`],
+                [t("partner.sales.new.fin.commissionAmount"), sale.commissionAmountUsd],
+                [t("partner.sales.new.fin.fob"), sale.fobUsd, true],
+                [t("partner.sales.new.fin.freight"), sale.freightUsd],
+                [t("partner.sales.new.fin.cif"), sale.cifUsd, true],
+                [t("partner.sales.new.fin.taxesFees"), sale.taxesFeesUsd],
+                [t("partner.sales.new.fin.landedDdp"), sale.landedDdpUsd, true],
+              ].map(([label, val, bold]) => (
+                <div key={String(label)} className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
+                  <span className="text-muted-foreground">{label}</span>
+                  <span>{typeof val === "number" ? formatCurrency(val) : val}</span>
+                </div>
+              ))
+            )}
           </div>
           {sale.notes && <p className="mt-4 text-sm text-muted-foreground border-t pt-2">{sale.notes}</p>}
         </div>

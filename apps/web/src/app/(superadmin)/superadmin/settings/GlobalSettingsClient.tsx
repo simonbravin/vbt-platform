@@ -1,9 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DollarSign, Eye, Building2, Lock, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
+import { saasApiErrorMessageOr } from "@/lib/saas-api-error-message";
+
+type PricingFieldMeta = {
+  effective: number | null;
+  persisted: number | null;
+  usesSystemDefault: boolean;
+};
+
+type EffectivePlatformPricing = {
+  defaultMarginMinPct: PricingFieldMeta;
+  defaultMarginMaxPct: PricingFieldMeta;
+  defaultEntryFeeUsd: PricingFieldMeta;
+  defaultTrainingFeeUsd: PricingFieldMeta;
+  visionLatamCommissionPct: PricingFieldMeta;
+  rateS80: PricingFieldMeta;
+  rateS150: PricingFieldMeta;
+  rateS200: PricingFieldMeta;
+};
 
 type Config = {
   pricing?: {
@@ -15,11 +33,9 @@ type Config = {
     rateS80?: number;
     rateS150?: number;
     rateS200?: number;
-    rateGlobal?: number;
-    baseUom?: "M" | "FT";
-    minRunFt?: number;
   };
   moduleVisibility?: Record<string, boolean>;
+  effectivePricing?: EffectivePlatformPricing;
 };
 
 const MODULE_KEYS = [
@@ -36,9 +52,86 @@ const MODULE_KEYS = [
   { key: "settings", labelKey: "nav.settings" },
 ];
 
+function formatDisplayValue(value: number | null, suffix = ""): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value}${suffix}`;
+}
+
+function persistedToEditString(persisted: number | null): string {
+  return persisted != null && Number.isFinite(persisted) ? String(persisted) : "";
+}
+
+function PricingNumericField({
+  label,
+  help,
+  meta,
+  editValue,
+  onEditChange,
+  onRestoreDefault,
+  step = 1,
+  min = 0,
+  max,
+  suffix = "",
+}: {
+  label: string;
+  help?: string;
+  meta?: PricingFieldMeta;
+  editValue: string;
+  onEditChange: (v: string) => void;
+  onRestoreDefault?: () => void;
+  step?: number;
+  min?: number;
+  max?: number;
+  suffix?: string;
+}) {
+  const t = useT();
+  return (
+    <div>
+      <label className="block text-xs font-medium text-muted-foreground">{label}</label>
+      {help ? <p className="mt-0.5 text-xs text-muted-foreground/80">{help}</p> : null}
+      <div className="mt-1 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("superadmin.settings.currentValueLabel")}
+        </p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold tabular-nums text-foreground">
+            {formatDisplayValue(meta?.effective ?? null, suffix)}
+          </span>
+          {meta?.usesSystemDefault ? (
+            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {t("superadmin.settings.systemDefaultBadge")}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <label className="mt-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("superadmin.settings.newValueLabel")}
+      </label>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={editValue}
+        onChange={(e) => onEditChange(e.target.value)}
+        className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
+      />
+      {onRestoreDefault && meta?.usesSystemDefault === false ? (
+        <button
+          type="button"
+          onClick={onRestoreDefault}
+          className="mt-1 text-xs font-medium text-primary hover:underline"
+        >
+          {t("superadmin.settings.restoreSystemDefault")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function GlobalSettingsClient() {
   const t = useT();
-  const [config, setConfig] = useState<Config | null>(null);
+  const [effectivePricing, setEffectivePricing] = useState<EffectivePlatformPricing | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -47,11 +140,27 @@ export function GlobalSettingsClient() {
   const [marginMaxPct, setMarginMaxPct] = useState<string>("");
   const [entryFeeUsd, setEntryFeeUsd] = useState<string>("");
   const [trainingFeeUsd, setTrainingFeeUsd] = useState<string>("");
-  const [visionLatamCommissionPct, setVisionLatamCommissionPct] = useState<string>("20");
+  const [visionLatamCommissionPct, setVisionLatamCommissionPct] = useState<string>("");
   const [rateS80, setRateS80] = useState<string>("");
   const [rateS150, setRateS150] = useState<string>("");
   const [rateS200, setRateS200] = useState<string>("");
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
+
+  const applyLoadedConfig = useCallback((data: Config) => {
+    const ep = data.effectivePricing ?? null;
+    setEffectivePricing(ep);
+    setMarginMinPct(persistedToEditString(ep?.defaultMarginMinPct?.persisted ?? data?.pricing?.defaultMarginMinPct ?? null));
+    setMarginMaxPct(persistedToEditString(ep?.defaultMarginMaxPct?.persisted ?? data?.pricing?.defaultMarginMaxPct ?? null));
+    setEntryFeeUsd(persistedToEditString(ep?.defaultEntryFeeUsd?.persisted ?? data?.pricing?.defaultEntryFeeUsd ?? null));
+    setTrainingFeeUsd(persistedToEditString(ep?.defaultTrainingFeeUsd?.persisted ?? data?.pricing?.defaultTrainingFeeUsd ?? null));
+    setVisionLatamCommissionPct(
+      persistedToEditString(ep?.visionLatamCommissionPct?.persisted ?? data?.pricing?.visionLatamCommissionPct ?? null)
+    );
+    setRateS80(persistedToEditString(ep?.rateS80?.persisted ?? data?.pricing?.rateS80 ?? null));
+    setRateS150(persistedToEditString(ep?.rateS150?.persisted ?? data?.pricing?.rateS150 ?? null));
+    setRateS200(persistedToEditString(ep?.rateS200?.persisted ?? data?.pricing?.rateS200 ?? null));
+    setVisibility((data?.moduleVisibility as Record<string, boolean>) ?? {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,16 +168,10 @@ export function GlobalSettingsClient() {
       try {
         const res = await fetch("/api/saas/platform-config");
         if (!res.ok) throw new Error(t("superadmin.settings.failedToLoad"));
-        const data = await res.json();
+        const data = (await res.json()) as Config;
         if (cancelled) return;
-        setConfig(data);
-        setMarginMinPct(String(data?.pricing?.defaultMarginMinPct ?? ""));
-        setMarginMaxPct(String(data?.pricing?.defaultMarginMaxPct ?? ""));
-        setEntryFeeUsd(String(data?.pricing?.defaultEntryFeeUsd ?? ""));
-        setTrainingFeeUsd(String(data?.pricing?.defaultTrainingFeeUsd ?? ""));
-        setVisionLatamCommissionPct(String(data?.pricing?.visionLatamCommissionPct ?? "20"));
-        setVisibility((data?.moduleVisibility as Record<string, boolean>) ?? {});
-      } catch (e) {
+        applyLoadedConfig(data);
+      } catch {
         if (!cancelled) setMessage({ type: "error", text: t("superadmin.settings.failedToLoadConfig") });
       } finally {
         if (!cancelled) setLoading(false);
@@ -78,7 +181,30 @@ export function GlobalSettingsClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyLoadedConfig, t]);
+
+  const restoreFactoryDefault = async (field: "rateS80" | "rateS150" | "rateS200") => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/saas/platform-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pricing: { [field]: null } }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(saasApiErrorMessageOr(err, t("superadmin.settings.saveFailed")));
+      }
+      const data = (await res.json()) as Config;
+      applyLoadedConfig(data);
+      setMessage({ type: "success", text: t("superadmin.settings.saved") });
+    } catch (e) {
+      setMessage({ type: "error", text: e instanceof Error ? e.message : t("superadmin.settings.saveFailed") });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -104,10 +230,10 @@ export function GlobalSettingsClient() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error ?? t("superadmin.settings.saveFailed"));
+        throw new Error(saasApiErrorMessageOr(err, t("superadmin.settings.saveFailed")));
       }
-      const data = await res.json();
-      setConfig(data);
+      const data = (await res.json()) as Config;
+      applyLoadedConfig(data);
       setMessage({ type: "success", text: t("superadmin.settings.saved") });
     } catch (e) {
       setMessage({ type: "error", text: e instanceof Error ? e.message : t("superadmin.settings.saveFailed") });
@@ -129,7 +255,9 @@ export function GlobalSettingsClient() {
       {message && (
         <div
           className={`rounded-lg border p-3 text-sm ${
-            message.type === "success" ? "border-alert-successBorder bg-alert-success text-foreground" : "border-alert-errorBorder bg-alert-error text-foreground"
+            message.type === "success"
+              ? "border-alert-successBorder bg-alert-success text-foreground"
+              : "border-alert-errorBorder bg-alert-error text-foreground"
           }`}
         >
           {message.text}
@@ -147,112 +275,81 @@ export function GlobalSettingsClient() {
               <p className="text-sm text-muted-foreground">{t("superadmin.settings.pricingDescription")}</p>
             </div>
           </div>
-          <div className="mt-4 space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.minMarginLabel")}</label>
-              <p className="mt-0.5 text-xs text-muted-foreground/80">{t("superadmin.settings.minMarginHelp")}</p>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.5}
-                value={marginMinPct}
-                onChange={(e) => setMarginMinPct(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder={t("superadmin.settings.placeholderEg15")}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.maxMarginLabel")}</label>
-              <p className="mt-0.5 text-xs text-muted-foreground/80">{t("superadmin.settings.maxMarginHelp")}</p>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.5}
-                value={marginMaxPct}
-                onChange={(e) => setMarginMaxPct(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder={t("superadmin.settings.placeholderEg20")}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.entryFeeLabel")}</label>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={entryFeeUsd}
-                onChange={(e) => setEntryFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder={t("superadmin.settings.placeholderZero")}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.trainingFeeLabel")}</label>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={trainingFeeUsd}
-                onChange={(e) => setTrainingFeeUsd(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder={t("superadmin.settings.placeholderZero")}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground">{t("superadmin.settings.vlCommissionLabel")}</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.5}
-                value={visionLatamCommissionPct}
-                onChange={(e) => setVisionLatamCommissionPct(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-                placeholder={t("superadmin.settings.placeholderEg20")}
-              />
-              <p className="mt-0.5 text-xs text-muted-foreground">{t("superadmin.settings.vlCommissionHelp")}</p>
-            </div>
+          <div className="mt-4 space-y-4">
+            <PricingNumericField
+              label={t("superadmin.settings.minMarginLabel")}
+              help={t("superadmin.settings.minMarginHelp")}
+              meta={effectivePricing?.defaultMarginMinPct}
+              editValue={marginMinPct}
+              onEditChange={setMarginMinPct}
+              step={0.5}
+              max={100}
+              suffix="%"
+            />
+            <PricingNumericField
+              label={t("superadmin.settings.maxMarginLabel")}
+              help={t("superadmin.settings.maxMarginHelp")}
+              meta={effectivePricing?.defaultMarginMaxPct}
+              editValue={marginMaxPct}
+              onEditChange={setMarginMaxPct}
+              step={0.5}
+              max={100}
+              suffix="%"
+            />
+            <PricingNumericField
+              label={t("superadmin.settings.entryFeeLabel")}
+              meta={effectivePricing?.defaultEntryFeeUsd}
+              editValue={entryFeeUsd}
+              onEditChange={setEntryFeeUsd}
+              suffix=" USD"
+            />
+            <PricingNumericField
+              label={t("superadmin.settings.trainingFeeLabel")}
+              meta={effectivePricing?.defaultTrainingFeeUsd}
+              editValue={trainingFeeUsd}
+              onEditChange={setTrainingFeeUsd}
+              suffix=" USD"
+            />
+            <PricingNumericField
+              label={t("superadmin.settings.vlCommissionLabel")}
+              help={t("superadmin.settings.vlCommissionHelp")}
+              meta={effectivePricing?.visionLatamCommissionPct}
+              editValue={visionLatamCommissionPct}
+              onEditChange={setVisionLatamCommissionPct}
+              step={0.5}
+              max={100}
+              suffix="%"
+            />
             <div className="border-t border-border pt-3 mt-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">{t("superadmin.settings.factoryRatesIntro")}</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS80Label")}</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={rateS80}
-                    onChange={(e) => setRateS80(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    placeholder={t("superadmin.settings.placeholderEg37")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS150Label")}</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={rateS150}
-                    onChange={(e) => setRateS150(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    placeholder={t("superadmin.settings.placeholderEg67")}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground">{t("superadmin.settings.rateS200Label")}</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    value={rateS200}
-                    onChange={(e) => setRateS200(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    placeholder={t("superadmin.settings.placeholderEg85")}
-                  />
-                </div>
+              <p className="text-xs font-medium text-muted-foreground mb-3">{t("superadmin.settings.factoryRatesIntro")}</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <PricingNumericField
+                  label={t("superadmin.settings.rateS80Label")}
+                  meta={effectivePricing?.rateS80}
+                  editValue={rateS80}
+                  onEditChange={setRateS80}
+                  onRestoreDefault={() => restoreFactoryDefault("rateS80")}
+                  step={0.5}
+                  suffix=" USD/m²"
+                />
+                <PricingNumericField
+                  label={t("superadmin.settings.rateS150Label")}
+                  meta={effectivePricing?.rateS150}
+                  editValue={rateS150}
+                  onEditChange={setRateS150}
+                  onRestoreDefault={() => restoreFactoryDefault("rateS150")}
+                  step={0.5}
+                  suffix=" USD/m²"
+                />
+                <PricingNumericField
+                  label={t("superadmin.settings.rateS200Label")}
+                  meta={effectivePricing?.rateS200}
+                  editValue={rateS200}
+                  onEditChange={setRateS200}
+                  onRestoreDefault={() => restoreFactoryDefault("rateS200")}
+                  step={0.5}
+                  suffix=" USD/m²"
+                />
               </div>
             </div>
           </div>

@@ -163,7 +163,15 @@ async function salesGetHandler(req: Request) {
       include: {
         client: { select: { id: true, name: true } },
         project: { select: { id: true, projectName: true } },
-        quote: { select: { id: true, quoteNumber: true } },
+        quote: {
+          select: {
+            id: true,
+            quoteNumber: true,
+            visionLatamMarkupPct: true,
+            partnerMarkupPct: true,
+            factoryCostTotal: true,
+          },
+        },
         saleProjectLines: {
           orderBy: { sortOrder: "asc" },
           include: { project: { select: { id: true, projectName: true } } },

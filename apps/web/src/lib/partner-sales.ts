@@ -84,7 +84,15 @@ export async function refreshSaleComputedStatus(saleId: string): Promise<void> {
 const saleDetailInclude = {
   client: { select: { id: true, name: true, email: true } },
   project: { select: { id: true, projectName: true } },
-  quote: { select: { id: true, quoteNumber: true } },
+  quote: {
+    select: {
+      id: true,
+      quoteNumber: true,
+      visionLatamMarkupPct: true,
+      partnerMarkupPct: true,
+      factoryCostTotal: true,
+    },
+  },
   saleProjectLines: {
     orderBy: { sortOrder: "asc" as const },
     include: {
@@ -162,7 +170,11 @@ export function serializeSaleDetail(sale: SaleDetailRecord) {
     project: { id: sale.project.id, name: summaryName },
     projects: projectsPayload,
     quote: sale.quote
-      ? { id: sale.quote.id, quoteNumber: sale.quote.quoteNumber }
+      ? {
+          id: sale.quote.id,
+          quoteNumber: sale.quote.quoteNumber,
+          ...quoteCommissionFields(sale.quote, sale.exwUsd),
+        }
       : null,
     invoices: sale.invoices.map((inv) => ({
       id: inv.id,
@@ -193,13 +205,49 @@ type SaleListRowDb = Prisma.SaleGetPayload<{
   include: {
     client: { select: { id: true; name: true } };
     project: { select: { id: true; projectName: true } };
-    quote: { select: { id: true; quoteNumber: true } };
+    quote: {
+      select: {
+        id: true;
+        quoteNumber: true;
+        visionLatamMarkupPct: true;
+        partnerMarkupPct: true;
+        factoryCostTotal: true;
+      };
+    };
     saleProjectLines: {
       include: { project: { select: { id: true; projectName: true } } };
     };
     _count: { select: { invoices: true; payments: true } };
   };
 }> & { organization?: { id: string; name: string } | null };
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function quoteCommissionFields(quote: SaleListRowDb["quote"], exwUsd: number) {
+  const vlPct = quote?.visionLatamMarkupPct ?? null;
+  const partnerPct = quote?.partnerMarkupPct ?? null;
+  // sale.exwUsd is order-level (includes quantity); quote.factoryCostTotal is per-kit.
+  const factoryExw =
+    exwUsd > 0 ? exwUsd : quote?.factoryCostTotal != null && Number.isFinite(quote.factoryCostTotal) ? quote.factoryCostTotal : 0;
+  const vlCommissionUsd =
+    vlPct != null && Number.isFinite(vlPct) ? round2((factoryExw * vlPct) / 100) : null;
+  const baseForPartnerUsd =
+    vlPct != null && Number.isFinite(vlPct) ? round2(factoryExw * (1 + vlPct / 100)) : null;
+  const partnerMarginUsd =
+    baseForPartnerUsd != null && partnerPct != null && Number.isFinite(partnerPct)
+      ? round2(baseForPartnerUsd * (partnerPct / 100))
+      : null;
+  return {
+    visionLatamMarkupPct: vlPct,
+    vlCommissionUsd,
+    partnerMarkupPct: partnerPct,
+    partnerMarginUsd,
+    factoryExwUsd: factoryExw,
+    basePriceForPartnerUsd: baseForPartnerUsd,
+  };
+}
 
 export function serializeSaleListRow(sale: SaleListRowDb) {
   const lines = sale.saleProjectLines ?? [];
@@ -227,7 +275,13 @@ export function serializeSaleListRow(sale: SaleListRowDb) {
     client: sale.client,
     project: { id: sale.project.id, name: summaryName },
     projects: lines.map((l) => ({ id: l.project.id, name: l.project.projectName })),
-    quote: sale.quote ? { id: sale.quote.id, quoteNumber: sale.quote.quoteNumber } : null,
+    quote: sale.quote
+      ? {
+          id: sale.quote.id,
+          quoteNumber: sale.quote.quoteNumber,
+          ...quoteCommissionFields(sale.quote, sale.exwUsd),
+        }
+      : null,
     organization: sale.organization ? { id: sale.organization.id, name: sale.organization.name } : undefined,
     _count: sale._count,
   };

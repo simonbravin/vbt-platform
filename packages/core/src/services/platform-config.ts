@@ -31,7 +31,7 @@ export type PlatformConfigJson = {
 
 const EMPTY_CONFIG: PlatformConfigJson = {
   pricing: {},
-  moduleVisibility: {},
+  moduleVisibility: {} as Record<string, boolean>,
 };
 
 function requirePlatformAdmin(ctx: TenantContext) {
@@ -98,7 +98,13 @@ export async function getPlatformConfig(
   };
 }
 
-export type UpdatePlatformConfigInput = Partial<PlatformConfigJson>;
+export type UpdatePlatformConfigInput = Partial<Omit<PlatformConfigJson, "pricing">> & {
+  pricing?: {
+    [K in keyof NonNullable<PlatformConfigJson["pricing"]>]?:
+      | NonNullable<PlatformConfigJson["pricing"]>[K]
+      | null;
+  };
+};
 
 export async function updatePlatformConfig(
   prisma: PrismaClient,
@@ -107,11 +113,20 @@ export async function updatePlatformConfig(
 ): Promise<PlatformConfigJson> {
   requirePlatformAdmin(ctx);
   const current = await getPlatformConfig(prisma, ctx);
+  const mergedPricing = { ...current.pricing };
+  if (input.pricing) {
+    for (const [key, value] of Object.entries(input.pricing)) {
+      if (value === null) {
+        delete mergedPricing[key as keyof NonNullable<PlatformConfigJson["pricing"]>];
+      } else if (value !== undefined) {
+        (mergedPricing as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
   const merged: PlatformConfigJson = {
     ...current,
-    ...input,
-    pricing: { ...current.pricing, ...input.pricing },
-    moduleVisibility: input.moduleVisibility ?? current.moduleVisibility,
+    pricing: mergedPricing,
+    moduleVisibility: (input.moduleVisibility ?? current.moduleVisibility ?? {}) as Record<string, boolean>,
   };
   const existing = await prisma.platformConfig.findFirst({ select: { id: true } });
   if (existing) {
@@ -128,9 +143,10 @@ export async function updatePlatformConfig(
 }
 
 /** Default factory USD/m² by system. Used only server-side when platform_config has no values. */
-const DEFAULT_RATE_S80 = 37;
-const DEFAULT_RATE_S150 = 67;
-const DEFAULT_RATE_S200 = 85;
+export const DEFAULT_RATE_S80 = 37;
+export const DEFAULT_RATE_S150 = 67;
+export const DEFAULT_RATE_S200 = 85;
+export const DEFAULT_VISION_LATAM_COMMISSION_PCT = 20;
 
 /**
  * Get raw factory rates (USD/m²) from platform_config. Server-side only; never expose to client for partners.
@@ -139,6 +155,11 @@ const DEFAULT_CONTAINER_CAPACITY_M3 = 68;
 const DEFAULT_WALL_M2_S80 = 320;
 const DEFAULT_WALL_M2_S150 = 420;
 const DEFAULT_WALL_M2_S200 = 380;
+
+function pickNonNegativeRate(value: unknown, fallback: number): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
 
 export async function getRawRatesFromConfig(prisma: PrismaClient): Promise<{
   rateS80: number;
@@ -159,9 +180,9 @@ export async function getRawRatesFromConfig(prisma: PrismaClient): Promise<{
   const w150 = Number(p.containerWallAreaM2S150);
   const w200 = Number(p.containerWallAreaM2S200);
   return {
-    rateS80: (p.rateS80 as number) ?? DEFAULT_RATE_S80,
-    rateS150: (p.rateS150 as number) ?? DEFAULT_RATE_S150,
-    rateS200: (p.rateS200 as number) ?? DEFAULT_RATE_S200,
+    rateS80: pickNonNegativeRate(p.rateS80, DEFAULT_RATE_S80),
+    rateS150: pickNonNegativeRate(p.rateS150, DEFAULT_RATE_S150),
+    rateS200: pickNonNegativeRate(p.rateS200, DEFAULT_RATE_S200),
     rateGlobal: (p.rateGlobal as number) ?? 0,
     baseUom: ((p.baseUom as string) === "FT" ? "FT" : "M") as "M" | "FT",
     minRunFt: (p.minRunFt as number) ?? 0,
@@ -176,6 +197,73 @@ export async function getRawRatesFromConfig(prisma: PrismaClient): Promise<{
  * Get quote defaults for an org: effective rates (factory × (1 + VL commission %)) so partners only see their base price per m².
  * Never returns raw factory rates to the client when used for partners.
  */
+export type PricingFieldMeta = {
+  /** Value in use for quotes (persisted or system default). */
+  effective: number | null;
+  /** Value stored in platform_config; null when using system default. */
+  persisted: number | null;
+  usesSystemDefault: boolean;
+};
+
+export type EffectivePlatformPricing = {
+  defaultMarginMinPct: PricingFieldMeta;
+  defaultMarginMaxPct: PricingFieldMeta;
+  defaultEntryFeeUsd: PricingFieldMeta;
+  defaultTrainingFeeUsd: PricingFieldMeta;
+  visionLatamCommissionPct: PricingFieldMeta;
+  rateS80: PricingFieldMeta;
+  rateS150: PricingFieldMeta;
+  rateS200: PricingFieldMeta;
+};
+
+function pricingFieldMeta(
+  raw: Record<string, unknown>,
+  key: string,
+  systemDefault: number | null
+): PricingFieldMeta {
+  const persistedRaw = raw[key];
+  const hasPersisted = typeof persistedRaw === "number" && Number.isFinite(persistedRaw);
+  const persisted = hasPersisted ? persistedRaw : null;
+  const effective = hasPersisted ? persistedRaw : systemDefault;
+  return {
+    effective,
+    persisted,
+    usesSystemDefault: !hasPersisted && systemDefault != null,
+  };
+}
+
+function rateFieldMeta(
+  raw: Record<string, unknown>,
+  key: string,
+  systemDefault: number,
+  resolvedRate: number
+): PricingFieldMeta {
+  const meta = pricingFieldMeta(raw, key, systemDefault);
+  return {
+    ...meta,
+    effective: meta.persisted != null ? meta.effective : resolvedRate,
+  };
+}
+
+/** Resolved pricing for superadmin UI: effective values + persisted vs default flags. */
+export async function getEffectivePlatformPricingForAdmin(
+  prisma: PrismaClient
+): Promise<EffectivePlatformPricing> {
+  const row = await prisma.platformConfig.findFirst({ select: { configJson: true } });
+  const p = (row?.configJson as { pricing?: Record<string, unknown> })?.pricing ?? {};
+  const raw = await getRawRatesFromConfig(prisma);
+  return {
+    defaultMarginMinPct: pricingFieldMeta(p, "defaultMarginMinPct", null),
+    defaultMarginMaxPct: pricingFieldMeta(p, "defaultMarginMaxPct", null),
+    defaultEntryFeeUsd: pricingFieldMeta(p, "defaultEntryFeeUsd", null),
+    defaultTrainingFeeUsd: pricingFieldMeta(p, "defaultTrainingFeeUsd", null),
+    visionLatamCommissionPct: pricingFieldMeta(p, "visionLatamCommissionPct", DEFAULT_VISION_LATAM_COMMISSION_PCT),
+    rateS80: rateFieldMeta(p, "rateS80", DEFAULT_RATE_S80, raw.rateS80),
+    rateS150: rateFieldMeta(p, "rateS150", DEFAULT_RATE_S150, raw.rateS150),
+    rateS200: rateFieldMeta(p, "rateS200", DEFAULT_RATE_S200, raw.rateS200),
+  };
+}
+
 export async function getQuoteDefaultsForOrg(
   prisma: PrismaClient,
   organizationId: string
