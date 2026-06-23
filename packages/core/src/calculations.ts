@@ -307,6 +307,13 @@ export function computeConcreteAndSteel(input: ConcreteAndSteelInput): {
   return { concreteM3, steelKgEst };
 }
 
+import {
+  DEFAULT_CONTAINER_CAPACITY_M3,
+  DEFAULT_WALL_M2_S80,
+  DEFAULT_WALL_M2_S150,
+  DEFAULT_WALL_M2_S200,
+} from "./services/platform-config";
+
 // ─── Container Calculation ────────────────────────────────────────────────────
 
 export function computeContainers(
@@ -326,7 +333,12 @@ export type FclDerivationInput = {
 
 export type FclDerivationResult = {
   numContainers: number;
+  /** Max whole kits per container (integer); 0 when one kit spans >1 container. */
   kitsPerContainer: number;
+  /** Theoretical max kits per container (1/slotsPerKit) when slotsPerKit ≤ 1. */
+  kitsPerContainerCapacity?: number;
+  /** Average kits per allocated container for this order (totalKits / numContainers). */
+  avgKitsPerContainer?: number;
   /** Fraction of one container used by one kit (sum of m²_sistema / cap_sistema). */
   slotsPerKit?: number;
   /** slotsPerKit × totalKits — container-equivalents for the order. */
@@ -377,11 +389,28 @@ export type FclWallM2Input = {
   totalKits: number;
 };
 
+function wallM2KitCapacityMetrics(slotsPerKit: number): {
+  kitsPerContainer: number;
+  kitsPerContainerCapacity: number;
+} {
+  if (slotsPerKit <= 0) {
+    return { kitsPerContainer: 0, kitsPerContainerCapacity: 0 };
+  }
+  if (slotsPerKit > 1) {
+    return { kitsPerContainer: 0, kitsPerContainerCapacity: 0 };
+  }
+  const capacity = 1 / slotsPerKit;
+  return {
+    kitsPerContainerCapacity: capacity,
+    kitsPerContainer: Math.max(1, Math.floor(capacity)),
+  };
+}
+
 export function deriveFclContainersFromWallM2(input: FclWallM2Input): FclDerivationResult {
   const kits = Math.max(0, Math.floor(Number(input.totalKits) || 0));
-  const a80 = Math.max(1e-6, Number(input.areaM2PerContainerS80) || 320);
-  const a150 = Math.max(1e-6, Number(input.areaM2PerContainerS150) || 420);
-  const a200 = Math.max(1e-6, Number(input.areaM2PerContainerS200) || 380);
+  const a80 = Math.max(1e-6, Number(input.areaM2PerContainerS80) || DEFAULT_WALL_M2_S80);
+  const a150 = Math.max(1e-6, Number(input.areaM2PerContainerS150) || DEFAULT_WALL_M2_S150);
+  const a200 = Math.max(1e-6, Number(input.areaM2PerContainerS200) || DEFAULT_WALL_M2_S200);
   const m80 = Math.max(0, Number(input.m2S80) || 0);
   const m150 = Math.max(0, Number(input.m2S150) || 0);
   const m200 = Math.max(0, Number(input.m2S200) || 0);
@@ -393,15 +422,20 @@ export function deriveFclContainersFromWallM2(input: FclWallM2Input): FclDerivat
 
   const m2PerKitTotal = m80 + m150 + m200;
   const totalSlots = slotsPerKit * kits;
+  const { kitsPerContainer, kitsPerContainerCapacity } = wallM2KitCapacityMetrics(slotsPerKit);
 
   let numContainers = 1;
   if (kits > 0 && slotsPerKit > 0) {
-    numContainers = Math.max(1, Math.ceil(totalSlots));
+    if (slotsPerKit <= 1 && kitsPerContainer > 0) {
+      numContainers = Math.max(1, Math.ceil(kits / kitsPerContainer));
+    } else {
+      numContainers = Math.max(1, Math.ceil(totalSlots));
+    }
   } else if (kits > 0) {
     numContainers = 1;
   }
 
-  const kitsPerContainer = numContainers > 0 && kits > 0 ? kits / numContainers : 0;
+  const avgKitsPerContainer = numContainers > 0 && kits > 0 ? kits / numContainers : 0;
   const occupancyPerKitPct = slotsPerKit * 100;
   const occupancyTotalPct =
     numContainers > 0 && totalSlots > 0 ? (totalSlots / numContainers) * 100 : 0;
@@ -409,6 +443,8 @@ export function deriveFclContainersFromWallM2(input: FclWallM2Input): FclDerivat
   return {
     numContainers,
     kitsPerContainer,
+    kitsPerContainerCapacity,
+    avgKitsPerContainer,
     slotsPerKit,
     totalSlots,
     occupancyPerKitPct,

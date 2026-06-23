@@ -8,7 +8,7 @@ This document matches the implementation in `@vbt/core` (pricing resolution + Sa
 
 | Layer | Storage | Purpose |
 |--------|---------|---------|
-| Platform | `platform_config.config_json.pricing` | Fallback VL commission % (`visionLatamCommissionPct`, default **20**), optional `defaultMarginMinPct` / `defaultMarginMaxPct` for any partner without explicit bounds |
+| Platform | `platform_config.config_json.pricing` | Fallback VL commission % (`visionLatamCommissionPct`, default **20**), optional `defaultMarginMinPct` / `defaultMarginMaxPct`, factory rates (`rateS80`/`S150`/`S200`), and **FCL planning** (`containerWallAreaM2S80` default **720**, `S150` **420**, `S200` **380**; `containerCapacityM3` default **68**) — editable in Superadmin → Global settings |
 | Partner (structured) | `partner_profiles.margin_min_pct`, `margin_max_pct`, `vision_latam_commission_pct` | Query-friendly bounds and per-partner VL commission override (same semantics as today’s `getVisionLatamCommissionPctForOrg`) |
 | Partner (JSON) | `partner_profiles.quote_defaults` | **Canonical extension point** for SaaS quote defaults: `defaultPartnerMarkupPct`, default logistics/import/local/technical USD amounts, optional `countryOverrides` (ISO2 → partial overrides). Coexists with legacy wizard keys (`baseUom`, `commissionPct`, …) used by `/api/admin/settings`. |
 

@@ -6,7 +6,12 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { deriveFclContainersFromWallM2 } from "@vbt/core";
+import {
+  deriveFclContainersFromWallM2,
+  DEFAULT_WALL_M2_S80,
+  DEFAULT_WALL_M2_S150,
+  DEFAULT_WALL_M2_S200,
+} from "@vbt/core";
 import { getT } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 
@@ -351,7 +356,6 @@ function SumRow({
 // ─── Main PDF Document ────────────────────────────────────────────────────────
 
 const DEFAULT_CONTAINER_VOLUME_M3 = 70;
-const DEFAULT_WALL_M2_CAP = { s80: 320, s150: 420, s200: 380 } as const;
 
 export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; options?: QuotePdfOptions }) {
   const locale: Locale = options?.locale === "es" ? "es" : "en";
@@ -368,9 +372,9 @@ export function QuotePdfDocument({ data, options = {} }: { data: QuotePdfData; o
     m2S80: Number(data.wallAreaM2S80) || 0,
     m2S150: Number(data.wallAreaM2S150) || 0,
     m2S200: Number(data.wallAreaM2S200) || 0,
-    areaM2PerContainerS80: DEFAULT_WALL_M2_CAP.s80,
-    areaM2PerContainerS150: DEFAULT_WALL_M2_CAP.s150,
-    areaM2PerContainerS200: DEFAULT_WALL_M2_CAP.s200,
+    areaM2PerContainerS80: DEFAULT_WALL_M2_S80,
+    areaM2PerContainerS150: DEFAULT_WALL_M2_S150,
+    areaM2PerContainerS200: DEFAULT_WALL_M2_S200,
     totalKits: totalKits > 0 ? totalKits : 1,
   });
   const hasWallM2 =

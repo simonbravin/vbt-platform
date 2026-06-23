@@ -151,10 +151,30 @@ export const DEFAULT_VISION_LATAM_COMMISSION_PCT = 20;
 /**
  * Get raw factory rates (USD/m²) from platform_config. Server-side only; never expose to client for partners.
  */
-const DEFAULT_CONTAINER_CAPACITY_M3 = 68;
-const DEFAULT_WALL_M2_S80 = 320;
-const DEFAULT_WALL_M2_S150 = 420;
-const DEFAULT_WALL_M2_S200 = 380;
+export const DEFAULT_CONTAINER_CAPACITY_M3 = 68;
+/** Approx. wall m² per full container (FCL planning) — S80 / 80 mm profile. */
+export const DEFAULT_WALL_M2_S80 = 720;
+export const DEFAULT_WALL_M2_S150 = 420;
+export const DEFAULT_WALL_M2_S200 = 380;
+
+export const LEGACY_WRONG_WALL_M2_S80 = 320;
+
+export function resolveContainerWallM2S80(persisted: unknown): number {
+  const n = typeof persisted === "number" ? persisted : Number(persisted);
+  if (!Number.isFinite(n) || n <= 0 || n === LEGACY_WRONG_WALL_M2_S80) {
+    return DEFAULT_WALL_M2_S80;
+  }
+  return n;
+}
+
+function pricingJsonForAdminMeta(p: Record<string, unknown>): Record<string, unknown> {
+  const n = Number(p.containerWallAreaM2S80);
+  if (Number.isFinite(n) && n === LEGACY_WRONG_WALL_M2_S80) {
+    const { containerWallAreaM2S80: _drop, ...rest } = p;
+    return rest;
+  }
+  return p;
+}
 
 function pickNonNegativeRate(value: unknown, fallback: number): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -176,7 +196,6 @@ export async function getRawRatesFromConfig(prisma: PrismaClient): Promise<{
   const row = await prisma.platformConfig.findFirst({ select: { configJson: true } });
   const p = (row?.configJson as { pricing?: Record<string, unknown> })?.pricing ?? {};
   const cap = Number(p.containerCapacityM3);
-  const w80 = Number(p.containerWallAreaM2S80);
   const w150 = Number(p.containerWallAreaM2S150);
   const w200 = Number(p.containerWallAreaM2S200);
   return {
@@ -187,7 +206,7 @@ export async function getRawRatesFromConfig(prisma: PrismaClient): Promise<{
     baseUom: ((p.baseUom as string) === "FT" ? "FT" : "M") as "M" | "FT",
     minRunFt: (p.minRunFt as number) ?? 0,
     containerCapacityM3: Number.isFinite(cap) && cap > 0 ? cap : DEFAULT_CONTAINER_CAPACITY_M3,
-    containerWallAreaM2S80: Number.isFinite(w80) && w80 > 0 ? w80 : DEFAULT_WALL_M2_S80,
+    containerWallAreaM2S80: resolveContainerWallM2S80(p.containerWallAreaM2S80),
     containerWallAreaM2S150: Number.isFinite(w150) && w150 > 0 ? w150 : DEFAULT_WALL_M2_S150,
     containerWallAreaM2S200: Number.isFinite(w200) && w200 > 0 ? w200 : DEFAULT_WALL_M2_S200,
   };
@@ -214,6 +233,10 @@ export type EffectivePlatformPricing = {
   rateS80: PricingFieldMeta;
   rateS150: PricingFieldMeta;
   rateS200: PricingFieldMeta;
+  containerWallAreaM2S80: PricingFieldMeta;
+  containerWallAreaM2S150: PricingFieldMeta;
+  containerWallAreaM2S200: PricingFieldMeta;
+  containerCapacityM3: PricingFieldMeta;
 };
 
 function pricingFieldMeta(
@@ -250,7 +273,8 @@ export async function getEffectivePlatformPricingForAdmin(
   prisma: PrismaClient
 ): Promise<EffectivePlatformPricing> {
   const row = await prisma.platformConfig.findFirst({ select: { configJson: true } });
-  const p = (row?.configJson as { pricing?: Record<string, unknown> })?.pricing ?? {};
+  const pRaw = (row?.configJson as { pricing?: Record<string, unknown> })?.pricing ?? {};
+  const p = pricingJsonForAdminMeta(pRaw);
   const raw = await getRawRatesFromConfig(prisma);
   return {
     defaultMarginMinPct: pricingFieldMeta(p, "defaultMarginMinPct", null),
@@ -261,6 +285,30 @@ export async function getEffectivePlatformPricingForAdmin(
     rateS80: rateFieldMeta(p, "rateS80", DEFAULT_RATE_S80, raw.rateS80),
     rateS150: rateFieldMeta(p, "rateS150", DEFAULT_RATE_S150, raw.rateS150),
     rateS200: rateFieldMeta(p, "rateS200", DEFAULT_RATE_S200, raw.rateS200),
+    containerWallAreaM2S80: rateFieldMeta(
+      p,
+      "containerWallAreaM2S80",
+      DEFAULT_WALL_M2_S80,
+      raw.containerWallAreaM2S80
+    ),
+    containerWallAreaM2S150: rateFieldMeta(
+      p,
+      "containerWallAreaM2S150",
+      DEFAULT_WALL_M2_S150,
+      raw.containerWallAreaM2S150
+    ),
+    containerWallAreaM2S200: rateFieldMeta(
+      p,
+      "containerWallAreaM2S200",
+      DEFAULT_WALL_M2_S200,
+      raw.containerWallAreaM2S200
+    ),
+    containerCapacityM3: rateFieldMeta(
+      p,
+      "containerCapacityM3",
+      DEFAULT_CONTAINER_CAPACITY_M3,
+      raw.containerCapacityM3
+    ),
   };
 }
 

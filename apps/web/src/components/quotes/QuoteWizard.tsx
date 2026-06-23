@@ -620,7 +620,20 @@ export function QuoteWizard() {
   const fcl = preview.data?.fcl as Record<string, unknown> | undefined;
   const pricing = preview.data?.pricing as Record<string, unknown> | undefined;
   const numContainers = typeof snap?.numContainers === "number" ? Number(snap.numContainers) : 0;
-  const kitsPerContainer = typeof snap?.kitsPerContainer === "number" ? Number(snap.kitsPerContainer) : null;
+  const maxKitsPerContainer =
+    typeof fcl?.kitsPerContainer === "number" && Number.isFinite(Number(fcl.kitsPerContainer))
+      ? Number(fcl.kitsPerContainer)
+      : typeof snap?.kitsPerContainer === "number"
+        ? Number(snap.kitsPerContainer)
+        : null;
+  const kitsPerContainerCapacity =
+    typeof fcl?.kitsPerContainerCapacity === "number" && Number.isFinite(Number(fcl.kitsPerContainerCapacity))
+      ? Number(fcl.kitsPerContainerCapacity)
+      : null;
+  const avgKitsPerContainer =
+    typeof fcl?.avgKitsPerContainer === "number" && Number.isFinite(Number(fcl.avgKitsPerContainer))
+      ? Number(fcl.avgKitsPerContainer)
+      : null;
   const occupancyPerKitPct =
     typeof fcl?.occupancyPerKitPct === "number" && Number.isFinite(Number(fcl.occupancyPerKitPct))
       ? Number(fcl.occupancyPerKitPct)
@@ -978,16 +991,6 @@ export function QuoteWizard() {
                       s200: String(quoteDefaults.containerWallAreaM2S200 ?? "—"),
                     })}
                   </p>
-                  <div className="mt-3 rounded-lg border border-border/60 bg-muted/10 px-3 py-2">
-                    <p className="text-xs font-medium text-foreground">{t("wizard.effectiveRatesTitle")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t("wizard.effectiveRatesLine", {
-                        s80: fmt(quoteDefaults.effectiveRateS80),
-                        s150: fmt(quoteDefaults.effectiveRateS150),
-                        s200: fmt(quoteDefaults.effectiveRateS200),
-                      })}
-                    </p>
-                  </div>
                 </>
               )}
               {state.costMethod === "CSV" && importMappedWithoutM2 > 0 && (
@@ -1150,13 +1153,37 @@ export function QuoteWizard() {
                       {t("wizard.containersLabel")}: <span className="text-foreground font-medium">{String(snap.numContainers)}</span>
                     </li>
                     <li>
-                      {t("wizard.kitsPerContainer")}:{" "}
+                      {t("wizard.maxKitsPerContainer")}:{" "}
                       <span className="text-foreground font-medium">
-                        {kitsPerContainer != null
-                          ? kitsPerContainer.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                          : "—"}
+                        {maxKitsPerContainer != null && maxKitsPerContainer > 0
+                          ? String(maxKitsPerContainer)
+                          : kitsPerContainerCapacity != null && kitsPerContainerCapacity > 0
+                            ? kitsPerContainerCapacity.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                            : "—"}
                       </span>
+                      {kitsPerContainerCapacity != null &&
+                        maxKitsPerContainer != null &&
+                        maxKitsPerContainer > 0 &&
+                        kitsPerContainerCapacity > maxKitsPerContainer + 0.05 && (
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            ({t("wizard.kitsPerContainerTheoretical", {
+                              value: kitsPerContainerCapacity.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                            })})
+                          </span>
+                        )}
                     </li>
+                    {avgKitsPerContainer != null &&
+                      maxKitsPerContainer != null &&
+                      maxKitsPerContainer > 0 &&
+                      Math.abs(avgKitsPerContainer - maxKitsPerContainer) > 0.05 &&
+                      numContainers > 1 && (
+                        <li className="text-xs text-muted-foreground">
+                          {t("wizard.avgKitsPerContainer", {
+                            value: avgKitsPerContainer.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                          })}
+                        </li>
+                      )}
                     {m2PerKitTotal != null && m2PerKitTotal > 0 && (
                       <li>
                         {t("wizard.m2PerKitLabel")}:{" "}

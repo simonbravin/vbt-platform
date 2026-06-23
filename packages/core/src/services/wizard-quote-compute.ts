@@ -236,12 +236,19 @@ export async function computeWizardQuoteArtifacts(
   });
   const kits = Math.max(0, Math.floor(Number(data.totalKits) || 0));
   const numContainersMerged = kits > 0 ? Math.max(wallFcl.numContainers, volFcl.numContainers, 1) : 1;
+  const avgKitsPerContainer = numContainersMerged > 0 && kits > 0 ? kits / numContainersMerged : 0;
+  const volumeDrivesContainers = volFcl.numContainers > wallFcl.numContainers;
   const kitsPerContainerMerged =
-    numContainersMerged > 0 && kits > 0 ? kits / numContainersMerged : 0;
+    volumeDrivesContainers && kits > 0
+      ? Math.max(1, Math.floor(kits / numContainersMerged))
+      : wallFcl.kitsPerContainer;
   const totalSlots = wallFcl.totalSlots ?? 0;
   const fclBase = {
     numContainers: numContainersMerged,
     kitsPerContainer: kitsPerContainerMerged,
+    kitsPerContainerCapacity: wallFcl.kitsPerContainerCapacity,
+    avgKitsPerContainer,
+    fclDriver: volumeDrivesContainers ? ("volume" as const) : ("wallM2" as const),
     slotsPerKit: wallFcl.slotsPerKit,
     totalSlots: wallFcl.totalSlots,
     occupancyPerKitPct: wallFcl.occupancyPerKitPct,

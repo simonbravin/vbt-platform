@@ -17,6 +17,10 @@ type Config = {
     rateS80?: number;
     rateS150?: number;
     rateS200?: number;
+    containerWallAreaM2S80?: number;
+    containerWallAreaM2S150?: number;
+    containerWallAreaM2S200?: number;
+    containerCapacityM3?: number;
   };
   moduleVisibility?: Record<string, boolean>;
   effectivePricing?: EffectivePlatformPricing;
@@ -143,6 +147,10 @@ export function GlobalSettingsClient() {
   const [rateS80, setRateS80] = useState<string>("");
   const [rateS150, setRateS150] = useState<string>("");
   const [rateS200, setRateS200] = useState<string>("");
+  const [containerWallM2S80, setContainerWallM2S80] = useState<string>("");
+  const [containerWallM2S150, setContainerWallM2S150] = useState<string>("");
+  const [containerWallM2S200, setContainerWallM2S200] = useState<string>("");
+  const [containerCapacityM3, setContainerCapacityM3] = useState<string>("");
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
 
   const applyLoadedConfig = useCallback((data: Config) => {
@@ -158,6 +166,18 @@ export function GlobalSettingsClient() {
     setRateS80(persistedToEditString(ep?.rateS80?.persisted ?? data?.pricing?.rateS80 ?? null));
     setRateS150(persistedToEditString(ep?.rateS150?.persisted ?? data?.pricing?.rateS150 ?? null));
     setRateS200(persistedToEditString(ep?.rateS200?.persisted ?? data?.pricing?.rateS200 ?? null));
+    setContainerWallM2S80(
+      persistedToEditString(ep?.containerWallAreaM2S80?.persisted ?? data?.pricing?.containerWallAreaM2S80 ?? null)
+    );
+    setContainerWallM2S150(
+      persistedToEditString(ep?.containerWallAreaM2S150?.persisted ?? data?.pricing?.containerWallAreaM2S150 ?? null)
+    );
+    setContainerWallM2S200(
+      persistedToEditString(ep?.containerWallAreaM2S200?.persisted ?? data?.pricing?.containerWallAreaM2S200 ?? null)
+    );
+    setContainerCapacityM3(
+      persistedToEditString(ep?.containerCapacityM3?.persisted ?? data?.pricing?.containerCapacityM3 ?? null)
+    );
     setVisibility((data?.moduleVisibility as Record<string, boolean>) ?? {});
   }, []);
 
@@ -182,7 +202,16 @@ export function GlobalSettingsClient() {
     };
   }, [applyLoadedConfig, t]);
 
-  const restoreFactoryDefault = async (field: "rateS80" | "rateS150" | "rateS200") => {
+  const restorePricingDefault = async (
+    field:
+      | "rateS80"
+      | "rateS150"
+      | "rateS200"
+      | "containerWallAreaM2S80"
+      | "containerWallAreaM2S150"
+      | "containerWallAreaM2S200"
+      | "containerCapacityM3"
+  ) => {
     setSaving(true);
     setMessage(null);
     try {
@@ -218,6 +247,10 @@ export function GlobalSettingsClient() {
         ["rateS80", parseOptionalNumberField(rateS80)],
         ["rateS150", parseOptionalNumberField(rateS150)],
         ["rateS200", parseOptionalNumberField(rateS200)],
+        ["containerWallAreaM2S80", parseOptionalNumberField(containerWallM2S80)],
+        ["containerWallAreaM2S150", parseOptionalNumberField(containerWallM2S150)],
+        ["containerWallAreaM2S200", parseOptionalNumberField(containerWallM2S200)],
+        ["containerCapacityM3", parseOptionalNumberField(containerCapacityM3)],
       ];
       if (pricingFields.some(([, v]) => v === null)) {
         setMessage({ type: "error", text: t("superadmin.settings.invalidNumber") });
@@ -354,7 +387,7 @@ export function GlobalSettingsClient() {
                   meta={effectivePricing?.rateS80}
                   editValue={rateS80}
                   onEditChange={setRateS80}
-                  onRestoreDefault={() => restoreFactoryDefault("rateS80")}
+                  onRestoreDefault={() => restorePricingDefault("rateS80")}
                   step={0.5}
                   suffix=" USD/m²"
                   stackEdit
@@ -364,7 +397,7 @@ export function GlobalSettingsClient() {
                   meta={effectivePricing?.rateS150}
                   editValue={rateS150}
                   onEditChange={setRateS150}
-                  onRestoreDefault={() => restoreFactoryDefault("rateS150")}
+                  onRestoreDefault={() => restorePricingDefault("rateS150")}
                   step={0.5}
                   suffix=" USD/m²"
                   stackEdit
@@ -374,10 +407,58 @@ export function GlobalSettingsClient() {
                   meta={effectivePricing?.rateS200}
                   editValue={rateS200}
                   onEditChange={setRateS200}
-                  onRestoreDefault={() => restoreFactoryDefault("rateS200")}
+                  onRestoreDefault={() => restorePricingDefault("rateS200")}
                   step={0.5}
                   suffix=" USD/m²"
                   stackEdit
+                />
+              </div>
+            </div>
+            <div className="border-t border-border pt-4">
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{t("superadmin.settings.fclCapacityIntro")}</p>
+              <p className="mb-3 text-xs text-muted-foreground/80">{t("superadmin.settings.fclCapacityHelp")}</p>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <PricingNumericField
+                  label={t("superadmin.settings.containerWallS80Label")}
+                  meta={effectivePricing?.containerWallAreaM2S80}
+                  editValue={containerWallM2S80}
+                  onEditChange={setContainerWallM2S80}
+                  onRestoreDefault={() => restorePricingDefault("containerWallAreaM2S80")}
+                  step={1}
+                  suffix=" m²"
+                  stackEdit
+                />
+                <PricingNumericField
+                  label={t("superadmin.settings.containerWallS150Label")}
+                  meta={effectivePricing?.containerWallAreaM2S150}
+                  editValue={containerWallM2S150}
+                  onEditChange={setContainerWallM2S150}
+                  onRestoreDefault={() => restorePricingDefault("containerWallAreaM2S150")}
+                  step={1}
+                  suffix=" m²"
+                  stackEdit
+                />
+                <PricingNumericField
+                  label={t("superadmin.settings.containerWallS200Label")}
+                  meta={effectivePricing?.containerWallAreaM2S200}
+                  editValue={containerWallM2S200}
+                  onEditChange={setContainerWallM2S200}
+                  onRestoreDefault={() => restorePricingDefault("containerWallAreaM2S200")}
+                  step={1}
+                  suffix=" m²"
+                  stackEdit
+                />
+              </div>
+              <div className="mt-4 max-w-md">
+                <PricingNumericField
+                  label={t("superadmin.settings.containerVolumeLabel")}
+                  help={t("superadmin.settings.containerVolumeHelp")}
+                  meta={effectivePricing?.containerCapacityM3}
+                  editValue={containerCapacityM3}
+                  onEditChange={setContainerCapacityM3}
+                  onRestoreDefault={() => restorePricingDefault("containerCapacityM3")}
+                  step={1}
+                  suffix=" m³"
                 />
               </div>
             </div>
