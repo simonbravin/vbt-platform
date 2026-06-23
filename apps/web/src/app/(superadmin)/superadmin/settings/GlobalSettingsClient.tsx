@@ -5,23 +5,7 @@ import Link from "next/link";
 import { DollarSign, Eye, Building2, Lock, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { saasApiErrorMessageOr } from "@/lib/saas-api-error-message";
-
-type PricingFieldMeta = {
-  effective: number | null;
-  persisted: number | null;
-  usesSystemDefault: boolean;
-};
-
-type EffectivePlatformPricing = {
-  defaultMarginMinPct: PricingFieldMeta;
-  defaultMarginMaxPct: PricingFieldMeta;
-  defaultEntryFeeUsd: PricingFieldMeta;
-  defaultTrainingFeeUsd: PricingFieldMeta;
-  visionLatamCommissionPct: PricingFieldMeta;
-  rateS80: PricingFieldMeta;
-  rateS150: PricingFieldMeta;
-  rateS200: PricingFieldMeta;
-};
+import type { EffectivePlatformPricing, PricingFieldMeta } from "@vbt/core";
 
 type Config = {
   pricing?: {
@@ -61,6 +45,12 @@ function persistedToEditString(persisted: number | null): string {
   return persisted != null && Number.isFinite(persisted) ? String(persisted) : "";
 }
 
+function parseOptionalNumberField(value: string): number | undefined | null {
+  if (value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 function PricingNumericField({
   label,
   help,
@@ -72,6 +62,7 @@ function PricingNumericField({
   min = 0,
   max,
   suffix = "",
+  stackEdit = false,
 }: {
   label: string;
   help?: string;
@@ -83,39 +74,47 @@ function PricingNumericField({
   min?: number;
   max?: number;
   suffix?: string;
+  /** When true, new value stacks below current (for narrow multi-column layouts). */
+  stackEdit?: boolean;
 }) {
   const t = useT();
   return (
     <div>
       <label className="block text-xs font-medium text-muted-foreground">{label}</label>
       {help ? <p className="mt-0.5 text-xs text-muted-foreground/80">{help}</p> : null}
-      <div className="mt-1 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("superadmin.settings.currentValueLabel")}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold tabular-nums text-foreground">
-            {formatDisplayValue(meta?.effective ?? null, suffix)}
-          </span>
-          {meta?.usesSystemDefault ? (
-            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {t("superadmin.settings.systemDefaultBadge")}
+      <div
+        className={`mt-1 grid grid-cols-1 items-end gap-2 ${stackEdit ? "" : "sm:grid-cols-2"}`}
+      >
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("superadmin.settings.currentValueLabel")}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {formatDisplayValue(meta?.effective ?? null, suffix)}
             </span>
-          ) : null}
+            {meta?.usesSystemDefault ? (
+              <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {t("superadmin.settings.systemDefaultBadge")}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("superadmin.settings.newValueLabel")}
+          </label>
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={editValue}
+            onChange={(e) => onEditChange(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
+          />
         </div>
       </div>
-      <label className="mt-2 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {t("superadmin.settings.newValueLabel")}
-      </label>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={editValue}
-        onChange={(e) => onEditChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground"
-      />
       {onRestoreDefault && meta?.usesSystemDefault === false ? (
         <button
           type="button"
@@ -210,17 +209,40 @@ export function GlobalSettingsClient() {
     setSaving(true);
     setMessage(null);
     try {
+      const pricingFields: Array<[string, number | undefined | null]> = [
+        ["defaultMarginMinPct", parseOptionalNumberField(marginMinPct)],
+        ["defaultMarginMaxPct", parseOptionalNumberField(marginMaxPct)],
+        ["defaultEntryFeeUsd", parseOptionalNumberField(entryFeeUsd)],
+        ["defaultTrainingFeeUsd", parseOptionalNumberField(trainingFeeUsd)],
+        ["visionLatamCommissionPct", parseOptionalNumberField(visionLatamCommissionPct)],
+        ["rateS80", parseOptionalNumberField(rateS80)],
+        ["rateS150", parseOptionalNumberField(rateS150)],
+        ["rateS200", parseOptionalNumberField(rateS200)],
+      ];
+      if (pricingFields.some(([, v]) => v === null)) {
+        setMessage({ type: "error", text: t("superadmin.settings.invalidNumber") });
+        return;
+      }
+
+      const parsedMin = pricingFields.find(([k]) => k === "defaultMarginMinPct")![1] as number | undefined;
+      const parsedMax = pricingFields.find(([k]) => k === "defaultMarginMaxPct")![1] as number | undefined;
+      const effectiveMin = parsedMin ?? effectivePricing?.defaultMarginMinPct?.effective ?? null;
+      const effectiveMax = parsedMax ?? effectivePricing?.defaultMarginMaxPct?.effective ?? null;
+      if (
+        effectiveMin != null &&
+        effectiveMax != null &&
+        Number.isFinite(effectiveMin) &&
+        Number.isFinite(effectiveMax) &&
+        effectiveMin > effectiveMax
+      ) {
+        setMessage({ type: "error", text: t("superadmin.settings.marginRangeInvalid") });
+        return;
+      }
+
       const body: Config = {
-        pricing: {
-          defaultMarginMinPct: marginMinPct === "" ? undefined : Number(marginMinPct),
-          defaultMarginMaxPct: marginMaxPct === "" ? undefined : Number(marginMaxPct),
-          defaultEntryFeeUsd: entryFeeUsd === "" ? undefined : Number(entryFeeUsd),
-          defaultTrainingFeeUsd: trainingFeeUsd === "" ? undefined : Number(trainingFeeUsd),
-          visionLatamCommissionPct: visionLatamCommissionPct === "" ? undefined : Number(visionLatamCommissionPct),
-          rateS80: rateS80 === "" ? undefined : Number(rateS80),
-          rateS150: rateS150 === "" ? undefined : Number(rateS150),
-          rateS200: rateS200 === "" ? undefined : Number(rateS200),
-        },
+        pricing: Object.fromEntries(
+          pricingFields.map(([key, value]) => [key, value === undefined ? undefined : value])
+        ) as Config["pricing"],
         moduleVisibility: visibility,
       };
       const res = await fetch("/api/saas/platform-config", {
@@ -264,7 +286,7 @@ export function GlobalSettingsClient() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-4">
         <div className="surface-card p-6">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-muted p-2">
@@ -276,40 +298,44 @@ export function GlobalSettingsClient() {
             </div>
           </div>
           <div className="mt-4 space-y-4">
-            <PricingNumericField
-              label={t("superadmin.settings.minMarginLabel")}
-              help={t("superadmin.settings.minMarginHelp")}
-              meta={effectivePricing?.defaultMarginMinPct}
-              editValue={marginMinPct}
-              onEditChange={setMarginMinPct}
-              step={0.5}
-              max={100}
-              suffix="%"
-            />
-            <PricingNumericField
-              label={t("superadmin.settings.maxMarginLabel")}
-              help={t("superadmin.settings.maxMarginHelp")}
-              meta={effectivePricing?.defaultMarginMaxPct}
-              editValue={marginMaxPct}
-              onEditChange={setMarginMaxPct}
-              step={0.5}
-              max={100}
-              suffix="%"
-            />
-            <PricingNumericField
-              label={t("superadmin.settings.entryFeeLabel")}
-              meta={effectivePricing?.defaultEntryFeeUsd}
-              editValue={entryFeeUsd}
-              onEditChange={setEntryFeeUsd}
-              suffix=" USD"
-            />
-            <PricingNumericField
-              label={t("superadmin.settings.trainingFeeLabel")}
-              meta={effectivePricing?.defaultTrainingFeeUsd}
-              editValue={trainingFeeUsd}
-              onEditChange={setTrainingFeeUsd}
-              suffix=" USD"
-            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <PricingNumericField
+                label={t("superadmin.settings.minMarginLabel")}
+                help={t("superadmin.settings.minMarginHelp")}
+                meta={effectivePricing?.defaultMarginMinPct}
+                editValue={marginMinPct}
+                onEditChange={setMarginMinPct}
+                step={0.5}
+                max={100}
+                suffix="%"
+              />
+              <PricingNumericField
+                label={t("superadmin.settings.maxMarginLabel")}
+                help={t("superadmin.settings.maxMarginHelp")}
+                meta={effectivePricing?.defaultMarginMaxPct}
+                editValue={marginMaxPct}
+                onEditChange={setMarginMaxPct}
+                step={0.5}
+                max={100}
+                suffix="%"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <PricingNumericField
+                label={t("superadmin.settings.entryFeeLabel")}
+                meta={effectivePricing?.defaultEntryFeeUsd}
+                editValue={entryFeeUsd}
+                onEditChange={setEntryFeeUsd}
+                suffix=" USD"
+              />
+              <PricingNumericField
+                label={t("superadmin.settings.trainingFeeLabel")}
+                meta={effectivePricing?.defaultTrainingFeeUsd}
+                editValue={trainingFeeUsd}
+                onEditChange={setTrainingFeeUsd}
+                suffix=" USD"
+              />
+            </div>
             <PricingNumericField
               label={t("superadmin.settings.vlCommissionLabel")}
               help={t("superadmin.settings.vlCommissionHelp")}
@@ -320,9 +346,9 @@ export function GlobalSettingsClient() {
               max={100}
               suffix="%"
             />
-            <div className="border-t border-border pt-3 mt-3">
-              <p className="text-xs font-medium text-muted-foreground mb-3">{t("superadmin.settings.factoryRatesIntro")}</p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="border-t border-border pt-4">
+              <p className="mb-3 text-xs font-medium text-muted-foreground">{t("superadmin.settings.factoryRatesIntro")}</p>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                 <PricingNumericField
                   label={t("superadmin.settings.rateS80Label")}
                   meta={effectivePricing?.rateS80}
@@ -331,6 +357,7 @@ export function GlobalSettingsClient() {
                   onRestoreDefault={() => restoreFactoryDefault("rateS80")}
                   step={0.5}
                   suffix=" USD/m²"
+                  stackEdit
                 />
                 <PricingNumericField
                   label={t("superadmin.settings.rateS150Label")}
@@ -340,6 +367,7 @@ export function GlobalSettingsClient() {
                   onRestoreDefault={() => restoreFactoryDefault("rateS150")}
                   step={0.5}
                   suffix=" USD/m²"
+                  stackEdit
                 />
                 <PricingNumericField
                   label={t("superadmin.settings.rateS200Label")}
@@ -349,6 +377,7 @@ export function GlobalSettingsClient() {
                   onRestoreDefault={() => restoreFactoryDefault("rateS200")}
                   step={0.5}
                   suffix=" USD/m²"
+                  stackEdit
                 />
               </div>
             </div>
@@ -365,47 +394,49 @@ export function GlobalSettingsClient() {
               <p className="text-sm text-muted-foreground">{t("superadmin.settings.moduleVisibilityHelp")}</p>
             </div>
           </div>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {MODULE_KEYS.map(({ key, labelKey }) => (
-              <label key={key} className="flex items-center gap-2">
+              <label key={key} className="flex min-w-0 items-center gap-2">
                 <input
                   type="checkbox"
                   checked={visibility[key] ?? true}
                   onChange={(e) => setVisibility((v) => ({ ...v, [key]: e.target.checked }))}
-                  className="h-4 w-4 rounded-lg border-input"
+                  className="h-4 w-4 shrink-0 rounded-lg border-input"
                 />
-                <span className="text-sm text-foreground">{t(labelKey)}</span>
+                <span className="truncate text-sm text-foreground">{t(labelKey)}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <div className="surface-card p-6">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted p-2">
-              <Lock className="h-5 w-5 text-muted-foreground" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-muted p-2">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">{t("superadmin.settings.overrideTogglesTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("superadmin.settings.overrideTogglesHelp")}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-semibold text-foreground">{t("superadmin.settings.overrideTogglesTitle")}</h2>
-              <p className="text-sm text-muted-foreground">{t("superadmin.settings.overrideTogglesHelp")}</p>
-            </div>
+            <p className="mt-4 text-xs text-muted-foreground">{t("superadmin.settings.overrideTogglesComing")}</p>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">{t("superadmin.settings.overrideTogglesComing")}</p>
-        </div>
 
-        <div className="surface-card p-6">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <Building2 className="h-5 w-5 text-primary" />
+          <div className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">{t("superadmin.settings.partnerParamsTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("superadmin.settings.partnerParamsHelp")}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-semibold text-foreground">{t("superadmin.settings.partnerParamsTitle")}</h2>
-              <p className="text-sm text-muted-foreground">{t("superadmin.settings.partnerParamsHelp")}</p>
-            </div>
+            <Link href="/superadmin/partners" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+              {t("superadmin.settings.goToPartners")}
+            </Link>
           </div>
-          <Link href="/superadmin/partners" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            {t("superadmin.settings.goToPartners")}
-          </Link>
         </div>
       </div>
 

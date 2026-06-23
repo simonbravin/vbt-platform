@@ -173,7 +173,7 @@ export function serializeSaleDetail(sale: SaleDetailRecord) {
       ? {
           id: sale.quote.id,
           quoteNumber: sale.quote.quoteNumber,
-          ...quoteCommissionFields(sale.quote, sale.exwUsd),
+          ...quoteCommissionFields(sale.quote, sale.exwUsd, sale.quantity),
         }
       : null,
     invoices: sale.invoices.map((inv) => ({
@@ -225,12 +225,17 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function quoteCommissionFields(quote: SaleListRowDb["quote"], exwUsd: number) {
+function quoteCommissionFields(quote: SaleListRowDb["quote"], exwUsd: number, quantity: number) {
   const vlPct = quote?.visionLatamMarkupPct ?? null;
   const partnerPct = quote?.partnerMarkupPct ?? null;
+  const kitMult = Math.max(1, quantity);
   // sale.exwUsd is order-level (includes quantity); quote.factoryCostTotal is per-kit.
   const factoryExw =
-    exwUsd > 0 ? exwUsd : quote?.factoryCostTotal != null && Number.isFinite(quote.factoryCostTotal) ? quote.factoryCostTotal : 0;
+    exwUsd > 0
+      ? exwUsd
+      : quote?.factoryCostTotal != null && Number.isFinite(quote.factoryCostTotal)
+        ? round2(quote.factoryCostTotal * kitMult)
+        : 0;
   const vlCommissionUsd =
     vlPct != null && Number.isFinite(vlPct) ? round2((factoryExw * vlPct) / 100) : null;
   const baseForPartnerUsd =
@@ -279,7 +284,7 @@ export function serializeSaleListRow(sale: SaleListRowDb) {
       ? {
           id: sale.quote.id,
           quoteNumber: sale.quote.quoteNumber,
-          ...quoteCommissionFields(sale.quote, sale.exwUsd),
+          ...quoteCommissionFields(sale.quote, sale.exwUsd, sale.quantity),
         }
       : null,
     organization: sale.organization ? { id: sale.organization.id, name: sale.organization.name } : undefined,

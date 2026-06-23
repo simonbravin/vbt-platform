@@ -21,10 +21,13 @@ export type CatalogPieceRow = {
 
 export function systemToCode(sc: string): "S80" | "S150" | "S200" | null {
   const u = sc.trim().toUpperCase();
-  // Longer codes first so values like S150/S200 are not captured by endsWith("80").
-  if (u === "S200" || u === "200" || u.endsWith("200")) return "S200";
-  if (u === "S150" || u === "150" || u.endsWith("150")) return "S150";
-  if (u === "S80" || u === "80" || u.endsWith("80")) return "S80";
+  if (u === "S200" || u === "200") return "S200";
+  if (u === "S150" || u === "150") return "S150";
+  if (u === "S80" || u === "80") return "S80";
+  // Longer codes first; require non-digit before suffix so S180 does not match S80.
+  if (/(?:^|[^0-9])200$/.test(u)) return "S200";
+  if (/(?:^|[^0-9])150$/.test(u)) return "S150";
+  if (/(?:^|[^0-9])80$/.test(u)) return "S80";
   return null;
 }
 

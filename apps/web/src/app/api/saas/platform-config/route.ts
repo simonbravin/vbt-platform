@@ -89,6 +89,31 @@ export async function PATCH(req: Request) {
       input.pricing = parsed.data.pricing as UpdatePlatformConfigInput["pricing"];
     }
     if (parsed.data.moduleVisibility) input.moduleVisibility = parsed.data.moduleVisibility;
+
+    if (input.pricing) {
+      const current = await getPlatformConfig(prisma, tenantCtx);
+      const mergedMin =
+        input.pricing.defaultMarginMinPct !== undefined
+          ? input.pricing.defaultMarginMinPct
+          : current.pricing?.defaultMarginMinPct;
+      const mergedMax =
+        input.pricing.defaultMarginMaxPct !== undefined
+          ? input.pricing.defaultMarginMaxPct
+          : current.pricing?.defaultMarginMaxPct;
+      if (
+        mergedMin != null &&
+        mergedMax != null &&
+        Number.isFinite(mergedMin) &&
+        Number.isFinite(mergedMax) &&
+        mergedMin > mergedMax
+      ) {
+        return NextResponse.json(
+          { error: "Min margin % cannot exceed max margin %" },
+          { status: 400 }
+        );
+      }
+    }
+
     await updatePlatformConfig(prisma, tenantCtx, input);
     const payload = await buildAdminConfigResponse(tenantCtx);
     return NextResponse.json(payload);
@@ -96,6 +121,7 @@ export async function PATCH(req: Request) {
     if (e instanceof TenantError) {
       return NextResponse.json({ error: e.message }, { status: tenantErrorStatus(e) });
     }
-    throw e;
+    console.error("platform-config PATCH error:", e);
+    return NextResponse.json({ error: "Failed to save configuration" }, { status: 500 });
   }
 }
