@@ -25,14 +25,18 @@ async function getHandler(req: Request) {
   if (ctx.isPlatformSuperadmin) {
     const programs = await listTrainingProgramsAdmin(prisma, { status });
     if (!includeSessions) return NextResponse.json(programs);
-    const sessions = await prisma.trainingLiveSession.findMany({
-      where: { trainingProgramId: { in: programs.map((p) => p.id) } },
-      include: {
-        trainingProgram: { select: { id: true, title: true, visibility: true } },
-        _count: { select: { enrollments: true } },
-      },
-      orderBy: { startsAt: "asc" },
-    });
+    const programIds = programs.map((p) => p.id);
+    const sessions =
+      programIds.length === 0
+        ? []
+        : await prisma.trainingLiveSession.findMany({
+            where: { trainingProgramId: { in: programIds } },
+            include: {
+              trainingProgram: { select: { id: true, title: true, visibility: true } },
+              _count: { select: { enrollments: true } },
+            },
+            orderBy: { startsAt: "asc" },
+          });
     const byProgram: Record<string, typeof sessions> = {};
     for (const s of sessions) {
       const pid = s.trainingProgramId;

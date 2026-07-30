@@ -30,11 +30,51 @@ export type ListQuotesOptions = {
   offset?: number;
 };
 
+/** List/search row: scalars + light relations; never includes line `items`. */
+export type ListQuoteRow = {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  engineeringRequestId: string | null;
+  quoteNumber: string;
+  version: number;
+  status: QuoteStatus;
+  currency: string;
+  factoryCostTotal: number;
+  visionLatamMarkupPct: number;
+  partnerMarkupPct: number;
+  logisticsCost: number;
+  importCost: number;
+  localTransportCost: number;
+  technicalServiceCost: number;
+  totalPrice: number;
+  taxRulesSnapshotJson: Prisma.JsonValue | null;
+  validUntil: Date | null;
+  preparedByUserId: string | null;
+  approvedByUserId: string | null;
+  notes: string | null;
+  quoteCostMethod: string | null;
+  wallAreaM2Total: number;
+  totalKits: number;
+  numContainers: number;
+  createdAt: Date;
+  updatedAt: Date;
+  organization: { name: string };
+  project: {
+    id: string;
+    projectName: string;
+    projectCode: string | null;
+    countryCode: string | null;
+    client: { name: string } | null;
+  };
+  _count: { items: number };
+};
+
 export async function listQuotes(
   prisma: PrismaClient,
   ctx: TenantContext,
   options: ListQuotesOptions = {}
-): Promise<{ quotes: Quote[]; total: number }> {
+): Promise<{ quotes: ListQuoteRow[]; total: number }> {
   const orgWhere = orgScopeWhere(ctx);
   const searchTrim = options.search?.trim();
   const where = {
@@ -99,7 +139,7 @@ export async function listQuotes(
     }),
     prisma.quote.count({ where }),
   ]);
-  return { quotes: quotes as unknown as Quote[], total };
+  return { quotes: quotes as ListQuoteRow[], total };
 }
 
 export async function getQuoteById(

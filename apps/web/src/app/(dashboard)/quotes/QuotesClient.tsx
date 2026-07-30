@@ -57,6 +57,7 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null);
 
@@ -68,51 +69,63 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
     const q = search.trim();
     if (!q) {
       setQuotes(initialQuotes);
+      setSearchError(null);
       return;
     }
     setSearching(true);
+    setSearchError(null);
     try {
       const params = new URLSearchParams({ search: q });
       if (initialStatus) params.set("status", initialStatus);
       const res = await fetch(`/api/saas/quotes?${params}`);
-      let data: { quotes?: Quote[] } = {};
+      let data: { quotes?: Quote[]; error?: boolean } = {};
       try {
         const text = await res.text();
         if (text) data = JSON.parse(text);
       } catch {
         // non-JSON or empty
       }
-      if (res.ok && Array.isArray(data.quotes)) setQuotes(data.quotes);
+      if (!res.ok || data.error || !Array.isArray(data.quotes)) {
+        setSearchError(t("quotes.searchFailed"));
+        return;
+      }
+      setQuotes(data.quotes);
     } finally {
       setSearching(false);
     }
-  }, [search, initialStatus, initialQuotes]);
+  }, [search, initialStatus, initialQuotes, t]);
 
   useEffect(() => {
     const q = search.trim();
     if (!q) {
       setQuotes(initialQuotes);
+      setSearchError(null);
       return;
     }
     const timer = setTimeout(() => {
       setSearching(true);
+      setSearchError(null);
       const params = new URLSearchParams({ search: q });
       if (initialStatus) params.set("status", initialStatus);
       fetch(`/api/saas/quotes?${params}`)
         .then(async (res) => {
-          let data: { quotes?: Quote[] } = {};
+          let data: { quotes?: Quote[]; error?: boolean } = {};
           try {
             const text = await res.text();
             if (text) data = JSON.parse(text);
           } catch {
             // ignore
           }
-          if (res.ok && Array.isArray(data.quotes)) setQuotes(data.quotes);
+          if (!res.ok || data.error || !Array.isArray(data.quotes)) {
+            setSearchError(t("quotes.searchFailed"));
+            return;
+          }
+          setQuotes(data.quotes);
         })
         .finally(() => setSearching(false));
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [search, initialStatus, initialQuotes]);
+  }, [search, initialStatus, initialQuotes, t]);
 
   const handleDeleteClick = (q: Quote) => setDeleteTarget(q);
 
@@ -134,6 +147,11 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
 
   return (
     <div>
+      {searchError && (
+        <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+          {searchError}
+        </div>
+      )}
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="relative flex-1 min-w-0">

@@ -99,6 +99,28 @@ export function formatQuoteForSaaSApiWithSnapshot(
   return formatQuoteForSaaSApi(row, { ...options, taxRules });
 }
 
+/**
+ * List/search path: never throw on a single bad snapshot (would empty the whole collection).
+ * Missing/invalid snapshot → empty tax rules + `pricingSnapshotMissing: true`.
+ */
+export function formatQuoteForSaaSApiListRow(
+  quote: unknown,
+  options: { maskFactoryExw: boolean }
+): Record<string, unknown> {
+  const row = JSON.parse(JSON.stringify(quote)) as Record<string, unknown>;
+  const parsed = parseTaxRulesSnapshotFromQuoteRow({
+    taxRulesSnapshotJson: row.taxRulesSnapshotJson,
+  });
+  const formatted = formatQuoteForSaaSApi(row, {
+    maskFactoryExw: options.maskFactoryExw,
+    taxRules: parsed ?? [],
+  });
+  if (parsed == null) {
+    formatted.pricingSnapshotMissing = true;
+  }
+  return formatted;
+}
+
 /** Same stack as SaaS `pricing`; keeps legacy New Sale field names (`factoryCostUsd`, `fobUsd`, …). */
 /**
  * FOB (after partner markup) for list/summary UIs. Uses snapshot rules when valid;

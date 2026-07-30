@@ -10,6 +10,7 @@ import {
   listQuotes,
   createQuote,
   normalizeQuoteStatus,
+  formatQuoteForSaaSApiListRow,
   formatQuoteForSaaSApiWithSnapshot,
   canonicalizeSaaSQuotePayload,
   resolveTaxRulesForSaaSQuote,
@@ -56,15 +57,18 @@ async function getHandler(req: Request) {
       limit,
       offset,
     });
+    // Soft snapshot formatting: one bad row must not empty the whole list (search/sales pickers).
     const quotes = result.quotes.map((q) =>
-      formatQuoteForSaaSApiWithSnapshot(q, { maskFactoryExw: !ctx.isPlatformSuperadmin })
+      formatQuoteForSaaSApiListRow(q, { maskFactoryExw: !ctx.isPlatformSuperadmin })
     );
     return NextResponse.json({ quotes, total: result.total });
   } catch (e) {
+    // Auth/tenant errors must surface via withSaaSHandler (not a fake empty 200).
+    if (e instanceof TenantError) throw e;
     console.error("[api/saas/quotes GET]", e);
     return NextResponse.json(
       { quotes: [], total: 0, error: true, message: "Failed to load quotes. Please try again." },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

@@ -44,7 +44,15 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
       where: {
         organizationId,
         ...(searchParams.status
-          ? { status: searchParams.status as "draft" | "sent" | "accepted" | "rejected" | "expired" }
+          ? {
+              status: searchParams.status as
+                | "draft"
+                | "sent"
+                | "accepted"
+                | "rejected"
+                | "expired"
+                | "archived",
+            }
           : {}),
       },
       select: {

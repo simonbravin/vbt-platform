@@ -503,6 +503,7 @@ export const translations = {
     "quotes.quotesCount": "{{count}} quotes",
     "quotes.createFirstLink": "Create your first quote →",
     "quotes.searchPlaceholder": "Search by number, project, client, destination...",
+    "quotes.searchFailed": "Could not load search results. Try again.",
     "quotes.quoteNumber": "Quote #",
     "quotes.deleteConfirm": "Permanently delete quote {{number}}? This cannot be undone.",
     "quotes.deleteTitle": "Delete permanently",
@@ -1360,6 +1361,8 @@ export const translations = {
     "partner.inventory.addItemDialogDescription":
       "Each row is one catalog piece and one length in mm. Entrances require a measure so stock lands in the right bucket.",
     "partner.inventory.measureRequired": "Enter the measure in mm for stock-in movements (or type 0 only if you mean undifferentiated stock).",
+    "partner.inventory.levelsTruncated":
+      "Showing {{shown}} of {{total}} stock lines. Refine filters or export if you need the full set.",
 
     "partner.settings.taxesPartnerIntro": "Base rules per country (Vision Latam) and yours. You can add or edit your own rules to change percentages or other values by country.",
 
@@ -3007,6 +3010,7 @@ export const translations = {
     "quotes.quotesCount": "{{count}} cotizaciones",
     "quotes.createFirstLink": "Crear tu primera cotización →",
     "quotes.searchPlaceholder": "Buscar por número, proyecto, cliente, destino...",
+    "quotes.searchFailed": "No se pudieron cargar los resultados. Intentá de nuevo.",
     "quotes.quoteNumber": "Cotización #",
     "quotes.deleteConfirm": "¿Eliminar la cotización {{number}} de forma permanente? No se puede deshacer.",
     "quotes.deleteTitle": "Eliminar definitivamente",
@@ -3866,6 +3870,8 @@ export const translations = {
       "Cada fila es una pieza del catálogo y una medida en mm. Las entradas exigen medida para que el stock quede en el bucket correcto.",
     "partner.inventory.measureRequired":
       "Indicá la medida en mm para movimientos de entrada (o escribí 0 solo si querés stock sin desglose).",
+    "partner.inventory.levelsTruncated":
+      "Mostrando {{shown}} de {{total}} líneas de stock. Filtrá o exportá si necesitás el conjunto completo.",
 
     "partner.settings.taxesPartnerIntro": "Reglas base por país (Vision Latam) y las tuyas. Podés agregar o editar tus propias reglas para modificar % u otros valores por país.",
 

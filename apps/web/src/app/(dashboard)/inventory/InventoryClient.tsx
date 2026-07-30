@@ -70,6 +70,7 @@ export function InventoryClient() {
   );
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
   const [levels, setLevels] = useState<LevelRow[]>([]);
+  const [levelsTotal, setLevelsTotal] = useState(0);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [catalogPieces, setCatalogPieces] = useState<CatalogPieceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,8 +115,14 @@ export function InventoryClient() {
     setLoadingLevels(true);
     fetch(`/api/saas/inventory/levels?limit=${LEVELS_FETCH_LIMIT}`)
       .then((r) => r.json())
-      .then((data) => setLevels(data.levels ?? []))
-      .catch(() => setLevels([]))
+      .then((data) => {
+        setLevels(data.levels ?? []);
+        setLevelsTotal(typeof data.total === "number" ? data.total : (data.levels?.length ?? 0));
+      })
+      .catch(() => {
+        setLevels([]);
+        setLevelsTotal(0);
+      })
       .finally(() => setLoadingLevels(false));
   }, []);
 
@@ -325,6 +332,14 @@ export function InventoryClient() {
       {error && (
         <div className="rounded-lg border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">
           {error}
+        </div>
+      )}
+      {levelsTotal > levels.length && (
+        <div className="rounded-lg border border-alert-warningBorder bg-alert-warning px-4 py-2 text-sm text-foreground">
+          {t("partner.inventory.levelsTruncated", {
+            shown: levels.length,
+            total: levelsTotal,
+          })}
         </div>
       )}
       {LOW_STOCK_BANNER_UI_ENABLED && lowStockLevels.length > 0 && (

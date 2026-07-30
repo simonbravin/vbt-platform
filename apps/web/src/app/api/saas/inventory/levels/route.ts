@@ -14,9 +14,9 @@ async function getHandler(req: Request) {
   const catalogPieceId = url.searchParams.get("catalogPieceId") || undefined;
   const limit = url.searchParams.get("limit");
   const offset = url.searchParams.get("offset");
-  // Default 500 keeps partner inventory usable without shipping thousands of rows.
+  // Default 500 for partner UX; explicit limit capped at 5000 (superadmin bulk views).
   const limitNum = limit
-    ? Math.min(2000, Math.max(1, parseInt(limit, 10) || 50))
+    ? Math.min(5000, Math.max(1, parseInt(limit, 10) || 50))
     : 500;
 
   try {
