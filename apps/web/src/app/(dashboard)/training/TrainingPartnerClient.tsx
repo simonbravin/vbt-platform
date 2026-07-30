@@ -144,7 +144,7 @@ export function TrainingPartnerClient() {
 
   const fetchData = useCallback(async () => {
     const [progs, enrollData, liveData, quizData, certData, attemptData] = await Promise.all([
-      fetch("/api/saas/training/programs").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/saas/training/programs?includeSessions=1").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/saas/training/enrollments?limit=50").then((r) =>
         r.ok ? r.json() : { enrollments: [] }
       ),
@@ -167,13 +167,10 @@ export function TrainingPartnerClient() {
     setCerts(certData?.certificates ?? []);
     setQuizAttempts(attemptData?.attempts ?? []);
 
-    const entries = await Promise.all(
-      programList.map(async (p: Program) => {
-        const res = await fetch(`/api/saas/training/programs/${p.id}/sessions`);
-        const list = res.ok ? await res.json() : [];
-        return [p.id, Array.isArray(list) ? list : []] as const;
-      })
-    );
+    const entries = programList.map((p: Program & { sessions?: LiveSession[] }) => {
+      const sessions = Array.isArray(p.sessions) ? p.sessions : [];
+      return [p.id, sessions] as const;
+    });
     setSessionsByProgram(Object.fromEntries(entries));
   }, []);
 

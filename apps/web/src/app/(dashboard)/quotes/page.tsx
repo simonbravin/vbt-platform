@@ -23,7 +23,16 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
   type QuoteWithProject = Awaited<
     ReturnType<
       typeof prisma.quote.findMany<{
-        include: { project: { select: { projectName: true; id: true; countryCode: true; client: { select: { name: true } } } } };
+        select: {
+          id: true;
+          quoteNumber: true;
+          status: true;
+          totalPrice: true;
+          createdAt: true;
+          project: {
+            select: { projectName: true; id: true; countryCode: true; client: { select: { name: true } } };
+          };
+        };
       }>
     >
   >;
@@ -38,7 +47,12 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           ? { status: searchParams.status as "draft" | "sent" | "accepted" | "rejected" | "expired" }
           : {}),
       },
-      include: {
+      select: {
+        id: true,
+        quoteNumber: true,
+        status: true,
+        totalPrice: true,
+        createdAt: true,
         project: {
           select: { projectName: true, id: true, countryCode: true, client: { select: { name: true } } },
         },

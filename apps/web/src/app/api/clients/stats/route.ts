@@ -16,14 +16,17 @@ export async function GET(req: Request) {
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "10", 10) || 10, 20);
 
   try {
-    const allClientsWithCount = await prisma.client.findMany({
+    const topClients = await prisma.client.findMany({
       where: { organizationId },
       select: { id: true, name: true, _count: { select: { projects: true } } },
+      orderBy: { projects: { _count: "desc" } },
+      take: limit,
     });
-    const topByProjects = allClientsWithCount
-      .sort((a, b) => b._count.projects - a._count.projects)
-      .slice(0, limit)
-      .map((c) => ({ clientId: c.id, clientName: c.name, projectCount: c._count.projects }));
+    const topByProjects = topClients.map((c) => ({
+      clientId: c.id,
+      clientName: c.name,
+      projectCount: c._count.projects,
+    }));
     const topBySold: { clientId: string; clientName: string | null; totalSold: number }[] = [];
     return NextResponse.json({ topByProjects, topBySold });
   } catch (err) {

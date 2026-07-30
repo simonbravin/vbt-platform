@@ -49,10 +49,38 @@ export async function listQuotes(
       ],
     }),
   };
+  // List path: never load line items (payload/DB blow-up). Detail uses getQuoteById.
   const [quotes, total] = await Promise.all([
     prisma.quote.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        organizationId: true,
+        projectId: true,
+        engineeringRequestId: true,
+        quoteNumber: true,
+        version: true,
+        status: true,
+        currency: true,
+        factoryCostTotal: true,
+        visionLatamMarkupPct: true,
+        partnerMarkupPct: true,
+        logisticsCost: true,
+        importCost: true,
+        localTransportCost: true,
+        technicalServiceCost: true,
+        totalPrice: true,
+        taxRulesSnapshotJson: true,
+        validUntil: true,
+        preparedByUserId: true,
+        approvedByUserId: true,
+        notes: true,
+        quoteCostMethod: true,
+        wallAreaM2Total: true,
+        totalKits: true,
+        numContainers: true,
+        createdAt: true,
+        updatedAt: true,
         organization: { select: { name: true } },
         project: {
           select: {
@@ -63,7 +91,7 @@ export async function listQuotes(
             client: { select: { name: true } },
           },
         },
-        items: { orderBy: { sortOrder: "asc" } },
+        _count: { select: { items: true } },
       },
       orderBy: [{ projectId: "asc" }, { version: "desc" }],
       take: options.limit ?? 50,
@@ -71,7 +99,7 @@ export async function listQuotes(
     }),
     prisma.quote.count({ where }),
   ]);
-  return { quotes, total };
+  return { quotes: quotes as unknown as Quote[], total };
 }
 
 export async function getQuoteById(
@@ -84,7 +112,20 @@ export async function getQuoteById(
     where: { id: quoteId, ...orgWhere },
     include: {
       organization: { select: { name: true } },
-      project: true,
+      project: {
+        select: {
+          id: true,
+          projectName: true,
+          projectCode: true,
+          countryCode: true,
+          city: true,
+          status: true,
+          clientId: true,
+          organizationId: true,
+          baselineQuoteId: true,
+          client: { select: { id: true, name: true } },
+        },
+      },
       items: { orderBy: { sortOrder: "asc" } },
       preparedByUser: { select: { id: true, fullName: true } },
       approvedByUser: { select: { id: true, fullName: true } },

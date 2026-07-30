@@ -100,6 +100,36 @@ export async function listVisibleLiveSessionsForPartnerProgram(
   });
 }
 
+/**
+ * Batch sessions for many programs (avoids HTTP/Prisma N+1 on partner training page).
+ * Only returns sessions for programs visible to the partner org.
+ */
+export async function listVisibleLiveSessionsForPartnerPrograms(
+  prisma: PrismaClient,
+  organizationId: string,
+  programIds: string[],
+  options: { includeCancelled?: boolean } = {}
+): Promise<TrainingLiveSession[]> {
+  if (programIds.length === 0) return [];
+  const visible = await prisma.trainingProgram.findMany({
+    where: {
+      id: { in: programIds },
+      ...trainingProgramVisibleToPartnerWhere(organizationId),
+    },
+    select: { id: true },
+  });
+  const visibleIds = visible.map((p) => p.id);
+  if (visibleIds.length === 0) return [];
+  return prisma.trainingLiveSession.findMany({
+    where: {
+      trainingProgramId: { in: visibleIds },
+      ...(!options.includeCancelled && { status: { not: "cancelled" } }),
+    },
+    include: sessionInclude,
+    orderBy: { startsAt: "asc" },
+  });
+}
+
 export async function assertPartnerCanAccessLiveSession(
   prisma: PrismaClient,
   sessionId: string,

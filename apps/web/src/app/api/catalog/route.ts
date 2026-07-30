@@ -57,6 +57,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const lite = url.searchParams.get("lite") === "1" || url.searchParams.get("lite") === "true";
+
     let where: Prisma.CatalogPieceWhereInput = {};
     if (!ctx.isSuperadmin) where.isActive = true;
 
@@ -88,6 +90,15 @@ export async function GET(req: Request) {
       where = {
         AND: [where, { OR: [{ pricePerM2Cored: null }, { usefulWidthMm: null }] }],
       };
+    }
+
+    if (lite) {
+      const list = await prisma.catalogPiece.findMany({
+        where,
+        select: { id: true, canonicalName: true, systemCode: true },
+        orderBy: [{ systemCode: "asc" }, { canonicalName: "asc" }],
+      });
+      return NextResponse.json(list);
     }
 
     const list = await prisma.catalogPiece.findMany({

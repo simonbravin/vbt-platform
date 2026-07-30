@@ -14,9 +14,10 @@ async function getHandler(req: Request) {
   const catalogPieceId = url.searchParams.get("catalogPieceId") || undefined;
   const limit = url.searchParams.get("limit");
   const offset = url.searchParams.get("offset");
+  // Default 500 keeps partner inventory usable without shipping thousands of rows.
   const limitNum = limit
-    ? Math.min(5000, Math.max(1, parseInt(limit, 10) || 50))
-    : Math.min(5000, 2000);
+    ? Math.min(2000, Math.max(1, parseInt(limit, 10) || 50))
+    : 500;
 
   try {
     const tenantCtx = {

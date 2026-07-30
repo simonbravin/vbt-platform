@@ -312,11 +312,13 @@ async function salesPostHandler(req: Request) {
   await ensureBillingEntities(organizationId);
 
   const invoiceLines = data.invoices ?? [];
-  for (const inv of invoiceLines) {
-    const ent = await prisma.billingEntity.findFirst({
-      where: { id: inv.entityId, organizationId, isActive: true },
+  if (invoiceLines.length > 0) {
+    const entityIds = [...new Set(invoiceLines.map((inv) => inv.entityId))];
+    const entities = await prisma.billingEntity.findMany({
+      where: { id: { in: entityIds }, organizationId, isActive: true },
+      select: { id: true },
     });
-    if (!ent) {
+    if (entities.length !== entityIds.length) {
       throw new ApiHttpError(400, "SALES_INVALID_BILLING_ENTITY", "Invalid or inactive billing entity.");
     }
   }

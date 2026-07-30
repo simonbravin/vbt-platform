@@ -24,7 +24,7 @@ import {
 } from "@/lib/inventory-stock-group";
 import { InventoryStockToolbar } from "@/components/inventory/InventoryStockToolbar";
 
-const LEVELS_FETCH_LIMIT = 5000;
+const LEVELS_FETCH_LIMIT = 500;
 
 type WarehouseRow = { id: string; name: string; location: string | null; countryCode?: string | null; address?: string | null; managerName?: string | null; contactPhone?: string | null; contactEmail?: string | null; isActive: boolean };
 type LevelRow = {
@@ -127,7 +127,7 @@ export function InventoryClient() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/catalog")
+    fetch("/api/catalog?lite=1")
       .then((r) => r.json())
       .then((data) => setCatalogPieces(Array.isArray(data) ? data : []))
       .catch(() => setCatalogPieces([]));

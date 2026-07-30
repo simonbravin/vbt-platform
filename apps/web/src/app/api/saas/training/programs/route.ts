@@ -5,6 +5,7 @@ import {
   createTrainingProgram,
   listTrainingProgramsAdmin,
   listTrainingProgramsForPartner,
+  listVisibleLiveSessionsForPartnerPrograms,
   resolveTrainingModuleVisible,
 } from "@vbt/core";
 import { createTrainingProgramSchema } from "@vbt/core/validation";
@@ -17,10 +18,30 @@ async function getHandler(req: Request) {
 
   const url = new URL(req.url);
   const status = url.searchParams.get("status") ?? undefined;
+  const includeSessions =
+    url.searchParams.get("includeSessions") === "1" ||
+    url.searchParams.get("includeSessions") === "true";
 
   if (ctx.isPlatformSuperadmin) {
     const programs = await listTrainingProgramsAdmin(prisma, { status });
-    return NextResponse.json(programs);
+    if (!includeSessions) return NextResponse.json(programs);
+    const sessions = await prisma.trainingLiveSession.findMany({
+      where: { trainingProgramId: { in: programs.map((p) => p.id) } },
+      include: {
+        trainingProgram: { select: { id: true, title: true, visibility: true } },
+        _count: { select: { enrollments: true } },
+      },
+      orderBy: { startsAt: "asc" },
+    });
+    const byProgram: Record<string, typeof sessions> = {};
+    for (const s of sessions) {
+      const pid = s.trainingProgramId;
+      if (!byProgram[pid]) byProgram[pid] = [];
+      byProgram[pid].push(s);
+    }
+    return NextResponse.json(
+      programs.map((p) => ({ ...p, sessions: byProgram[p.id] ?? [] }))
+    );
   }
 
   if (!ctx.activeOrgId) {
@@ -31,7 +52,22 @@ async function getHandler(req: Request) {
     return NextResponse.json([]);
   }
   const programs = await listTrainingProgramsForPartner(prisma, ctx.activeOrgId, { status });
-  return NextResponse.json(programs);
+  if (!includeSessions) return NextResponse.json(programs);
+
+  const allSessions = await listVisibleLiveSessionsForPartnerPrograms(
+    prisma,
+    ctx.activeOrgId,
+    programs.map((p) => p.id)
+  );
+  const byProgram: Record<string, typeof allSessions> = {};
+  for (const s of allSessions) {
+    const pid = s.trainingProgramId;
+    if (!byProgram[pid]) byProgram[pid] = [];
+    byProgram[pid].push(s);
+  }
+  return NextResponse.json(
+    programs.map((p) => ({ ...p, sessions: byProgram[p.id] ?? [] }))
+  );
 }
 
 async function postHandler(req: Request) {

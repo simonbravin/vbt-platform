@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { useT } from "@/lib/i18n/context";
-import { QuoteWizard } from "@/components/quotes/QuoteWizard";
 
 function WizardLoading() {
   const t = useT();
@@ -12,6 +12,11 @@ function WizardLoading() {
     </div>
   );
 }
+
+const QuoteWizard = dynamic(
+  () => import("@/components/quotes/QuoteWizard").then((m) => m.QuoteWizard),
+  { ssr: false, loading: () => <WizardLoading /> }
+);
 
 export default function QuoteWizardPage() {
   return (
