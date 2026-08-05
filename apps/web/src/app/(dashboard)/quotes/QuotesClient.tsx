@@ -278,9 +278,9 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                 <th>{t("quotes.quoteNumber")}</th>
                 <th>{t("quotes.project")}</th>
                 <th>{t("quotes.destination")}</th>
-                <th className="text-right">{t("quotes.pricePerKit")}</th>
-                <th className="text-right">{t("quotes.pricePerContainer")}</th>
-                <th className="text-right">{t("quotes.total")}</th>
+                <th className="text-center">{t("quotes.pricePerKit")}</th>
+                <th className="text-center">{t("quotes.pricePerContainer")}</th>
+                <th className="text-center">{t("quotes.total")}</th>
                 <th>{t("common.status")}</th>
                 <th>{t("quotes.date")}</th>
                 <th className="w-10" />
@@ -310,13 +310,13 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="text-right tabular-nums">
+                    <td className="text-center tabular-nums">
                       {perKit != null ? money(perKit) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="text-right tabular-nums">
+                    <td className="text-center tabular-nums">
                       {perContainer != null ? money(perContainer) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="text-right tabular-nums font-semibold">{money(q.totalPrice)}</td>
+                    <td className="text-center tabular-nums font-semibold">{money(q.totalPrice)}</td>
                     <td>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide border ${
