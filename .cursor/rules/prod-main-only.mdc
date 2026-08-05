@@ -1,0 +1,12 @@
+---
+description: Siempre trabajar en main / producción; sin branches de feature
+alwaysApply: true
+---
+
+# Flujo: solo producción (`main`)
+
+- El owner trabaja **solo contra producción** (Vercel + Neon). **No** usar ramas de feature (`cursor/*`, etc.) salvo petición explícita.
+- Commits y pushes van a **`main`**. Tras un cambio listo: commit en `main` y `git push origin main` para que Vercel despliegue `app.visionlatam.com`.
+- **No** asumir entorno local ni “preview branch” como destino del trabajo diario.
+- Repo: https://github.com/simonbravin/vbt-platform — app prod: https://app.visionlatam.com
+- Si el agente está en otra rama al empezar, **cambiar a `main`**, traer `origin/main`, y trabajar ahí.
