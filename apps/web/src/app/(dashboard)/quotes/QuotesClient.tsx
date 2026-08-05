@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FileText, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -19,14 +19,36 @@ type Quote = {
   quoteNumber: string;
   status: string;
   totalPrice: number;
+  totalKits?: number | null;
+  numContainers?: number | null;
   createdAt: Date | string;
   project: {
     projectName: string;
     id: string;
     countryCode?: string | null;
     client?: { name: string } | null;
-  };
+  } | null;
 };
+
+/** Same gate as quote detail: unit prices only when totalKits > 0. */
+function quoteUnitPrices(q: Quote): { perKit: number | null; perContainer: number | null } {
+  const total = Number(q.totalPrice);
+  const kits = Number(q.totalKits);
+  const containers = Number(q.numContainers);
+  if (!Number.isFinite(total) || !(kits > 0)) {
+    return { perKit: null, perContainer: null };
+  }
+  return {
+    perKit: total / kits,
+    perContainer:
+      Number.isFinite(containers) && containers > 0 ? total / containers : null,
+  };
+}
+
+function money(amount: number | null | undefined): string {
+  const n = Number(amount);
+  return formatCurrency(Number.isFinite(n) ? n : 0);
+}
 
 const STATUS_COLORS: Record<string, string> = {
   sent: "border-primary/35 bg-primary/10 text-primary",
@@ -60,24 +82,18 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
   const [searchError, setSearchError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     localStorage.setItem(VIEW_STORAGE_KEY, view);
   }, [view]);
 
-  const runSearch = useCallback(async () => {
-    const q = search.trim();
-    if (!q) {
-      setQuotes(initialQuotes);
-      setSearchError(null);
-      return;
-    }
-    setSearching(true);
-    setSearchError(null);
-    try {
+  const fetchSearch = useCallback(
+    async (q: string, signal?: AbortSignal) => {
       const params = new URLSearchParams({ search: q });
       if (initialStatus) params.set("status", initialStatus);
-      const res = await fetch(`/api/saas/quotes?${params}`);
+      const res = await fetch(`/api/saas/quotes?${params}`, { signal });
       let data: { quotes?: Quote[]; error?: boolean } = {};
       try {
         const text = await res.text();
@@ -86,58 +102,97 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
         // non-JSON or empty
       }
       if (!res.ok || data.error || !Array.isArray(data.quotes)) {
-        setSearchError(t("quotes.searchFailed"));
-        return;
+        throw new Error("search_failed");
       }
-      setQuotes(data.quotes);
-    } finally {
-      setSearching(false);
-    }
-  }, [search, initialStatus, initialQuotes, t]);
+      return data.quotes;
+    },
+    [initialStatus]
+  );
 
-  useEffect(() => {
+  const clearSearchTimer = useCallback(() => {
+    if (searchTimerRef.current != null) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
+  }, []);
+
+  const runSearch = useCallback(async () => {
     const q = search.trim();
+    clearSearchTimer();
+    searchAbortRef.current?.abort();
     if (!q) {
       setQuotes(initialQuotes);
       setSearchError(null);
+      setSearching(false);
       return;
     }
-    const timer = setTimeout(() => {
+    const ac = new AbortController();
+    searchAbortRef.current = ac;
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const rows = await fetchSearch(q, ac.signal);
+      if (!ac.signal.aborted) setQuotes(rows);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (!ac.signal.aborted) setSearchError(t("quotes.searchFailed"));
+    } finally {
+      if (!ac.signal.aborted) setSearching(false);
+    }
+  }, [search, initialQuotes, fetchSearch, t, clearSearchTimer]);
+
+  useEffect(() => {
+    const q = search.trim();
+    clearSearchTimer();
+    if (!q) {
+      searchAbortRef.current?.abort();
+      setQuotes(initialQuotes);
+      setSearchError(null);
+      setSearching(false);
+      return;
+    }
+    const ac = new AbortController();
+    searchAbortRef.current = ac;
+    searchTimerRef.current = setTimeout(() => {
+      searchTimerRef.current = null;
       setSearching(true);
       setSearchError(null);
-      const params = new URLSearchParams({ search: q });
-      if (initialStatus) params.set("status", initialStatus);
-      fetch(`/api/saas/quotes?${params}`)
-        .then(async (res) => {
-          let data: { quotes?: Quote[]; error?: boolean } = {};
-          try {
-            const text = await res.text();
-            if (text) data = JSON.parse(text);
-          } catch {
-            // ignore
-          }
-          if (!res.ok || data.error || !Array.isArray(data.quotes)) {
-            setSearchError(t("quotes.searchFailed"));
-            return;
-          }
-          setQuotes(data.quotes);
+      fetchSearch(q, ac.signal)
+        .then((rows) => {
+          if (!ac.signal.aborted) setQuotes(rows);
         })
-        .finally(() => setSearching(false));
+        .catch((err) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          if (!ac.signal.aborted) setSearchError(t("quotes.searchFailed"));
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setSearching(false);
+        });
     }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [search, initialStatus, initialQuotes, t]);
+    return () => {
+      clearSearchTimer();
+      ac.abort();
+    };
+  }, [search, initialStatus, initialQuotes, fetchSearch, t, clearSearchTimer]);
 
   const handleDeleteClick = (q: Quote) => setDeleteTarget(q);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeletingId(deleteTarget.id);
+    setSearchError(null);
     try {
       const res = await fetch(`/api/saas/quotes/${deleteTarget.id}`, { method: "DELETE" });
       if (res.ok) {
         setQuotes((prev) => prev.filter((x) => x.id !== deleteTarget.id));
         setDeleteTarget(null);
+      } else {
+        setSearchError(t("quotes.deleteFailed"));
+        setDeleteTarget(null);
       }
+    } catch {
+      setSearchError(t("quotes.deleteFailed"));
+      setDeleteTarget(null);
     } finally {
       setDeletingId(null);
     }
@@ -223,6 +278,8 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                 <th>{t("quotes.quoteNumber")}</th>
                 <th>{t("quotes.project")}</th>
                 <th>{t("quotes.destination")}</th>
+                <th className="text-right">{t("quotes.pricePerKit")}</th>
+                <th className="text-right">{t("quotes.pricePerContainer")}</th>
                 <th className="text-right">{t("quotes.total")}</th>
                 <th>{t("common.status")}</th>
                 <th>{t("quotes.date")}</th>
@@ -230,98 +287,134 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
               </tr>
             </thead>
             <tbody>
-              {quotes.map((q) => (
-                <tr key={q.id}>
-                  <td>
-                    <Link
-                      href={`/quotes/${q.id}`}
-                      className="font-medium tabular-nums text-primary hover:underline underline-offset-2"
-                    >
-                      {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
-                    </Link>
-                  </td>
-                  <td>
-                    <p className="font-medium">{q.project.projectName}</p>
-                    {q.project.client?.name && <p className="text-muted-foreground text-xs">{q.project.client.name}</p>}
-                  </td>
-                  <td>
-                    {getCountryName(q.project.countryCode) || <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="text-right tabular-nums font-semibold">
-                    {formatCurrency(q.totalPrice)}
-                  </td>
-                  <td>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide border ${
-                        STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {t(STATUS_KEYS[q.status] ?? q.status)}
-                    </span>
-                  </td>
-                  <td className="text-muted-foreground tabular-nums text-xs">
-                    {new Date(q.createdAt).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(q)}
-                      disabled={deletingId === q.id}
-                      className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg border border-transparent hover:border-destructive/20 disabled:opacity-50"
-                      title={t("quotes.deleteTitle")}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {quotes.map((q) => {
+                const { perKit, perContainer } = quoteUnitPrices(q);
+                return (
+                  <tr key={q.id}>
+                    <td>
+                      <Link
+                        href={`/quotes/${q.id}`}
+                        className="font-medium tabular-nums text-primary hover:underline underline-offset-2"
+                      >
+                        {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
+                      </Link>
+                    </td>
+                    <td>
+                      <p className="font-medium">{q.project?.projectName ?? "—"}</p>
+                      {q.project?.client?.name && (
+                        <p className="text-muted-foreground text-xs">{q.project.client.name}</p>
+                      )}
+                    </td>
+                    <td>
+                      {getCountryName(q.project?.countryCode) || (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {perKit != null ? money(perKit) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {perContainer != null ? money(perContainer) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-right tabular-nums font-semibold">{money(q.totalPrice)}</td>
+                    <td>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide border ${
+                          STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {t(STATUS_KEYS[q.status] ?? q.status)}
+                      </span>
+                    </td>
+                    <td className="text-muted-foreground tabular-nums text-xs">
+                      {new Date(q.createdAt).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClick(q)}
+                        disabled={deletingId === q.id}
+                        className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg border border-transparent hover:border-destructive/20 disabled:opacity-50"
+                        title={t("quotes.deleteTitle")}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          {quotes.map((q) => (
-            <div
-              key={q.id}
-              className="bg-background rounded-lg border border-border/60 p-5 hover:border-primary/30 transition-colors relative group"
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDeleteClick(q);
-                }}
-                disabled={deletingId === q.id}
-                className="absolute top-3 right-3 p-1.5 text-destructive hover:bg-destructive/10 rounded-lg border border-transparent hover:border-destructive/25 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                title={t("quotes.deleteTitle")}
+          {quotes.map((q) => {
+            const { perKit, perContainer } = quoteUnitPrices(q);
+            return (
+              <div
+                key={q.id}
+                className="bg-background rounded-lg border border-border/60 p-5 hover:border-primary/30 transition-colors relative group"
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <Link href={`/quotes/${q.id}`} className="block">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 border border-border bg-muted/40 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-primary" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDeleteClick(q);
+                  }}
+                  disabled={deletingId === q.id}
+                  className="absolute top-3 right-3 p-1.5 text-destructive hover:bg-destructive/10 rounded-lg border border-transparent hover:border-destructive/25 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                  title={t("quotes.deleteTitle")}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <Link href={`/quotes/${q.id}`} className="block">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 border border-border bg-muted/40 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-semibold uppercase tracking-wide border ${
+                        STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {t(STATUS_KEYS[q.status] ?? q.status)}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-semibold uppercase tracking-wide border ${
-                      STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {t(STATUS_KEYS[q.status] ?? q.status)}
-                  </span>
-                </div>
-                <p className="font-mono font-semibold tabular-nums text-primary text-sm">
-                  {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
-                </p>
-                <p className="font-medium text-foreground mt-1">{q.project.projectName}</p>
-                {q.project.client?.name && <p className="text-muted-foreground text-xs mt-0.5">{q.project.client.name}</p>}
-                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground font-mono">{getCountryName(q.project.countryCode) || "—"}</span>
-                  <span className="text-base font-bold text-foreground font-mono tabular-nums">{formatCurrency(q.totalPrice)}</span>
-                </div>
-              </Link>
-            </div>
-          ))}
+                  <p className="font-mono font-semibold tabular-nums text-primary text-sm">
+                    {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}
+                  </p>
+                  <p className="font-medium text-foreground mt-1">{q.project?.projectName ?? "—"}</p>
+                  {q.project?.client?.name && (
+                    <p className="text-muted-foreground text-xs mt-0.5">{q.project.client.name}</p>
+                  )}
+                  <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {getCountryName(q.project?.countryCode) || "—"}
+                      </span>
+                      <span className="text-base font-bold text-foreground font-mono tabular-nums">
+                        {money(q.totalPrice)}
+                      </span>
+                    </div>
+                    {(perKit != null || perContainer != null) && (
+                      <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
+                        {perKit != null && (
+                          <span>
+                            {t("quotes.pricePerKit")}: {money(perKit)}
+                          </span>
+                        )}
+                        {perContainer != null && (
+                          <span>
+                            {t("quotes.pricePerContainer")}: {money(perContainer)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
 

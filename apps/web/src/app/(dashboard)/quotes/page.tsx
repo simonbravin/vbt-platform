@@ -9,6 +9,7 @@ import { QuotesClient } from "./QuotesClient";
 import type { SessionUser } from "@/lib/auth";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
+import { normalizeQuoteStatus } from "@vbt/core";
 
 export default async function QuotesPage({ searchParams }: { searchParams: { status?: string } }) {
   const user = await requireAuth();
@@ -20,6 +21,8 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
   const organizationId = effectiveOrgId ?? getEffectiveOrganizationId(user);
   if (!organizationId) return null;
 
+  const statusFilter = searchParams.status ? normalizeQuoteStatus(searchParams.status) : null;
+
   type QuoteWithProject = Awaited<
     ReturnType<
       typeof prisma.quote.findMany<{
@@ -28,6 +31,8 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           quoteNumber: true;
           status: true;
           totalPrice: true;
+          totalKits: true;
+          numContainers: true;
           createdAt: true;
           project: {
             select: { projectName: true; id: true; countryCode: true; client: { select: { name: true } } };
@@ -43,23 +48,15 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
     quotes = await prisma.quote.findMany({
       where: {
         organizationId,
-        ...(searchParams.status
-          ? {
-              status: searchParams.status as
-                | "draft"
-                | "sent"
-                | "accepted"
-                | "rejected"
-                | "expired"
-                | "archived",
-            }
-          : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
       },
       select: {
         id: true,
         quoteNumber: true,
         status: true,
         totalPrice: true,
+        totalKits: true,
+        numContainers: true,
         createdAt: true,
         project: {
           select: { projectName: true, id: true, countryCode: true, client: { select: { name: true } } },
@@ -75,7 +72,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
 
   return (
     <div className="space-y-5">
-      {dataLoadError && quotes.length > 0 && (
+      {dataLoadError && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           <p className="text-foreground">
             <span className="font-medium">{t("dashboard.errorLoad")}</span>
@@ -100,7 +97,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
         </Button>
       </div>
 
-      <QuotesClient quotes={quotes} initialStatus={searchParams.status} />
+      <QuotesClient quotes={quotes} initialStatus={statusFilter ?? undefined} />
     </div>
   );
 }
