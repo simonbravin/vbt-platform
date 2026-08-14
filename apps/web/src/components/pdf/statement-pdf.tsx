@@ -5,7 +5,9 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from "@react-pdf/renderer";
+import { PDF_BRAND as C } from "./pdf-brand";
 
 const styles = StyleSheet.create({
   page: {
@@ -15,72 +17,98 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
     paddingLeft: 40,
     paddingRight: 40,
-    color: "#1d1d1f",
+    color: C.textDark,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 20,
-    borderBottom: "1px solid #d2d2d7",
+    marginBottom: 18,
+    borderBottomWidth: 2.5,
+    borderBottomColor: C.accent,
     paddingBottom: 12,
   },
-  headerLeft: { flex: 1 },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logo: {
+    width: 36,
+    height: 42,
+    objectFit: "contain",
+    marginRight: 10,
+  },
   companyName: {
-    fontSize: 18,
+    fontSize: 13,
     fontFamily: "Helvetica-Bold",
-    color: "#1d1d1f",
+    color: C.navyDark,
   },
   companyTagline: {
-    fontSize: 8,
-    color: "#6e6e73",
+    fontSize: 7.5,
+    color: C.textMid,
     marginTop: 2,
   },
   docTitle: {
     fontSize: 14,
     fontFamily: "Helvetica-Bold",
-    color: "#0071e3",
+    color: C.navyDark,
+    letterSpacing: 0.8,
   },
   docSubtitle: {
-    fontSize: 9,
-    color: "#555",
-    marginTop: 4,
+    fontSize: 8,
+    color: C.textMid,
+    marginTop: 3,
   },
-  section: { marginBottom: 18 },
+  section: { marginBottom: 16 },
   clientName: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
-    color: "#1d1d1f",
+    color: C.navyDark,
     marginBottom: 6,
   },
   totalsRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    gap: 16,
     marginBottom: 8,
-    fontSize: 9,
+    fontSize: 8.5,
   },
-  totalsLabel: { color: "#666" },
-  totalsValue: { fontFamily: "Helvetica-Bold" },
-  table: { width: "100%", marginBottom: 12 },
+  totalsItem: {
+    flexDirection: "row",
+    marginLeft: 14,
+  },
+  totalsLabel: { color: C.textMid },
+  totalsValue: { fontFamily: "Helvetica-Bold", color: C.textDark, marginLeft: 4 },
+  table: {
+    width: "100%",
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: C.grayBorder,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#f5f5f7",
-    color: "#1d1d1f",
-    padding: "5 6",
+    backgroundColor: C.navyDark,
+    color: C.white,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
+    fontSize: 7.5,
   },
   tableRow: {
     flexDirection: "row",
-    padding: "4 6",
-    borderBottom: "0.5px solid #e8e8e8",
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: C.grayBorder,
   },
   tableRowAlt: {
     flexDirection: "row",
-    padding: "4 6",
-    borderBottom: "0.5px solid #e8e8e8",
-    backgroundColor: "#f8f9fa",
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: C.grayBorder,
+    backgroundColor: C.grayBg,
   },
   colSale: { width: "22%", textAlign: "left" },
   colProject: { flex: 1, textAlign: "left" },
@@ -89,19 +117,24 @@ const styles = StyleSheet.create({
   colBalance: { width: "18%", textAlign: "right" },
   footer: {
     position: "absolute",
-    bottom: 24,
+    bottom: 22,
     left: 40,
     right: 40,
-    borderTop: "1px solid #e0e0e0",
+    borderTopWidth: 1,
+    borderTopColor: C.grayBorder,
     paddingTop: 6,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  footerText: { fontSize: 7, color: "#999" },
+  footerText: { fontSize: 6.5, color: C.textMuted },
 });
 
 function formatMoney(n: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(n);
 }
 
 export type StatementPdfData = {
@@ -110,9 +143,16 @@ export type StatementPdfData = {
   filterTo?: string | null;
   filterClientName?: string | null;
   filterEntityName?: string | null;
+  logoDataUrl?: string | null;
   statements: Array<{
     client: { id: string; name: string };
-    sales: Array<{ saleNumber: string; projectName: string; invoiced: number; paid: number; balance: number }>;
+    sales: Array<{
+      saleNumber: string;
+      projectName: string;
+      invoiced: number;
+      paid: number;
+      balance: number;
+    }>;
     totalInvoiced: number;
     totalPaid: number;
     balance: number;
@@ -133,9 +173,12 @@ export function StatementPdfDocument({ data }: { data: StatementPdfData }) {
       <Page size="A4" style={styles.page}>
         <View fixed>
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.companyName}>Vision Building Technologies</Text>
-              <Text style={styles.companyTagline}>VBT Platform · Account Statements</Text>
+            <View style={styles.brandRow}>
+              {data.logoDataUrl ? <Image src={data.logoDataUrl} style={styles.logo} /> : null}
+              <View>
+                <Text style={styles.companyName}>Vision Building Technologies</Text>
+                <Text style={styles.companyTagline}>VBT Platform · Account Statements</Text>
+              </View>
             </View>
             <View>
               <Text style={styles.docTitle}>Account Statements</Text>
@@ -149,12 +192,18 @@ export function StatementPdfDocument({ data }: { data: StatementPdfData }) {
           <View key={st.client.id} style={styles.section} wrap={false}>
             <Text style={styles.clientName}>{st.client.name}</Text>
             <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>Invoiced:</Text>
-              <Text style={styles.totalsValue}>{formatMoney(st.totalInvoiced)}</Text>
-              <Text style={styles.totalsLabel}>Paid:</Text>
-              <Text style={styles.totalsValue}>{formatMoney(st.totalPaid)}</Text>
-              <Text style={styles.totalsLabel}>Balance:</Text>
-              <Text style={styles.totalsValue}>{formatMoney(st.balance)}</Text>
+              <View style={styles.totalsItem}>
+                <Text style={styles.totalsLabel}>Invoiced:</Text>
+                <Text style={styles.totalsValue}>{formatMoney(st.totalInvoiced)}</Text>
+              </View>
+              <View style={styles.totalsItem}>
+                <Text style={styles.totalsLabel}>Paid:</Text>
+                <Text style={styles.totalsValue}>{formatMoney(st.totalPaid)}</Text>
+              </View>
+              <View style={styles.totalsItem}>
+                <Text style={styles.totalsLabel}>Balance:</Text>
+                <Text style={styles.totalsValue}>{formatMoney(st.balance)}</Text>
+              </View>
             </View>
             <View style={styles.table}>
               <View style={styles.tableHeader}>

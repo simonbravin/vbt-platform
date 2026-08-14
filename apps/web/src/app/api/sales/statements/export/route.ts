@@ -8,6 +8,7 @@ import { buildStatementsResponse } from "@/lib/partner-sales";
 import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
 import { StatementPdfDocument, type StatementPdfData } from "@/components/pdf/statement-pdf";
+import { loadPdfLogoDataUrl } from "@/components/pdf/load-pdf-logo";
 
 function escapeCsvCell(v: string): string {
   if (/[",\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
@@ -43,6 +44,7 @@ async function statementsExportGetHandler(req: Request) {
       filterTo: to ?? null,
       filterClientName: null,
       filterEntityName: null,
+      logoDataUrl: loadPdfLogoDataUrl(),
       statements: payload.statements.map((st) => ({
         client: st.client,
         sales: st.sales.map((s: { saleNumber?: string | null; id: string; project: { name: string }; statementInvoiced: number; statementPaid: number }) => ({
