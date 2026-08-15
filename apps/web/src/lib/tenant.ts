@@ -5,6 +5,9 @@ import { authOptions, type SessionUser } from "./auth";
 /** Cookie used by superadmin to "view as" a partner org. */
 export const ACTIVE_ORG_COOKIE = "vbt-active-org";
 
+const ORG_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export type TenantContext = {
   userId: string;
   activeOrgId: string | null;
@@ -53,10 +56,11 @@ export async function requireSession(): Promise<SessionUser> {
  */
 export async function requireActiveOrg(): Promise<SessionUser> {
   const user = await requireSession();
-  if (!user.activeOrgId && !user.isPlatformSuperadmin) {
+  const activeOrgId = await getEffectiveActiveOrgId(user);
+  if (!activeOrgId && !user.isPlatformSuperadmin) {
     throw new TenantError("No active organization", "NO_ACTIVE_ORG");
   }
-  return user;
+  return { ...user, activeOrgId };
 }
 
 /**
@@ -105,25 +109,46 @@ export async function assertOrgAccess(
 
 /**
  * Get tenant context for use in services: userId, activeOrgId, role, roles, isPlatformSuperadmin.
- * Returns null if not authenticated. For platform superadmins, activeOrgId is overridden by
- * the vbt-active-org cookie when set (context switcher).
+ * Returns null if not authenticated. For platform superadmins, activeOrgId is the
+ * vbt-active-org cookie only (session membership is ignored). No cookie = platform context.
  */
 export async function getTenantContext(): Promise<TenantContext | null> {
   const user = await getSessionUser();
   if (!user) return null;
-  let activeOrgId = getEffectiveOrganizationId(user);
-  if (user.isPlatformSuperadmin) {
-    const store = await cookies();
-    const value = store.get(ACTIVE_ORG_COOKIE)?.value;
-    if (value) activeOrgId = value;
-  }
   return {
     userId: user.userId ?? user.id,
-    activeOrgId,
+    activeOrgId: await getEffectiveActiveOrgId(user),
     role: user.role ?? "viewer",
     roles: user.roles ?? [],
     isPlatformSuperadmin: user.isPlatformSuperadmin ?? false,
   };
+}
+
+/**
+ * Superadmin with `vbt-active-org` is quoting/viewing as that partner.
+ * Wizard math and partner UX must not use the platform EXW path.
+ */
+export function isImpersonatingPartner(ctx: {
+  isPlatformSuperadmin?: boolean;
+  activeOrgId?: string | null;
+}): boolean {
+  return !!ctx.isPlatformSuperadmin && Boolean(ctx.activeOrgId);
+}
+
+/** Hide factory EXW unless the caller is on the platform (no partner cookie). */
+export function shouldMaskFactoryExw(ctx: {
+  isPlatformSuperadmin?: boolean;
+  activeOrgId?: string | null;
+}): boolean {
+  return !ctx.isPlatformSuperadmin || isImpersonatingPartner(ctx);
+}
+
+/** Superadmin without partner cookie — full platform scope. */
+export function isPlatformOperatorContext(ctx: {
+  isPlatformSuperadmin?: boolean;
+  activeOrgId?: string | null;
+}): boolean {
+  return !!ctx.isPlatformSuperadmin && !ctx.activeOrgId;
 }
 
 /**
@@ -148,7 +173,9 @@ export async function getEffectiveActiveOrgId(
   if (!user) return null;
   if (user.isPlatformSuperadmin) {
     const store = await cookies();
-    return store.get(ACTIVE_ORG_COOKIE)?.value ?? null;
+    const value = store.get(ACTIVE_ORG_COOKIE)?.value ?? null;
+    if (!value || !ORG_ID_RE.test(value)) return null;
+    return value;
   }
   return getEffectiveOrganizationId(user);
 }

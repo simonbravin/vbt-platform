@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { Resend } from "resend";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
 import { canManageQuotes } from "@/lib/permissions";
@@ -35,7 +35,8 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const scoped = quoteByIdWhere(user, params.id);
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const scoped = quoteByIdWhere(user, params.id, actingOrgId);
   if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const quote = await prisma.quote.findFirst({
@@ -144,7 +145,7 @@ export async function POST(
     }
 
     await createActivityLog({
-      organizationId: getEffectiveOrganizationId(user) ?? undefined,
+      organizationId: actingOrgId ?? getEffectiveOrganizationId(user) ?? undefined,
       userId: user.id,
       action: "quote_sent",
       entityType: "quote",

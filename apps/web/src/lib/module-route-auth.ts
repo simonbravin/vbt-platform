@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, type SessionUser } from "@/lib/auth";
 import { assertPartnerModuleEnabled, type PartnerModuleKey } from "@/lib/module-access";
 import { jsonApiErrorResponse } from "@/lib/api-error";
+import { getEffectiveActiveOrgId } from "@/lib/tenant";
 
 type ModuleRouteAuthResult =
   | { ok: true; user: SessionUser }
@@ -22,14 +23,19 @@ export async function requireModuleRouteAuth(module: PartnerModuleKey): Promise<
     };
   }
   const user = session.user as SessionUser;
+  const activeOrgId = await getEffectiveActiveOrgId(user);
+  const actingUser = { ...user, activeOrgId };
   try {
-    await assertPartnerModuleEnabled(module, user);
+    await assertPartnerModuleEnabled(module, {
+      activeOrgId,
+      isPlatformSuperadmin: user.isPlatformSuperadmin && !activeOrgId,
+    });
   } catch {
     return {
       ok: false,
       response: jsonApiErrorResponse(403, "FORBIDDEN", "You do not have permission for this action."),
     };
   }
-  return { ok: true, user };
+  return { ok: true, user: actingUser };
 }
 

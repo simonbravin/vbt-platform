@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import { createTransaction, listTransactions } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
@@ -18,7 +18,7 @@ async function getHandler(req: Request) {
   const tenantCtx = {
     userId: ctx.userId,
     organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    isPlatformSuperadmin: isPlatformOperatorContext(ctx),
   };
   const result = await listTransactions(prisma, tenantCtx, {
     warehouseId,
@@ -45,7 +45,7 @@ async function postHandler(req: Request) {
     );
   }
   let organizationId: string;
-  if (ctx.isPlatformSuperadmin && body.organizationId) {
+  if (isPlatformOperatorContext(ctx) && body.organizationId) {
     organizationId = body.organizationId;
   } else if (ctx.activeOrgId) {
     organizationId = ctx.activeOrgId;
@@ -56,7 +56,7 @@ async function postHandler(req: Request) {
   const tenantCtx = {
     userId: ctx.userId,
     organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    isPlatformSuperadmin: isPlatformOperatorContext(ctx),
   };
   const lengthMmRaw = body.lengthMm;
   const lengthMm =

@@ -52,7 +52,7 @@ export function SidebarUserFooter({
   hasAvatar,
   surface = "header",
   versionLabel,
-  settingsHref = "/settings",
+  settingsHref,
 }: FooterBaseProps & {
   surface?: "header" | "sidebar";
 }) {
@@ -152,7 +152,6 @@ function SidebarUserFooterSidebarChrome({
   const [signOutOpen, setSignOutOpen] = useState(false);
   const roleLabel = role.replaceAll("_", " ").toUpperCase();
   const roleBadgeClass = ROLE_COLORS[role] ?? ROLE_BADGE_FALLBACK;
-  const settingsPath = settingsHref ?? "/settings";
   const { state, isMobile } = useSidebar();
   const isCollapsedRail = !isMobile && state === "collapsed";
 
@@ -187,12 +186,14 @@ function SidebarUserFooterSidebarChrome({
       <DropdownMenuItem asChild>
         <Link href={profileHref}>{t("nav.settings.profile")}</Link>
       </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href={settingsPath} className="flex cursor-default items-center gap-2">
-          <Settings className="h-4 w-4 shrink-0" />
-          {t("nav.settings")}
-        </Link>
-      </DropdownMenuItem>
+      {settingsHref ? (
+        <DropdownMenuItem asChild>
+          <Link href={settingsHref} className="flex cursor-default items-center gap-2">
+            <Settings className="h-4 w-4 shrink-0" />
+            {t("nav.settings")}
+          </Link>
+        </DropdownMenuItem>
+      ) : null}
       <DropdownMenuSeparator />
       <DropdownMenuItem
         className="text-destructive focus:bg-destructive/10 focus:text-destructive"

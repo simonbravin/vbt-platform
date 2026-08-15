@@ -4,6 +4,7 @@ import {
   getTenantContext,
   getSessionUser,
   getEffectiveOrganizationId,
+  isPlatformOperatorContext,
   TenantError,
   tenantErrorStatus,
 } from "@/lib/tenant";
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const organizationIdParam = url.searchParams.get("organizationId");
     let organizationId: string | null = null;
-    if (ctx.isPlatformSuperadmin && organizationIdParam) {
+    if (isPlatformOperatorContext(ctx) && organizationIdParam) {
       organizationId = organizationIdParam;
     } else {
       organizationId = ctx.activeOrgId ?? (user ? getEffectiveOrganizationId(user) : null);
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     const contactEmail = typeof body.contactEmail === "string" ? body.contactEmail.trim() || null : null;
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
     let organizationId: string | null = null;
-    if (ctx.isPlatformSuperadmin && body.organizationId) {
+    if (isPlatformOperatorContext(ctx) && body.organizationId) {
       organizationId = body.organizationId;
     } else {
       organizationId = ctx.activeOrgId ?? (user ? getEffectiveOrganizationId(user) : null);

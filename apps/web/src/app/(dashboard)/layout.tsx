@@ -35,13 +35,13 @@ export default async function DashboardLayout({
   };
 
   try {
-    // Partners only: superadmin must use superadmin portal, not partner layout
-    if (user.isPlatformSuperadmin) {
+    const effectiveOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+
+    // Superadmin without an impersonated partner stays in the platform portal.
+    // With vbt-active-org set, they can use the partner portal (VL as partner).
+    if (user.isPlatformSuperadmin && !effectiveOrgId) {
       redirect("/superadmin/dashboard");
     }
-
-    const effectiveOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
-    // No effective active org → pending / onboarding
     if (!effectiveOrgId) {
       redirect("/pending");
     }
@@ -50,11 +50,22 @@ export default async function DashboardLayout({
     let activeOrgName: string | null = user.activeOrgName ?? null;
     let userDisplayName: string | null = null;
     let hasAvatar = false;
-    if (effectiveOrgId !== user.activeOrgId) {
+    if (user.isPlatformSuperadmin || effectiveOrgId !== user.activeOrgId) {
       try {
-        const org = await prisma.organization.findUnique({ where: { id: effectiveOrgId }, select: { name: true } });
+        const org = await prisma.organization.findUnique({
+          where: { id: effectiveOrgId },
+          select: { name: true, organizationType: true },
+        });
+        if (user.isPlatformSuperadmin) {
+          const isPartner =
+            org?.organizationType === "commercial_partner" || org?.organizationType === "master_partner";
+          if (!org || !isPartner) {
+            redirect("/superadmin/dashboard");
+          }
+        }
         activeOrgName = org?.name ?? null;
-      } catch {
+      } catch (e) {
+        if (isNextRedirect(e)) throw e;
         activeOrgName = user.activeOrgName ?? null;
       }
     }
@@ -76,7 +87,12 @@ export default async function DashboardLayout({
     const safeUser = {
       name: userDisplayName,
       email: user.email ?? null,
-      role: typeof user.role === "string" ? user.role : "viewer",
+      // Superadmin impersonating a partner acts as org admin for nav/settings.
+      role: user.isPlatformSuperadmin
+        ? "org_admin"
+        : typeof user.role === "string"
+          ? user.role
+          : "viewer",
       activeOrgName,
     };
 
@@ -91,15 +107,25 @@ export default async function DashboardLayout({
           moduleVisibility={moduleVisibility}
         />
         <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
-          <TopBar activeOrgName={safeUser.activeOrgName} />
+          <TopBar
+            showContextSwitcher={!!user.isPlatformSuperadmin}
+            portal="partner"
+            activeOrgName={safeUser.activeOrgName}
+          />
           <div className="app-main-scroll flex flex-1 flex-col overflow-y-auto bg-background">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     );
   } catch (e) {
-    // Next.js redirect() throws NEXT_REDIRECT; must rethrow so redirect works
-    if ((e as Error)?.message === "NEXT_REDIRECT") throw e;
+    if (isNextRedirect(e)) throw e;
     console.error("[dashboard layout]", e);
     redirect("/login");
   }
+}
+
+function isNextRedirect(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const digest = "digest" in e ? (e as { digest?: unknown }).digest : undefined;
+  if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) return true;
+  return (e as Error).message === "NEXT_REDIRECT";
 }

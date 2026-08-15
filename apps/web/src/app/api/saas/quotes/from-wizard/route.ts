@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isImpersonatingPartner, shouldMaskFactoryExw } from "@/lib/tenant";
 import { withSaaSHandler } from "@/lib/saas-handler";
 import { ApiHttpError } from "@/lib/api-error";
 import { generateQuoteNumber } from "@/lib/utils";
@@ -120,7 +120,8 @@ async function postHandler(req: Request) {
   try {
     artifacts = await computeWizardQuoteArtifacts(prisma, {
       organizationId,
-      isPlatformSuperadmin: !!ctx.isPlatformSuperadmin,
+      // Partner portal (incl. VL impersonating) must persist partner landed math, not factory EXW.
+      isPlatformSuperadmin: !!ctx.isPlatformSuperadmin && !isImpersonatingPartner(ctx),
       data: {
         projectId: data.projectId,
         costMethod: data.costMethod,
@@ -213,7 +214,7 @@ async function postHandler(req: Request) {
   });
 
   return NextResponse.json(
-    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !ctx.isPlatformSuperadmin }),
+    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: shouldMaskFactoryExw(ctx) }),
     { status: 201 }
   );
 }

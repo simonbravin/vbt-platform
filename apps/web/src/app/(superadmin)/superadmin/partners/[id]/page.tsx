@@ -9,11 +9,12 @@ import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = { params: { id: string }; searchParams: Promise<{ inviteSent?: string }> };
+type PageProps = { params: { id: string }; searchParams: Promise<{ inviteSent?: string; setupIncomplete?: string }> };
 
 export default async function PartnerDetailPage({ params, searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
   const inviteSent = resolvedSearchParams.inviteSent;
+  const setupIncomplete = resolvedSearchParams.setupIncomplete === "1";
   const session = await getServerSession(authOptions);
   const user = session?.user as { isPlatformSuperadmin?: boolean } | undefined;
   if (!user?.isPlatformSuperadmin) redirect("/dashboard");
@@ -48,6 +49,7 @@ export default async function PartnerDetailPage({ params, searchParams }: PagePr
       <PartnerDetailClient
         partnerId={partner.id}
         inviteSent={inviteSent}
+        setupIncomplete={setupIncomplete}
         initialPartner={{
           id: partner.id,
           name: partner.name,

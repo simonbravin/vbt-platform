@@ -8,8 +8,8 @@ Este documento describe el **tech stack**, la **estructura de la aplicación**, 
 
 - **Nombre de producto:** **Plataforma VBT** (ES) / **VBT Platform** (EN). El repositorio en GitHub es **simonbravin/vbt-platform** y la carpeta local habitual es `vbt-platform`; no usar “Cotizador” como nombre de marca en UI ni emails.
 - **Empresa:** Vision Building Technologies (VBT).
-- **Propósito:** Herramienta interna para **cotizar** proyectos de construcción (sistemas de muros/prefabricados: S80, S150, S200), calcular costos de fábrica, flete, impuestos y comisiones, enviar cotizaciones por email (PDF), gestionar **ventas** (Sales), facturación y pagos. Incluye **clientes**, **proyectos**, **catálogo de piezas**, **inventario**, **importación desde Revit (CSV)** y **reportes**.
-- **Evolución planeada:** Migración hacia un **CRM**; modelo **multi-tenant** donde cada partner (Org) ve solo sus datos y un superadmin ve todo.
+- **Propósito:** Plataforma para que la **red de distribuidores (partners)** **cotice por sí misma** sistemas de muro de PVC extruido (VBT 80 / 150 / 200 mm; códigos S80 / S150 / S200). Unidad comercial: **m² → kit → contenedor**. Precio landed por país (flete + impuestos del destino). Incluye clientes, proyectos, diseño, ventas, inventario, import CSV Revit y reportes.
+- **No es un CRM genérico:** el camino humano canónico de cotización es el **wizard de 5 pasos** (`/quotes/wizard` → `POST /api/saas/quotes/from-wizard`). `/quotes/new` y `/quotes/create` redirigen al wizard.
 
 ---
 
@@ -126,17 +126,28 @@ Referencia: `packages/core` `getVisionLatamOrganizationId`, `packages/db/prisma/
 
 ---
 
-## 6. Rutas de la aplicación (dashboard)
+## 6. Rutas de la aplicación
+
+### Portal partner (`(dashboard)`, sidebar agrupado)
 
 - **Dashboard** – `/dashboard`
-- **Proyectos** – `/projects`, `/projects/new`, `/projects/[id]`, `/projects/logs`
-- **Clientes** – `/clients`, `/clients/[id]`
-- **Cotizaciones** – `/quotes`, `/quotes/new`, `/quotes/[id]`
-- **Ventas** – `/sales`, `/sales/new`, `/sales/[id]`, `/sales/[id]/edit`, `/sales/statements`
-- **Reportes** – `/reports`
-- **Admin:** `/admin/users`, `/admin/entities` (SUPERADMIN), `/admin/catalog`, `/admin/warehouses`, `/admin/countries`, `/admin/freight`, `/admin/taxes`, `/admin/settings`, `/admin/inventory`
+- **Comercial:** `/quotes`, `/quotes/wizard` (CTA Nueva cotización), `/sales`, `/sales/statements`, `/reports`
+- **Cartera:** `/clients`, `/projects`, `/engineering`
+- **Operación:** `/inventory`
+- **Recursos:** `/documents`, `/training`
+- **Configuración** (org_admin): `/settings`, `/settings/team`, `/settings/warehouses`, `/settings/freight`, `/settings/taxes`, `/settings/activity`
+- Compatibilidad: `/quotes/new` y `/quotes/create` → `/quotes/wizard`
 
-La navegación y visibilidad por rol están definidas en `apps/web/src/components/layout/sidebar.tsx`.
+### Portal plataforma (`(superadmin)`)
+
+- Red, operación, fábrica, país (incluye `/superadmin/countries/onboard`), contenido, informes (`/superadmin/analytics` con tabs Analíticas / Reportes; `/superadmin/reports` redirige), sistema.
+- Superadmin puede entrar al portal partner con cookie `vbt-active-org` (switcher “ver como”).
+
+### Árbol fantasma `(dashboard)/admin/*`
+
+- **No borrar.** Varias pantallas de `/superadmin/admin/*` reexportan estas páginas. El middleware manda superadmins a `/superadmin/admin/*`. No forma parte de la IA del partner.
+
+La navegación partner está en `apps/web/src/components/layout/sidebar.tsx`; la de plataforma en `superadmin-sidebar.tsx`.
 
 ---
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import { getQuizDefinitionById, updateQuizDefinition, resolveTrainingModuleVisible } from "@vbt/core";
 import { updateQuizDefinitionSchema } from "@vbt/core/validation";
 import { withSaaSHandler } from "@/lib/saas-handler";
@@ -12,7 +12,7 @@ async function getHandler(_req: Request, routeContext?: unknown) {
   const { id } = params instanceof Promise ? await params : params;
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     const d = await getQuizDefinitionById(prisma, id, { admin: true });
     if (!d) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(d);

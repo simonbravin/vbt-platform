@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/db";
-import { getTenantContext, TenantError } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, TenantError } from "@/lib/tenant";
 import {
   parseRevitCsv,
   catalogPiecesToPieceLookup,
@@ -87,7 +87,7 @@ async function postHandler(req: Request) {
     typeof formData.get("organizationId") === "string" ? String(formData.get("organizationId")).trim() : "";
 
   let organizationId: string;
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     // Prefer explicit org (UI sends VL id). If omitted, infer from warehouse so we never rely on
     // vbt-active-org cookie matching the warehouse org (that mismatch caused apply 400 after preview).
     if (orgFromForm) {

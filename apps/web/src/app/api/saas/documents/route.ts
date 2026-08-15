@@ -3,7 +3,7 @@
  */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requirePlatformSuperadmin, getTenantContext } from "@/lib/tenant";
+import { requirePlatformSuperadmin, getTenantContext, isPlatformOperatorContext } from "@/lib/tenant";
 import { getVisibleDocuments, createDocument } from "@vbt/core";
 import { createDocumentSchema } from "@vbt/core/validation";
 import { createActivityLog } from "@/lib/audit";
@@ -54,12 +54,12 @@ async function getHandler(req: Request) {
       prisma,
       {
         organizationId: ctx.activeOrgId ?? null,
-        isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+        isPlatformSuperadmin: isPlatformOperatorContext(ctx),
         countryCode: viewerCountryCode,
       },
       listOptions
     );
-    const forSuperadmin = ctx.isPlatformSuperadmin;
+    const forSuperadmin = isPlatformOperatorContext(ctx);
     return NextResponse.json({
       documents: result.documents.map((d) => formatDocumentListItem(d as ListedDoc, forSuperadmin)),
       total: result.total,

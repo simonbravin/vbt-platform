@@ -1,8 +1,11 @@
 import { requireAuth } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 import FreightPage from "@/app/(dashboard)/admin/freight/page";
+import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
+import type { Locale } from "@/lib/i18n/translations";
 
 export default async function SettingsFreightPage() {
   try {
@@ -11,6 +14,10 @@ export default async function SettingsFreightPage() {
     if ((e as Error)?.message === "NEXT_REDIRECT") throw e;
     redirect("/login");
   }
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
+  const locale: Locale = raw === "es" || raw === "en" ? raw : "en";
+  const t = getT(locale);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -21,9 +28,7 @@ export default async function SettingsFreightPage() {
           <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </Link>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Tarifas base de Vision Latam y las tuyas (si no usas los servicios cotizados por Vision Latam). Puedes agregar o editar solo tus propias tarifas.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("partner.settings.freightPartnerIntro")}</p>
       <FreightPage />
     </div>
   );

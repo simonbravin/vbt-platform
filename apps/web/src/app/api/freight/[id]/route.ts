@@ -8,7 +8,7 @@ async function getProfileAndCheckAccess(id: string, isSuperadmin: boolean, activ
     include: { country: true, organization: { select: { id: true, name: true } } },
   });
   if (!profile) return { profile: null, error: "Not found" as const };
-  if (isSuperadmin) return { profile, error: null };
+  if (isSuperadmin && !activeOrgId) return { profile, error: null };
   if (profile.organizationId === null) return { profile: null, error: "Partners cannot edit platform base rates" as const };
   if (profile.organizationId !== activeOrgId) return { profile: null, error: "Forbidden" as const };
   return { profile, error: null };
@@ -31,8 +31,8 @@ export async function GET(
     include: { country: true, organization: { select: { id: true, name: true } } },
   });
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!user.isPlatformSuperadmin && profile.organizationId != null) {
-    const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+  const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+  if (!(user.isPlatformSuperadmin && !activeOrgId) && profile.organizationId != null) {
     if (profile.organizationId !== activeOrgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return NextResponse.json(profile);

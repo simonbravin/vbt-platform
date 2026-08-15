@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, TenantError } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, TenantError } from "@/lib/tenant";
 import { pruneZeroInventoryLevels } from "@vbt/core";
 import { createActivityLog } from "@/lib/audit";
 import { withSaaSHandler } from "@/lib/saas-handler";
@@ -16,7 +16,7 @@ async function postHandler(req: Request) {
   const tenantCtx = {
     userId: ctx.userId,
     organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    isPlatformSuperadmin: isPlatformOperatorContext(ctx),
   };
 
   try {

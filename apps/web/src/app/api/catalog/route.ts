@@ -13,9 +13,10 @@ async function getCatalogContext(): Promise<{ allowedSystems: string[]; isSupera
   const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   const user = session.user as { isPlatformSuperadmin?: boolean };
-  if (user.isPlatformSuperadmin) return { allowedSystems: [...SYSTEM_CODES], isSuperadmin: true };
-
   const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+  if (user.isPlatformSuperadmin && !activeOrgId) {
+    return { allowedSystems: [...SYSTEM_CODES], isSuperadmin: true };
+  }
   if (!activeOrgId) return { allowedSystems: [], isSuperadmin: false };
 
   const profile = await prisma.partnerProfile.findUnique({

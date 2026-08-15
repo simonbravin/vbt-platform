@@ -8,7 +8,7 @@ async function getSetAndCheckAccess(id: string, isSuperadmin: boolean, activeOrg
     include: { country: true, organization: { select: { id: true, name: true } } },
   });
   if (!set) return { set: null, error: "Not found" as const };
-  if (isSuperadmin) return { set, error: null };
+  if (isSuperadmin && !activeOrgId) return { set, error: null };
   if (set.organizationId === null) return { set: null, error: "Partners cannot edit platform base tax rules" as const };
   if (set.organizationId !== activeOrgId) return { set: null, error: "Forbidden" as const };
   return { set, error: null };
@@ -35,8 +35,8 @@ export async function GET(
     include: { country: true, organization: { select: { id: true, name: true } } },
   });
   if (!set) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!user.isPlatformSuperadmin && set.organizationId != null) {
-    const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+  const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
+  if (!(user.isPlatformSuperadmin && !activeOrgId) && set.organizationId != null) {
     if (set.organizationId !== activeOrgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return NextResponse.json(withRules(set));

@@ -6,7 +6,11 @@ import { NewEngineeringRequestForm } from "./NewEngineeringRequestForm";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 
-export default async function NewEngineeringRequestPage() {
+export default async function NewEngineeringRequestPage({
+  searchParams,
+}: {
+  searchParams?: { projectId?: string };
+}) {
   const cookieStore = await cookies();
   const locale = (cookieStore.get(LOCALE_COOKIE_NAME)?.value === "es" ? "es" : "en") as Locale;
   const t = getT(locale);
@@ -21,7 +25,7 @@ export default async function NewEngineeringRequestPage() {
         <Link href="/engineering" className="text-sm text-muted-foreground hover:text-primary">{t("partner.engineering.back")}</Link>
         <h1 className="text-2xl font-semibold text-foreground">{t("partner.engineering.newTitle")}</h1>
       </div>
-      <NewEngineeringRequestForm />
+      <NewEngineeringRequestForm initialProjectId={searchParams?.projectId?.trim() || undefined} />
     </div>
   );
 }

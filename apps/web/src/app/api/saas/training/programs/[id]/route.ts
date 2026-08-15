@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import { getTrainingProgramById, updateTrainingProgram, resolveTrainingModuleVisible } from "@vbt/core";
 import { updateTrainingProgramSchema } from "@vbt/core/validation";
 
@@ -11,7 +11,7 @@ export async function GET(
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     const p = await getTrainingProgramById(prisma, params.id, { admin: true });
     if (!p) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(p);

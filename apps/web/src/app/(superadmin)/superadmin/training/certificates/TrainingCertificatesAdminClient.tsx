@@ -64,12 +64,20 @@ export function TrainingCertificatesAdminClient() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/superadmin/training"
-        className="inline-flex text-sm font-medium text-primary hover:underline"
-      >
-        ← {t("nav.superadmin.training")}
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/superadmin/training"
+          className="inline-flex text-sm font-medium text-primary hover:underline"
+        >
+          ← {t("nav.superadmin.training")}
+        </Link>
+        <Link
+          href="/superadmin/training/certificates/verify"
+          className="inline-flex text-sm font-medium text-primary hover:underline"
+        >
+          {t("nav.superadmin.certificateVerify")}
+        </Link>
+      </div>
 
       <form onSubmit={applyFilters} className="surface-card p-4 grid gap-3 sm:grid-cols-3">
         <div>

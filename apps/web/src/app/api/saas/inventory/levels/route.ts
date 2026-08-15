@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import { listLevels } from "@vbt/core";
 import { withSaaSHandler } from "@/lib/saas-handler";
@@ -23,7 +23,7 @@ async function getHandler(req: Request) {
     const tenantCtx = {
       userId: ctx.userId,
       organizationId: ctx.activeOrgId ?? null,
-      isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+      isPlatformSuperadmin: isPlatformOperatorContext(ctx),
     };
     const result = await listLevels(prisma, tenantCtx, {
       warehouseId,

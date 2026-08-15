@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { requirePlatformSuperadmin, ACTIVE_ORG_COOKIE } from "@/lib/tenant";
 import { TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { prisma } from "@/lib/db";
 import { z } from "zod";
+
+const PARTNER_ORG_TYPES = ["commercial_partner", "master_partner"] as const;
 
 const bodySchema = z.object({
   organizationId: z.string().uuid().nullable(),
@@ -22,6 +25,21 @@ export async function POST(req: Request) {
       );
     }
     const { organizationId } = parsed.data;
+    if (organizationId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { organizationType: true },
+      });
+      if (
+        !org ||
+        !PARTNER_ORG_TYPES.includes(org.organizationType as (typeof PARTNER_ORG_TYPES)[number])
+      ) {
+        return NextResponse.json(
+          { error: "Active org must be a commercial or master partner" },
+          { status: 400 }
+        );
+      }
+    }
     const res = NextResponse.json({ ok: true });
     if (organizationId) {
       res.cookies.set(ACTIVE_ORG_COOKIE, organizationId, {

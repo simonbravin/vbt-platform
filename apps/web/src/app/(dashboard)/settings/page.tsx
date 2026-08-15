@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { Users, Warehouse, Truck, TrendingUp, ClipboardList } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
 
@@ -18,10 +19,7 @@ export default async function SettingsHubPage() {
   }
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">{t("partner.settings.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("partner.settings.subtitle")}</p>
-      </div>
+      <PageHeader title={t("partner.settings.title")} description={t("partner.settings.subtitle")} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Link

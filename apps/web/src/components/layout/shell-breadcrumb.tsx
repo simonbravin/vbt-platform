@@ -56,6 +56,8 @@ function superadminPageKey(pathname: string): string {
   const parts = pathname.split("/").filter(Boolean);
   if (parts[0] !== "superadmin") return "nav.superadmin.dashboard";
   const rest = parts.slice(1);
+  if (rest[0] === "countries" && rest[1] === "onboard") return "nav.countries.onboard";
+  if (rest[0] === "reports") return "nav.superadmin.analytics";
   if (rest[0] === "admin" && rest[1] === "inventory") return "nav.superadmin.inventory";
   if (rest[0] === "training" && rest[1] === "certificates" && rest[2] === "verify") {
     return "nav.superadmin.certificateVerify";

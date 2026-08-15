@@ -136,7 +136,7 @@
 
 @layer components {
   .app-main-scroll {
-    @apply px-8 pb-8 pt-5;
+    @apply px-4 pb-8 pt-5 md:px-8;
   }
 
   .surface-card {

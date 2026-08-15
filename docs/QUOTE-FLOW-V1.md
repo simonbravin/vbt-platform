@@ -1,6 +1,8 @@
-# Quote Creation V1
+# Quote flow (partner self-quoting)
 
-Minimal production-oriented quote flow on the new schema. No legacy CSV/Revit flow.
+Canonical human path: **5-step wizard** at `/quotes/wizard`. Do not treat `/quotes/new` or `/quotes/create` as separate products — they redirect to the wizard.
+
+Commercial unit: **m² → kit → container**. Systems in UI: **VBT 80 / 150 / 200 mm** (codes S80 / S150 / S200). Landed price uses destination freight + tax rule sets. Do not invent tax rates.
 
 ---
 
@@ -9,25 +11,32 @@ Minimal production-oriented quote flow on the new schema. No legacy CSV/Revit fl
 - A quote **always belongs to a project** (`projectId`).
 - A quote starts with **status = `draft`**.
 - **Version** starts at 1; new versions are created via **duplicate** (same `quoteNumber`, incremented `version`).
-- **Statuses** (schema-compatible): `draft`, `sent`, `accepted`, `rejected`, `expired`.
+- **Statuses:** `draft`, `sent`, `accepted`, `rejected`, `expired`, `archived`.
 
-### Status transitions (V1)
+### Status transitions
 
 - **draft** → user can edit; can transition to `sent` (e.g. when sending by email).
 - **sent** → quote has been sent to client; can move to `accepted` or `rejected`.
-- **accepted** / **rejected** / **expired** → terminal for V1 (no automated transitions).
+- **accepted** / **rejected** / **expired** / **archived** → terminal for the partner send flow.
 
 ---
 
-## 2. Quote creation V1
+## 2. Wizard (canonical)
 
-### Flow
+### UI steps (`QuoteWizard`, `MAX_STEP = 5`)
 
-1. User goes to **New Quote** from project detail (`/quotes/create?projectId=...`) or from quotes list (`/quotes/create`).
-2. User selects project (prefilled when coming from project).
-3. User clicks **Create draft quote** → `POST /api/saas/quotes` with `{ projectId }`.
-4. Server generates `quoteNumber` (if not provided) via `generateQuoteNumber()`, creates quote with `version: 1`, `status: draft`, and `preparedByUserId` from session.
-5. User is redirected to `/quotes/[id]` to add items and pricing.
+1. **Project + method** — project, CSV vs m² by system, optional completed engineering request.
+2. **CSV import** — only when method is CSV; skipped for m².
+3. **Material + partner price** — partner sees VL base price, not factory EXW.
+4. **Destination + freight** — country (territory-scoped), freight profile, containers.
+5. **Preview + create** — landed totals; submit `POST /api/saas/quotes/from-wizard` (`buildQuoteSnapshot` + `canonicalizeSaaSQuotePayload` + `createQuote`).
+
+### Entry points
+
+- Sidebar CTA **Nueva cotización**, dashboard, quotes list → `/quotes/wizard`.
+- `/quotes/new` and `/quotes/create` redirect to the wizard (optional `projectId` query).
+
+`POST /api/saas/quotes` may still exist for integrations; the partner UI does not offer “draft only, no wizard”.
 
 ### Scoping
 
@@ -96,25 +105,24 @@ Items are created with the quote (POST) or replaced on update (PATCH).
 
 ---
 
-## 7. UI (minimal)
+## 7. UI
 
-- **`/quotes/create`** – project selector (or prefilled from query); single button to create draft and redirect to `/quotes/[id]`.
-- **Project detail** – “New Quote” links to `/quotes/create?projectId=...`.
-- **Quotes list** – “New Quote” links to `/quotes/create`; list uses new schema (quoteNumber, totalPrice, project.projectName, project.client, status).
+- **`/quotes/wizard`** – five-step assistant (CSV or m²). Canonical create path.
+- **`/quotes`** – list; “New quote” → wizard.
+- **`/quotes/[id]`** – detail, PDF, email, next steps (sale if org_admin / sales_user).
+- **Project detail** – new quote should go to `/quotes/wizard?projectId=...`.
 
 ---
 
 ## 8. Country source
 
-- **Static list** in `apps/web/src/lib/countries.ts` (`STATIC_COUNTRIES`).
-- Used for project form and quote list destination display; no DB-backed countries module.
+- Partner dropdowns use assigned territories + `Country` rows (`getPartnerCountryDropdownOptions`).
+- Superadmin country playbook: `/superadmin/countries/onboard` (country → tax rule set → freight). Do not invent rates.
 
 ---
 
-## 9. Remaining gaps (out of scope for V1)
+## 9. Remaining gaps (out of scope here)
 
-- **Legacy wizard** (`/quotes/new`) – CSV/Revit flow not restored; remains legacy.
 - **Validation** – no strict server-side validation of totals vs item sums; pragmatic defaults only.
-- **Versioning UI** – duplicate is API-only; no “New version” button in UI yet (can be added later).
-- **Quote edit form** – quote detail page may still use legacy `/api/quotes/[id]` for GET/PATCH; can be switched to `/api/saas/quotes/[id]` when desired.
-- **Email/PDF** – still use existing routes under `/api/quotes/[id]/email` and `/api/quotes/[id]/pdf` (schema-compatible).
+- **reserveStock** – not implemented; removed from partner UI.
+- **Email/PDF** – routes under `/api/quotes/[id]/email` and `/api/quotes/[id]/pdf` (schema-compatible).

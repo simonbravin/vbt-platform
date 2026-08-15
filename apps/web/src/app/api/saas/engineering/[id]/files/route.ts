@@ -36,7 +36,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    if (user.isPlatformSuperadmin) {
+    if (user.isPlatformSuperadmin && !user.activeOrgId) {
       return NextResponse.json(
         { error: "platform_use_revision_upload", message: "Use engineering revision upload for platform files." },
         { status: 403 }

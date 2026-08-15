@@ -7,8 +7,9 @@ import type { SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createActivityLog } from "@/lib/audit";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
-import { canDeleteQuote, canManageQuotes, isPlatformSuperadmin } from "@/lib/permissions";
+import { canDeleteQuote, canManageQuotes } from "@/lib/permissions";
 import { quoteByIdWhere } from "@/lib/quote-scope";
+import { getEffectiveActiveOrgId, shouldMaskFactoryExw } from "@/lib/tenant";
 import { formatQuoteForSaaSApiWithSnapshot, normalizeQuoteStatus, QuoteMissingTaxSnapshotError } from "@vbt/core";
 
 export async function GET(
@@ -18,8 +19,9 @@ export async function GET(
   const auth = await requireModuleRouteAuth("quotes");
   if (!auth.ok) return auth.response;
   const user = auth.user as SessionUser;
+  const actingOrgId = await getEffectiveActiveOrgId(user);
 
-  const scoped = quoteByIdWhere(user, params.id);
+  const scoped = quoteByIdWhere(user, params.id, actingOrgId);
   if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const quote = await prisma.quote.findFirst({
@@ -33,7 +35,9 @@ export async function GET(
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });
 
   return NextResponse.json(
-    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !isPlatformSuperadmin(user) })
+    formatQuoteForSaaSApiWithSnapshot(quote, {
+      maskFactoryExw: shouldMaskFactoryExw({ ...user, activeOrgId: actingOrgId }),
+    })
   );
 }
 
@@ -48,7 +52,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const scoped = quoteByIdWhere(user, params.id);
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const scoped = quoteByIdWhere(user, params.id, actingOrgId);
   if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const quote = await prisma.quote.findFirst({
@@ -93,7 +98,7 @@ export async function PATCH(
     try {
       return NextResponse.json(
         formatQuoteForSaaSApiWithSnapshot(updated ?? quote, {
-          maskFactoryExw: !isPlatformSuperadmin(user),
+          maskFactoryExw: shouldMaskFactoryExw({ ...user, activeOrgId: actingOrgId }),
         })
       );
     } catch (e) {
@@ -108,7 +113,9 @@ export async function PATCH(
   }
   try {
     return NextResponse.json(
-      formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !isPlatformSuperadmin(user) })
+      formatQuoteForSaaSApiWithSnapshot(quote, {
+        maskFactoryExw: shouldMaskFactoryExw({ ...user, activeOrgId: actingOrgId }),
+      })
     );
   } catch (e) {
     if (e instanceof QuoteMissingTaxSnapshotError) {
@@ -132,7 +139,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const scoped = quoteByIdWhere(user, params.id);
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const scoped = quoteByIdWhere(user, params.id, actingOrgId);
   if (!scoped.ok) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const quote = await prisma.quote.findFirst({

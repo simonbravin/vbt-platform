@@ -10,6 +10,7 @@ import { getCountryName } from "@/lib/countries";
 import { useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
+import { StatusBadge, quoteStatusTone } from "@/components/ui/status-badge";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-quotes-view";
@@ -49,15 +50,6 @@ function money(amount: number | null | undefined): string {
   const n = Number(amount);
   return formatCurrency(Number.isFinite(n) ? n : 0);
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  sent: "border-primary/35 bg-primary/10 text-primary",
-  draft: "border border-alert-warningBorder bg-alert-warning text-foreground",
-  accepted: "border-primary/40 bg-primary/10 text-foreground",
-  rejected: "border-destructive/45 bg-destructive/10 text-destructive",
-  expired: "border-border bg-muted text-muted-foreground",
-  archived: "border-border bg-muted/80 text-muted-foreground",
-};
 
 const STATUS_KEYS: Record<string, string> = {
   draft: "quotes.draft",
@@ -318,13 +310,9 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                     </td>
                     <td className="text-center tabular-nums font-semibold">{money(q.totalPrice)}</td>
                     <td>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide border ${
-                          STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
-                        }`}
-                      >
+                      <StatusBadge tone={quoteStatusTone(q.status)} className="uppercase tracking-wide">
                         {t(STATUS_KEYS[q.status] ?? q.status)}
-                      </span>
+                      </StatusBadge>
                     </td>
                     <td className="text-muted-foreground tabular-nums text-xs">
                       {new Date(q.createdAt).toLocaleDateString()}
@@ -372,13 +360,9 @@ export function QuotesClient({ quotes: initialQuotes, initialStatus }: { quotes:
                     <div className="w-10 h-10 border border-border bg-muted/40 rounded-lg flex items-center justify-center">
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-semibold uppercase tracking-wide border ${
-                        STATUS_COLORS[q.status] ?? "border-border bg-muted text-muted-foreground"
-                      }`}
-                    >
+                    <StatusBadge tone={quoteStatusTone(q.status)} className="font-mono text-[10px] uppercase tracking-wide">
                       {t(STATUS_KEYS[q.status] ?? q.status)}
-                    </span>
+                    </StatusBadge>
                   </div>
                   <p className="font-mono font-semibold tabular-nums text-primary text-sm">
                     {q.quoteNumber ?? q.id.slice(0, 8).toUpperCase()}

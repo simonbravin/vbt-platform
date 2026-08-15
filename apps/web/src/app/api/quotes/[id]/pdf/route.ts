@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { QuotePdfDocument, type QuotePdfData } from "@/components/pdf/quote-pdf";
 import { loadPdfLogoDataUrl } from "@/components/pdf/load-pdf-logo";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
 import { LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
 import type { Locale } from "@/lib/i18n/translations";
@@ -36,8 +36,10 @@ export async function GET(
 ) {
   const auth = await requireModuleRouteAuth("quotes");
   if (!auth.ok) return auth.response;
-  const user = auth.user as { activeOrgId?: string; orgId?: string; isPlatformSuperadmin?: boolean };
-  const organizationId = getEffectiveOrganizationId(user);
+  const user = auth.user as import("@/lib/auth").SessionUser;
+  const organizationId =
+    (await getEffectiveActiveOrgId(user)) ??
+    (user.isPlatformSuperadmin ? null : getEffectiveOrganizationId(user));
   const isPlatformSuperadmin = !!user.isPlatformSuperadmin;
 
   const url = new URL(req.url);

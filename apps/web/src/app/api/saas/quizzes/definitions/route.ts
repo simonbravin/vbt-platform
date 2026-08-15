@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import {
   listQuizDefinitionsAdmin,
   createQuizDefinition,
@@ -13,7 +13,7 @@ import { withSaaSHandler } from "@/lib/saas-handler";
 async function getHandler(_req: Request) {
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     const defs = await listQuizDefinitionsAdmin(prisma);
     return NextResponse.json(defs);
   }

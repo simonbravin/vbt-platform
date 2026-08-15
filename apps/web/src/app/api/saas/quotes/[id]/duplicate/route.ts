@@ -1,7 +1,7 @@
 /** Canonical SaaS quote duplicate. Legacy flows should call this when migrated. */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireActiveOrg, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { getTenantContext, requireActiveOrg, shouldMaskFactoryExw, TenantError, tenantErrorStatus } from "@/lib/tenant";
 import { assertPartnerModuleEnabled } from "@/lib/module-access";
 import {
   duplicateQuote,
@@ -23,7 +23,10 @@ export async function POST(
       isPlatformSuperadmin: user.isPlatformSuperadmin,
     };
     const quote = await duplicateQuote(prisma, tenantCtx, params.id);
-    return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !user.isPlatformSuperadmin }), {
+    const ctx = await getTenantContext();
+    return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, {
+      maskFactoryExw: ctx ? shouldMaskFactoryExw(ctx) : !user.isPlatformSuperadmin,
+    }), {
       status: 201,
     });
   } catch (e) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import { simulateForQuote, simulateForProject } from "@vbt/core";
 import { withSaaSHandler } from "@/lib/saas-handler";
@@ -20,9 +20,9 @@ async function getHandler(req: Request) {
   const tenantCtx = {
     userId: ctx.userId,
     organizationId: ctx.activeOrgId ?? null,
-    isPlatformSuperadmin: ctx.isPlatformSuperadmin,
+    isPlatformSuperadmin: isPlatformOperatorContext(ctx),
   };
-  const options = organizationIdsParam && ctx.isPlatformSuperadmin
+  const options = organizationIdsParam && isPlatformOperatorContext(ctx)
     ? { organizationIds: organizationIdsParam.split(",").map((s) => s.trim()).filter(Boolean) }
     : {};
 

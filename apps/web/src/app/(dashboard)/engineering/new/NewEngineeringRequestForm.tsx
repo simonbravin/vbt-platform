@@ -20,12 +20,12 @@ const SYSTEM_OPTIONS = [
   { value: "S200", labelKey: "admin.catalog.s200" },
 ] as const;
 
-export function NewEngineeringRequestForm() {
+export function NewEngineeringRequestForm({ initialProjectId }: { initialProjectId?: string }) {
   const t = useT();
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [form, setForm] = useState({
-    projectId: "",
+    projectId: initialProjectId ?? "",
     requestNumber: "",
     requestType: "",
     wallAreaM2: "",

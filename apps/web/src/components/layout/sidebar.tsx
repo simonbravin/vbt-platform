@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   FolderOpen,
   FileText,
+  FilePlus,
   Package,
   Building2,
   Users,
@@ -18,66 +18,83 @@ import {
   FileStack,
   GraduationCap,
   Receipt,
-  User,
-  ChevronRight,
+  Warehouse,
+  Truck,
+  TrendingUp,
+  ClipboardList,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { SidebarUserFooter } from "@/components/layout/sidebar-user-footer";
+import { SidebarPortalBadge } from "@/components/layout/sidebar-portal-badge";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  SidebarNavSections,
+  isNavHrefActive,
+  type SidebarNavGroup,
+  type SidebarNavItem,
+} from "@/components/layout/sidebar-nav-sections";
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-interface NavItem {
-  labelKey: string;
-  href?: string;
-  icon: React.ElementType;
-  roles?: string[];
-  children?: NavItem[];
-}
-
-const navigation: NavItem[] = [
-  { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { labelKey: "nav.clients", href: "/clients", icon: Building2 },
-  { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
-  { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
-  { labelKey: "nav.quotes", href: "/quotes", icon: FileText },
+const navigation: SidebarNavGroup[] = [
   {
-    labelKey: "nav.sales",
-    icon: ShoppingCart,
-    roles: ["org_admin", "sales_user", "technical_user", "viewer"],
-    children: [
-      { labelKey: "nav.sales.list", href: "/sales", icon: ShoppingCart },
-      { labelKey: "nav.sales.statements", href: "/sales/statements", icon: Receipt },
+    labelKey: null,
+    items: [{ labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    labelKey: "nav.group.commercial",
+    items: [
+      {
+        labelKey: "nav.quotes",
+        href: "/quotes",
+        icon: FileText,
+        activeExclude: ["/quotes/wizard", "/quotes/new", "/quotes/create"],
+      },
+      {
+        labelKey: "nav.sales.list",
+        href: "/sales",
+        icon: ShoppingCart,
+        roles: ["org_admin", "sales_user"],
+        activeExclude: ["/sales/statements"],
+      },
+      { labelKey: "nav.sales.statements", href: "/sales/statements", icon: Receipt, roles: ["org_admin", "sales_user"] },
+      { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["org_admin", "sales_user"] },
     ],
   },
-  { labelKey: "nav.inventory", href: "/inventory", icon: Package },
-  { labelKey: "nav.documents", href: "/documents", icon: FileStack },
-  { labelKey: "nav.training", href: "/training", icon: GraduationCap },
-  { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["SUPERADMIN", "org_admin", "sales_user"] },
+  {
+    labelKey: "nav.group.portfolio",
+    items: [
+      { labelKey: "nav.clients", href: "/clients", icon: Building2 },
+      { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
+      { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
+    ],
+  },
+  {
+    labelKey: "nav.group.operations",
+    items: [{ labelKey: "nav.inventory", href: "/inventory", icon: Package }],
+  },
+  {
+    labelKey: "nav.group.resources",
+    items: [
+      { labelKey: "nav.documents", href: "/documents", icon: FileStack },
+      { labelKey: "nav.training", href: "/training", icon: GraduationCap },
+    ],
+  },
   {
     labelKey: "nav.settings",
-    icon: Settings,
-    roles: ["SUPERADMIN", "org_admin"],
-    children: [
-      { labelKey: "nav.settings.overview", href: "/settings", icon: Settings },
-      { labelKey: "nav.settings.profile", href: "/profile", icon: User },
-      { labelKey: "nav.team", href: "/settings/team", icon: Users },
+    items: [
+      { labelKey: "nav.settings.overview", href: "/settings", icon: Settings, roles: ["org_admin"], activeExact: true },
+      { labelKey: "nav.team", href: "/settings/team", icon: Users, roles: ["org_admin"] },
+      { labelKey: "nav.warehouses", href: "/settings/warehouses", icon: Warehouse, roles: ["org_admin"] },
+      { labelKey: "nav.freight", href: "/settings/freight", icon: Truck, roles: ["org_admin"] },
+      { labelKey: "nav.taxes", href: "/settings/taxes", icon: TrendingUp, roles: ["org_admin"] },
+      { labelKey: "nav.settings.activity", href: "/settings/activity", icon: ClipboardList, roles: ["org_admin"] },
     ],
   },
 ];
@@ -108,7 +125,7 @@ function isModuleVisible(moduleVisibility: SidebarProps["moduleVisibility"], hre
   if (href === "/clients") return moduleVisibility?.clients !== false;
   if (href === "/engineering") return moduleVisibility?.engineering !== false;
   if (href === "/projects") return moduleVisibility?.projects !== false;
-  if (href === "/quotes") return moduleVisibility?.quotes !== false;
+  if (href === "/quotes" || href.startsWith("/quotes/")) return moduleVisibility?.quotes !== false;
   if (href === "/sales" || href.startsWith("/sales/")) return moduleVisibility?.sales !== false;
   if (href === "/inventory") return moduleVisibility?.inventory !== false;
   if (href === "/documents") return moduleVisibility?.documents !== false;
@@ -118,37 +135,14 @@ function isModuleVisible(moduleVisibility: SidebarProps["moduleVisibility"], hre
   return true;
 }
 
-function isNavLinkActive(pathname: string, href: string) {
-  if (pathname === href) return true;
-  if (href === "/sales") {
-    if (pathname.startsWith("/sales/statements")) return false;
-    return pathname.startsWith("/sales/");
-  }
-  return pathname.startsWith(`${href}/`);
-}
-
 export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleVisibility }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const quotesVisible = isModuleVisible(moduleVisibility, "/quotes/wizard");
 
-  useEffect(() => {
-    if (pathname.startsWith("/sales")) {
-      setExpanded((prev) => (prev.includes("nav.sales") ? prev : [...prev, "nav.sales"]));
-    }
-    if (pathname.startsWith("/settings") || pathname.startsWith("/profile")) {
-      setExpanded((prev) => (prev.includes("nav.settings") ? prev : [...prev, "nav.settings"]));
-    }
-  }, [pathname]);
-
-  const canSee = (item: NavItem) => {
-    if (!item.roles) return true;
-    return item.roles.includes(role);
-  };
-
-  const parentHref = (item: NavItem & { children: NavItem[] }) => {
-    const first = item.children.find((c) => c.href && canSee(c) && isModuleVisible(moduleVisibility, c.href));
-    return first?.href ?? "#";
+  const canSee = (item: SidebarNavItem) => {
+    if (item.roles && !item.roles.includes(role)) return false;
+    return isModuleVisible(moduleVisibility, item.href);
   };
 
   return (
@@ -170,99 +164,30 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
           />
         </Link>
       </div>
+      <SidebarPortalBadge label={t("shell.portal.partner")} />
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("shell.nav.menu")}</SidebarGroupLabel>
-          <SidebarMenu>
-            {navigation
-              .filter(canSee)
-              .filter((item) => {
-                if (item.children?.length) {
-                  return item.children.some((c) => c.href && isModuleVisible(moduleVisibility, c.href));
-                }
-                return isModuleVisible(moduleVisibility, item.href);
-              })
-              .map((item) => {
-                if (item.children?.length) {
-                  const open = expanded.includes(item.labelKey);
-                  const hasActiveChild = item.children.some(
-                    (child) => child.href && isNavLinkActive(pathname, child.href)
-                  );
-                  const ph = parentHref(item as NavItem & { children: NavItem[] });
+        {quotesVisible ? (
+          <SidebarGroup>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isNavHrefActive(pathname, "/quotes/wizard")}
+                  tooltip={t("nav.quotes.new")}
+                  className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                >
+                  <Link href="/quotes/wizard">
+                    <FilePlus className="shrink-0" />
+                    <span>{t("nav.quotes.new")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null}
 
-                  return (
-                    <Collapsible
-                      key={item.labelKey}
-                      open={open}
-                      onOpenChange={(next) => {
-                        setExpanded((prev) =>
-                          next ? (prev.includes(item.labelKey) ? prev : [...prev, item.labelKey]) : prev.filter((k) => k !== item.labelKey)
-                        );
-                      }}
-                      className="group/collapsible"
-                    >
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={hasActiveChild}
-                          tooltip={t(item.labelKey)}
-                        >
-                          <Link href={ph}>
-                            <item.icon className="shrink-0" />
-                            <span>{t(item.labelKey)}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuAction
-                            aria-label={t("shell.expandGroup")}
-                            className="data-[state=open]:rotate-90"
-                          >
-                            <ChevronRight className="size-4" />
-                          </SidebarMenuAction>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {item.children
-                              .filter(canSee)
-                              .filter((child) => isModuleVisible(moduleVisibility, child.href))
-                              .map((child) => (
-                                <SidebarMenuSubItem key={child.href}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={Boolean(child.href && isNavLinkActive(pathname, child.href))}
-                                  >
-                                    <Link href={child.href!}>
-                                      <child.icon className="size-4 shrink-0" />
-                                      <span>{t(child.labelKey)}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  );
-                }
-
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={Boolean(item.href && isNavLinkActive(pathname, item.href))}
-                      tooltip={t(item.labelKey)}
-                    >
-                      <Link href={item.href!}>
-                        <item.icon className="shrink-0" />
-                        <span>{t(item.labelKey)}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-          </SidebarMenu>
-        </SidebarGroup>
+        <SidebarNavSections groups={navigation} pathname={pathname} t={t} isItemVisible={canSee} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -273,7 +198,7 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
             hasAvatar={hasAvatar}
             profileHref={profileHref}
             surface="sidebar"
-            settingsHref="/settings"
+            settingsHref={role === "org_admin" ? "/settings" : undefined}
             versionLabel={t("sidebar.footerVersion")}
           />
         ) : null}

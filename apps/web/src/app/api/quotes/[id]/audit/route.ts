@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 
 export async function GET(
   _req: Request,
@@ -11,9 +11,14 @@ export async function GET(
   if (!auth.ok) return auth.response;
   const user = auth.user as any;
 
-  const orgId = getEffectiveOrganizationId(user);
+  const orgId = user.isPlatformSuperadmin
+    ? await getEffectiveActiveOrgId(user)
+    : getEffectiveOrganizationId(user);
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, organizationId: orgId ?? "" },
+    where: {
+      id: params.id,
+      ...(user.isPlatformSuperadmin && !orgId ? {} : { organizationId: orgId ?? "" }),
+    },
     select: { id: true },
   });
   if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 });

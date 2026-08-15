@@ -4,7 +4,14 @@
  */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requireActiveOrg, requireSession, TenantError } from "@/lib/tenant";
+import {
+  getTenantContext,
+  isImpersonatingPartner,
+  requireActiveOrg,
+  requireSession,
+  shouldMaskFactoryExw,
+  TenantError,
+} from "@/lib/tenant";
 import { withSaaSHandler } from "@/lib/saas-handler";
 import { ApiHttpError } from "@/lib/api-error";
 import {
@@ -100,7 +107,7 @@ async function getQuoteHandler(_req: Request, routeContext: unknown) {
   const quote = await getQuoteById(prisma, tenantCtx, id);
   if (!quote) throw new ApiHttpError(404, "RECORD_NOT_FOUND", "Quote not found");
   return NextResponse.json(
-    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !ctx.isPlatformSuperadmin })
+    formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: shouldMaskFactoryExw(ctx) })
   );
 }
 
@@ -128,28 +135,22 @@ async function patchHandler(req: Request, routeContext: unknown) {
         message: issue.message,
       })));
     }
+    const ctx = await getTenantContext();
+    if (!ctx) throw new TenantError("Unauthorized", "UNAUTHORIZED");
+    const isSuperadmin = !!user.isPlatformSuperadmin && !isImpersonatingPartner(ctx);
     const tenantCtx = {
       userId: user.userId ?? user.id,
-      organizationId: user.activeOrgId ?? null,
-      isPlatformSuperadmin: user.isPlatformSuperadmin,
+      organizationId: ctx.activeOrgId ?? user.activeOrgId ?? null,
+      isPlatformSuperadmin: isSuperadmin,
     };
     const data = parsed.data;
-    const isSuperadmin = !!user.isPlatformSuperadmin;
 
     if (!patchHasEffect(data, isSuperadmin)) {
-      const ctxRead = await getTenantContext();
-      if (!ctxRead) throw new TenantError("Unauthorized", "UNAUTHORIZED");
-      const tenantRead = {
-        userId: ctxRead.userId,
-        organizationId: ctxRead.activeOrgId ?? null,
-        isPlatformSuperadmin: ctxRead.isPlatformSuperadmin,
-      };
-      const unchanged = await getQuoteById(prisma, tenantRead, id);
+      const unchanged = await getQuoteById(prisma, tenantCtx, id);
       if (!unchanged) throw new ApiHttpError(404, "RECORD_NOT_FOUND", "Quote not found");
-      if (!isSuperadmin) {
-        return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(unchanged, { maskFactoryExw: true }));
-      }
-      return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(unchanged, { maskFactoryExw: false }));
+      return NextResponse.json(
+        formatQuoteForSaaSApiWithSnapshot(unchanged, { maskFactoryExw: shouldMaskFactoryExw(ctx) })
+      );
     }
 
     const commentTrim = (data.superadminComment ?? "").trim();
@@ -351,7 +352,9 @@ async function patchHandler(req: Request, routeContext: unknown) {
         metadata: { changed: changedKeys.map(String) },
       });
     }
-    return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !isSuperadmin }));
+    return NextResponse.json(
+      formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: shouldMaskFactoryExw(ctx) })
+    );
 }
 
 async function deleteQuoteHandler(_req: Request, routeContext: unknown) {

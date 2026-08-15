@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { AnalyticsHubClient } from "./AnalyticsHubClient";
+import { InsightsHubClient } from "./InsightsHubClient";
 import { getServerT } from "@/lib/i18n/server";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +17,13 @@ export default async function SuperadminAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">{t("nav.superadmin.analytics")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.page.analyticsSubtitle")}</p>
-      </div>
-      <AnalyticsHubClient />
+      <PageHeader
+        title={t("nav.superadmin.analytics")}
+        description={t("superadmin.page.insightsSubtitle")}
+      />
+      <Suspense fallback={null}>
+        <InsightsHubClient />
+      </Suspense>
     </div>
   );
 }

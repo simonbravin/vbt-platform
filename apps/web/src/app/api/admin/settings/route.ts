@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
+import type { SessionUser } from "@/lib/auth";
 import { z } from "zod";
 
 const settingsSchema = z.object({
@@ -41,12 +42,15 @@ function canEditSettings(user: { role?: string; isPlatformSuperadmin?: boolean }
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { id?: string; userId?: string; activeOrgId?: string | null; orgId?: string | null };
+  const user = session.user as SessionUser;
 
   const userId = user.id ?? user.userId;
   if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-  const orgId = await resolveOrgId(userId, getEffectiveOrganizationId(user));
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const orgId = user.isPlatformSuperadmin
+    ? actingOrgId
+    : await resolveOrgId(userId, getEffectiveOrganizationId(user));
   if (!orgId) return NextResponse.json({ error: "No organization. Join or create an organization first." }, { status: 400 });
 
   const org = await prisma.organization.findFirst({
@@ -71,7 +75,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as { id?: string; userId?: string; activeOrgId?: string | null; orgId?: string | null; role?: string; isPlatformSuperadmin?: boolean };
+  const user = session.user as SessionUser;
 
   if (!canEditSettings(user)) {
     return NextResponse.json({ error: "You do not have permission to change these settings." }, { status: 403 });
@@ -80,7 +84,10 @@ export async function PATCH(req: Request) {
   const userId = user.id ?? user.userId;
   if (!userId) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-  const orgId = await resolveOrgId(userId, getEffectiveOrganizationId(user));
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const orgId = user.isPlatformSuperadmin
+    ? actingOrgId
+    : await resolveOrgId(userId, getEffectiveOrganizationId(user));
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const body = await req.json();

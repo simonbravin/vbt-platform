@@ -19,6 +19,7 @@ type ProjectOpt = {
 };
 type WarehouseOpt = { id: string; name: string };
 type CatalogPieceOpt = { id: string; canonicalName: string; systemCode: string; dieNumber?: string | null };
+type EngineeringOpt = { id: string; requestNumber: string; status: string };
 type CountryOpt = { id: string; code: string; name: string };
 type FreightProfileOpt = {
   id: string;
@@ -161,7 +162,11 @@ export function QuoteWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const isSuperadmin = !!(session?.user as { isPlatformSuperadmin?: boolean } | undefined)?.isPlatformSuperadmin;
+  const isPlatformOperator = !!(session?.user as { isPlatformSuperadmin?: boolean } | undefined)
+    ?.isPlatformSuperadmin;
+  // This wizard only mounts in the partner portal. VL-as-partner must get the
+  // same labels, markup, and payload as a distributor — never factory EXW.
+  const isSuperadmin = false;
 
   const [step, setStep] = useState(1);
   const [state, setState] = useState<QuoteWizardState>(() => initialQuoteWizardState());
@@ -183,6 +188,8 @@ export function QuoteWizard() {
     partnerMarkupMaxPct?: number | null;
   } | null>(null);
   const [catalogPieces, setCatalogPieces] = useState<CatalogPieceOpt[]>([]);
+  const [engineeringOptions, setEngineeringOptions] = useState<EngineeringOpt[]>([]);
+  const [engineeringModuleOn, setEngineeringModuleOn] = useState(true);
   const [csvUploading, setCsvUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -244,6 +251,41 @@ export function QuoteWizard() {
       .then(setProjects)
       .catch(() => setProjects([]));
   }, []);
+
+  useEffect(() => {
+    if (!state.projectId) {
+      setEngineeringOptions([]);
+      return;
+    }
+    fetch(`/api/saas/engineering?projectId=${encodeURIComponent(state.projectId)}&status=completed&limit=50`)
+      .then(async (r) => {
+        if (r.status === 403) {
+          setEngineeringModuleOn(false);
+          return [];
+        }
+        setEngineeringModuleOn(true);
+        if (!r.ok) return [];
+        try {
+          const d = await r.json();
+          return Array.isArray(d?.requests) ? d.requests : [];
+        } catch {
+          return [];
+        }
+      })
+      .then((rows: EngineeringOpt[]) => {
+        const opts = rows
+          .filter((x) => x?.id)
+          .map((x) => ({ id: String(x.id), requestNumber: String(x.requestNumber ?? x.id), status: String(x.status ?? "") }));
+        setEngineeringOptions(opts);
+        setState((prev) => {
+          if (prev.engineeringRequestId && !opts.some((o) => o.id === prev.engineeringRequestId)) {
+            return { ...prev, engineeringRequestId: "" };
+          }
+          return prev;
+        });
+      })
+      .catch(() => setEngineeringOptions([]));
+  }, [state.projectId]);
 
   useEffect(() => {
     fetch("/api/saas/warehouses")
@@ -576,7 +618,6 @@ export function QuoteWizard() {
           baseUom: state.baseUom,
           revitImportId: state.costMethod === "CSV" ? state.revitImportId : null,
           warehouseId: state.warehouseId || null,
-          reserveStock: state.reserveStock,
           m2S80: state.m2S80,
           m2S150: state.m2S150,
           m2S200: state.m2S200,
@@ -589,6 +630,7 @@ export function QuoteWizard() {
           freightCostUsd: state.freightCostUsd,
           freightProfileId: state.freightProfileId.trim() || null,
           totalKits: state.totalKits,
+          engineeringRequestId: state.engineeringRequestId.trim() || null,
           countryId: null,
           taxRuleSetId: null,
           notes: state.notes || null,
@@ -766,6 +808,32 @@ export function QuoteWizard() {
                 triggerClassName="h-10 w-full min-w-0 max-w-full text-sm"
               />
             </div>
+            {state.projectId && engineeringModuleOn ? (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">{t("wizard.engineeringPackage")}</label>
+                <p className="text-xs text-muted-foreground mb-2">{t("wizard.engineeringPackageHint")}</p>
+                {engineeringOptions.length > 0 ? (
+                  <FilterSelect
+                    value={state.engineeringRequestId}
+                    onValueChange={(v) => update({ engineeringRequestId: v })}
+                    emptyOptionLabel={t("wizard.engineeringNone")}
+                    options={engineeringOptions.map((e) => ({
+                      value: e.id,
+                      label: e.requestNumber,
+                    }))}
+                    aria-label={t("wizard.engineeringPackage")}
+                    triggerClassName="h-10 w-full min-w-0 max-w-full text-sm"
+                  />
+                ) : (
+                  <Link
+                    href={`/engineering/new?projectId=${encodeURIComponent(state.projectId)}`}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {t("wizard.engineeringRequestDesign")}
+                  </Link>
+                )}
+              </div>
+            ) : null}
             <div>
               <p className="text-sm font-medium text-foreground mb-2">{t("wizard.costingMethod")}</p>
               <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label={t("wizard.costingMethod")}>
@@ -797,6 +865,7 @@ export function QuoteWizard() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
                     <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt80")}</label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt80Hint")}</p>
                     <input
                       type="number"
                       min={0}
@@ -808,6 +877,7 @@ export function QuoteWizard() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt150")}</label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt150Hint")}</p>
                     <input
                       type="number"
                       min={0}
@@ -819,6 +889,7 @@ export function QuoteWizard() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt200")}</label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt200Hint")}</p>
                     <input
                       type="number"
                       min={0}
@@ -853,14 +924,6 @@ export function QuoteWizard() {
                 triggerClassName="h-10 w-full min-w-0 max-w-full text-sm"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={state.reserveStock}
-                onChange={(e) => update({ reserveStock: e.target.checked })}
-              />
-              {t("wizard.reserveStock")}
-            </label>
           </div>
         )}
 
@@ -965,18 +1028,21 @@ export function QuoteWizard() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt80")}</label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt80Hint")}</p>
                   <div className="mt-1 rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm tabular-nums text-foreground">
                     {state.m2S80.toFixed(2)} m²
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt150")}</label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt150Hint")}</p>
                   <div className="mt-1 rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm tabular-nums text-foreground">
                     {state.m2S150.toFixed(2)} m²
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase text-muted-foreground">{t("wizard.vbt200")}</label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("wizard.vbt200Hint")}</p>
                   <div className="mt-1 rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm tabular-nums text-foreground">
                     {state.m2S200.toFixed(2)} m²
                   </div>
@@ -1004,13 +1070,15 @@ export function QuoteWizard() {
               <WizardPreviewError
                 error={preview.error}
                 errorCode={preview.errorCode}
-                isSuperadmin={isSuperadmin}
+                isSuperadmin={isPlatformOperator}
                 t={t}
               />
             ) : null}
 
             <div className="rounded-lg border border-border/60 bg-muted/10 px-4 py-3 text-sm">
-              <p className="font-medium text-foreground">{t("wizard.estimatedFactoryExw")}</p>
+              <p className="font-medium text-foreground">
+                {isSuperadmin ? t("wizard.estimatedFactoryExw") : t("wizard.estimatedPartnerBase")}
+              </p>
               <p className="text-lg font-semibold tabular-nums text-foreground mt-1">
                 {snap && typeof snap.factoryCostUsd === "number" && Number.isFinite(Number(snap.factoryCostUsd))
                   ? fmt(Number(snap.factoryCostUsd))
@@ -1056,6 +1124,7 @@ export function QuoteWizard() {
                   onChange={(e) => update({ totalKits: parseInt(e.target.value, 10) || 0 })}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm"
                 />
+                <p className="text-xs text-muted-foreground">{t("wizard.totalKitsHint")}</p>
               </div>
             </div>
 
@@ -1097,13 +1166,12 @@ export function QuoteWizard() {
                   </div>
                   {pricing &&
                     typeof pricing.basePriceForPartnerUsd === "number" &&
-                    typeof pricing.factoryExwUsd === "number" &&
                     typeof pricing.afterPartnerMarkupUsd === "number" && (
                       <div className="text-xs text-muted-foreground sm:text-right space-y-0.5">
                         <p>
                           {t("wizard.partnerMarkupPerKit", {
                             amount: fmt(
-                              ((Number(pricing.afterPartnerMarkupUsd) - Number(pricing.factoryExwUsd)) / kitCount)
+                              ((Number(pricing.afterPartnerMarkupUsd) - Number(pricing.basePriceForPartnerUsd)) / kitCount)
                             ),
                           })}
                         </p>
@@ -1111,7 +1179,7 @@ export function QuoteWizard() {
                           <p>
                             {t("wizard.partnerMarkupPerOrder", {
                               amount: fmt(
-                                Number(pricing.afterPartnerMarkupUsd) - Number(pricing.factoryExwUsd)
+                                Number(pricing.afterPartnerMarkupUsd) - Number(pricing.basePriceForPartnerUsd)
                               ),
                             })}
                           </p>
@@ -1142,7 +1210,7 @@ export function QuoteWizard() {
                 <WizardPreviewError
                   error={preview.error}
                   errorCode={preview.errorCode}
-                  isSuperadmin={isSuperadmin}
+                  isSuperadmin={isPlatformOperator}
                   t={t}
                 />
               )}
@@ -1302,7 +1370,7 @@ export function QuoteWizard() {
                         <td className="p-2 text-right tabular-nums text-foreground">{fmt(freightProgress.freightOrder)}</td>
                       </tr>
                       <tr className="font-semibold text-foreground">
-                        <td className="p-2">{t("quotes.cif")}</td>
+                        <td className="p-2">{isSuperadmin ? t("quotes.cif") : t("wizard.priceAfterFreight")}</td>
                         <td className="p-2 text-right tabular-nums">{fmt(freightProgress.cifPerKit)}</td>
                         <td className="p-2 text-right tabular-nums">{fmt(freightProgress.cifOrder)}</td>
                       </tr>
@@ -1377,7 +1445,7 @@ export function QuoteWizard() {
                       </tr>
                       {pricing && typeof pricing.cifUsd === "number" && (
                         <tr className="border-b border-border/40">
-                          <td className="p-2">{t("quotes.cif")}</td>
+                          <td className="p-2">{isSuperadmin ? t("quotes.cif") : t("wizard.priceAfterFreight")}</td>
                           <td className="p-2 text-right tabular-nums text-foreground">
                             {fmt(Number(pricing.cifUsd))}
                           </td>
@@ -1393,7 +1461,7 @@ export function QuoteWizard() {
                       )}
                       {pricing && typeof pricing.suggestedLandedUsd === "number" && (
                         <tr className="font-semibold text-foreground">
-                          <td className="p-2">{t("wizard.landedDdpTotal")}</td>
+                          <td className="p-2">{isSuperadmin ? t("wizard.landedDdpTotal") : t("wizard.clientLandedTotal")}</td>
                           <td className="p-2 text-right tabular-nums">{fmt(pricing.suggestedLandedUsd as number)}</td>
                         </tr>
                       )}
@@ -1502,6 +1570,7 @@ export function QuoteWizard() {
                 )}
                 {landedTotalUsd != null && (
                   <div className="rounded-lg border border-border/60 bg-muted/15 p-4 space-y-1 text-sm text-muted-foreground">
+                    {!isSuperadmin ? <p className="text-foreground">{t("wizard.clientPriceHint")}</p> : null}
                     <p>
                       {t("wizard.ddpPerKitLabel")}:{" "}
                       <span className="font-medium text-foreground">{finalPerKit != null ? fmt(finalPerKit) : "—"}</span>

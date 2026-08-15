@@ -6,6 +6,7 @@ import { FolderOpen, ChevronRight, User, MapPin } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
+import { StatusBadge, projectStatusTone } from "@/components/ui/status-badge";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-superadmin-projects-view";
@@ -219,9 +220,7 @@ export function SuperadminProjectsListClient() {
                       {p.countryCode ?? "—"}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
-                        {projectStatusLabel(p.status)}
-                      </span>
+                      <StatusBadge tone={projectStatusTone(p.status)}>{projectStatusLabel(p.status)}</StatusBadge>
                     </td>
                     <td className="px-5 py-3 text-right text-sm text-foreground">
                       {p._count?.quotes ?? 0}
@@ -250,9 +249,7 @@ export function SuperadminProjectsListClient() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
                     <FolderOpen className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="inline-flex shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {projectStatusLabel(p.status)}
-                  </span>
+                  <StatusBadge tone={projectStatusTone(p.status)}>{projectStatusLabel(p.status)}</StatusBadge>
                 </div>
                 <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {p.organization?.name ?? "—"}

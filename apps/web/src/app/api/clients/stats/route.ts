@@ -8,8 +8,9 @@ export async function GET(req: Request) {
   const auth = await requireModuleRouteAuth("clients");
   if (!auth.ok) return auth.response;
   const user = auth.user as SessionUser & { activeOrgId?: string; orgId?: string };
-  const effectiveOrgId = await getEffectiveActiveOrgId(user);
-  const organizationId = effectiveOrgId ?? getEffectiveOrganizationId(user);
+  const organizationId = user.isPlatformSuperadmin
+    ? await getEffectiveActiveOrgId(user)
+    : getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ topByProjects: [], topBySold: [] });
 
   const url = new URL(req.url);

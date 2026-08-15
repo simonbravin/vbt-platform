@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import { getNotificationTitleKeyAndLink } from "@/lib/notifications";
 import {
@@ -57,7 +57,7 @@ async function getHandler(req: Request) {
       take: limit * 2,
     });
 
-    if (!ctx.isPlatformSuperadmin) {
+    if (!isPlatformOperatorContext(ctx)) {
       rows = rows.filter((r) => {
         const a = r.action.toLowerCase();
         if (superadminOnlyActions.has(a)) return false;

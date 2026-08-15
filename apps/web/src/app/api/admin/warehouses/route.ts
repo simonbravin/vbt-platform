@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const ctx = await getTenantContext();
     if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (ctx.isPlatformSuperadmin) {
+    if (ctx.isPlatformSuperadmin && !ctx.activeOrgId) {
       const vlOrgId = await getVisionLatamOrganizationId(prisma);
       if (!vlOrgId) return NextResponse.json([]);
       const list = await prisma.warehouse.findMany({
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
     // Superadmin = Vision Latam org (platform owner). Partner = their active org. No ad-hoc org creation.
     let organizationId: string | null = null;
-    if (ctx.isPlatformSuperadmin) {
+    if (ctx.isPlatformSuperadmin && !ctx.activeOrgId) {
       if (body.organizationId && typeof body.organizationId === "string" && body.organizationId.trim()) {
         organizationId = body.organizationId.trim();
       } else {

@@ -17,7 +17,7 @@ export async function GET() {
 
   const withRules = (s: { rulesJson: unknown }) => ({ ...s, rules: s.rulesJson });
 
-  if (isSuperadmin) {
+  if (isSuperadmin && !activeOrgId) {
     const list = await prisma.taxRuleSet.findMany({
       include: { country: true, organization: { select: { id: true, name: true } } },
       orderBy: [{ country: { name: "asc" } }, { name: "asc" }],
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     let organizationId: string | null = body?.organizationId != null ? String(body.organizationId).trim() || null : null;
-    if (isSuperadmin) {
+    if (isSuperadmin && !activeOrgId) {
       if (organizationId === "") organizationId = null;
     } else {
       if (!activeOrgId) return NextResponse.json({ error: "No active organization" }, { status: 403 });

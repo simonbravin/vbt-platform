@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
+import { StatusBadge, projectStatusTone, quoteStatusTone } from "@/components/ui/status-badge";
 
 type Country = { id: string; name: string; code: string };
 type Quote = {
@@ -364,14 +365,9 @@ export function ProjectDetailClient({
             )}
             <div className="flex flex-wrap items-center gap-2 mt-1">
               {(project as any).status && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  (project as any).status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
-                  (project as any).status === "lost" ? "bg-muted text-muted-foreground" :
-                  (project as any).status === "quoting" || (project as any).status === "engineering" ? "bg-primary/10 text-primary" :
-                  (project as any).status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
-                  (project as any).status === "on_hold" ? "bg-muted text-muted-foreground ring-1 ring-border/50" :
-                  "bg-muted text-muted-foreground"
-                }`}>{projectStatusLabel((project as any).status)}</span>
+                <StatusBadge tone={projectStatusTone((project as any).status)}>
+                  {projectStatusLabel((project as any).status)}
+                </StatusBadge>
               )}
               {project.expectedCloseDate && (
                 <p className="text-muted-foreground/70 text-xs mt-0.5">{t("projects.expectedClose")} {new Date(project.expectedCloseDate).toLocaleDateString(dateLocale)}</p>
@@ -538,12 +534,7 @@ export function ProjectDetailClient({
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-foreground">{q.totalPrice != null ? formatCurrency(q.totalPrice) : "—"}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    q.status === "sent" ? "border border-primary/25 bg-primary/10 text-primary" :
-                    q.status === "draft" ? "border border-border/80 bg-muted text-foreground" :
-                    q.status === "accepted" ? "border border-primary/25 bg-primary/10 text-primary" :
-                    "bg-muted text-muted-foreground"
-                  }`}>{quoteStatusLabel(q.status)}</span>
+                  <StatusBadge tone={quoteStatusTone(q.status)}>{quoteStatusLabel(q.status)}</StatusBadge>
                 </div>
               </Link>
             ))}

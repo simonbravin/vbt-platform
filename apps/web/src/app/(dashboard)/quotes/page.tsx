@@ -5,6 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { QuotesClient } from "./QuotesClient";
 import type { SessionUser } from "@/lib/auth";
 import { getT, LOCALE_COOKIE_NAME } from "@/lib/i18n/translations";
@@ -83,19 +84,17 @@ export default async function QuotesPage({ searchParams }: { searchParams: { sta
           </Link>
         </div>
       )}
-      <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{t("quotes.title")}</h1>
-          <p className="text-muted-foreground mt-1 font-mono text-[11px] tabular-nums uppercase tracking-wider">
-            {t("quotes.quotesCount", { count: quotes.length })}
-          </p>
-        </div>
-        <Button asChild className="shrink-0 gap-2 self-start border border-primary/20 sm:self-auto">
-          <Link href="/quotes/wizard">
-            <Plus className="h-4 w-4 shrink-0" /> {t("quotes.newQuote")}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t("quotes.title")}
+        description={t("quotes.quotesCount", { count: quotes.length })}
+        actions={
+          <Button asChild className="shrink-0 gap-2 border border-primary/20">
+            <Link href="/quotes/wizard">
+              <Plus className="h-4 w-4 shrink-0" /> {t("quotes.newQuote")}
+            </Link>
+          </Button>
+        }
+      />
 
       <QuotesClient quotes={quotes} initialStatus={statusFilter ?? undefined} />
     </div>

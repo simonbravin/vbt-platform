@@ -9,6 +9,7 @@ import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { StatusBadge, projectStatusTone } from "@/components/ui/status-badge";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const VIEW_STORAGE_KEY = "vbt-partner-projects-view";
@@ -195,13 +196,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                 </div>
                 <div className="flex items-center gap-2">
                   {p.status && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      p.status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
-                      p.status === "lost" ? "bg-muted text-foreground" :
-                      p.status === "quoting" ? "bg-primary/10 text-primary" :
-                      p.status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
-                      "bg-muted text-foreground"
-                    }`}>{projectStatusLabel(p.status)}</span>
+                    <StatusBadge tone={projectStatusTone(p.status)}>{projectStatusLabel(p.status)}</StatusBadge>
                   )}
                   <span className="text-xs px-2 py-1 bg-muted text-foreground rounded-full">
                     {quoteCount(p)} quote{quoteCount(p) !== 1 ? "s" : ""}
@@ -278,13 +273,7 @@ export function ProjectsClient({ projects: initialProjects, total: initialTotal 
                   <td>{(p.city || p.countryCode) ? [p.city, p.countryCode].filter(Boolean).join(", ") : <span className="text-muted-foreground/50">—</span>}</td>
                   <td>
                     {p.status ? (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        p.status === "won" ? "border border-primary/25 bg-primary/10 text-primary" :
-                        p.status === "lost" ? "bg-muted text-foreground" :
-                        p.status === "quoting" ? "bg-primary/10 text-primary" :
-                        p.status === "qualified" ? "border border-border/80 bg-muted text-foreground" :
-                        "bg-muted text-foreground"
-                      }`}>{projectStatusLabel(p.status)}</span>
+                      <StatusBadge tone={projectStatusTone(p.status)}>{projectStatusLabel(p.status)}</StatusBadge>
                     ) : (
                       <span className="text-muted-foreground/50">—</span>
                     )}

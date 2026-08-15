@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, TenantError, tenantErrorStatus } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, TenantError, tenantErrorStatus } from "@/lib/tenant";
 
 /** PATCH: update warehouse — superadmin any; partner only their org's. */
 export async function PATCH(
@@ -14,7 +14,7 @@ export async function PATCH(
     const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
     if (!warehouse) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    if (!ctx.isPlatformSuperadmin && warehouse.organizationId !== ctx.activeOrgId) {
+    if (!isPlatformOperatorContext(ctx) && warehouse.organizationId !== ctx.activeOrgId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -62,7 +62,7 @@ export async function DELETE(
     const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
     if (!warehouse) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    if (!ctx.isPlatformSuperadmin && warehouse.organizationId !== ctx.activeOrgId) {
+    if (!isPlatformOperatorContext(ctx) && warehouse.organizationId !== ctx.activeOrgId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

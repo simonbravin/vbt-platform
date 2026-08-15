@@ -4,7 +4,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { getTenantContext } from "@/lib/tenant";
+import { getTenantContext, isImpersonatingPartner } from "@/lib/tenant";
 import { withSaaSHandler } from "@/lib/saas-handler";
 import { ApiHttpError } from "@/lib/api-error";
 import { computeWizardQuoteArtifacts, QuoteTaxResolutionError } from "@vbt/core";
@@ -65,7 +65,7 @@ async function postHandler(req: Request) {
   try {
     artifacts = await computeWizardQuoteArtifacts(prisma, {
       organizationId,
-      isPlatformSuperadmin: !!ctx.isPlatformSuperadmin,
+      isPlatformSuperadmin: !!ctx.isPlatformSuperadmin && !isImpersonatingPartner(ctx),
       pricingMaskFactoryExw: false,
       data: {
         projectId: data.projectId,

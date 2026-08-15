@@ -5,7 +5,7 @@ export interface QuoteWizardState {
   costMethod: QuoteCostMethod;
   baseUom: "M" | "FT";
   warehouseId: string;
-  reserveStock: boolean;
+  engineeringRequestId: string;
   revitImportId: string;
   unmatchedRows: Array<{
     lineId: string;
@@ -43,7 +43,7 @@ export const initialQuoteWizardState = (): QuoteWizardState => ({
   costMethod: "CSV",
   baseUom: "M",
   warehouseId: "",
-  reserveStock: false,
+  engineeringRequestId: "",
   revitImportId: "",
   unmatchedRows: [],
   m2S80: 0,

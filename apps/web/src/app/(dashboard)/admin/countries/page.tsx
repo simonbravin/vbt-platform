@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Globe, Plus } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 
 export default function CountriesPage() {
   const t = useT();
+  const pathname = usePathname();
+  const showPlaybook = pathname?.startsWith("/superadmin");
   const [countries, setCountries] = useState<any[]>([]);
   const [newForm, setNewForm] = useState({ code: "", name: "" });
   const [adding, setAdding] = useState(false);
@@ -42,15 +46,25 @@ export default function CountriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground">{t("admin.countries.title")}</h1>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-        >
-          <Plus className="w-4 h-4" /> {t("admin.countries.add")}
-        </button>
+        <div className="flex items-center gap-2">
+          {showPlaybook ? (
+            <Link
+              href="/superadmin/countries/onboard"
+              className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {t("nav.countries.onboard")}
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" /> {t("admin.countries.add")}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

@@ -14,21 +14,24 @@ Este documento describe paso a paso cómo realizar las tareas habituales en el *
 
 ### 1.2 Navegación principal
 
-En el menú lateral (sidebar) tenés acceso a:
+El menú lateral está agrupado alrededor del viaje comercial. El CTA **Nueva cotización** (arriba del menú) abre el asistente en `/quotes/wizard`.
 
-| Sección | Ruta | Descripción |
-|--------|------|-------------|
-| Dashboard | `/dashboard` | Resumen de proyectos, cotizaciones y metas. |
-| Proyectos | `/projects` | Lista y gestión de proyectos. |
-| Clientes | `/clients` | Lista y gestión de clientes. |
-| Cotizaciones | `/quotes` | Lista y gestión de cotizaciones. |
-| Ingeniería | `/engineering` | Solicitudes de ingeniería. |
-| Documentos | `/documents` | Biblioteca de documentos. |
-| Capacitación | `/training` | Programas de capacitación. |
-| Ventas | `/sales` | Ventas, facturas y estados de cuenta *(visible según rol)*. |
-| Configuración | `/settings` | Ajustes y equipo *(según rol)*. |
+| Grupo | Sección | Ruta | Descripción |
+|--------|---------|------|-------------|
+| — | Dashboard | `/dashboard` | Resumen de proyectos, cotizaciones y metas. |
+| Comercial | Cotizaciones | `/quotes` | Lista de cotizaciones. |
+| Comercial | Ventas | `/sales` | Ventas, facturas y estados de cuenta *(org_admin / sales_user)*. |
+| Comercial | Estados de cuenta | `/sales/statements` | Estados de cuenta por cliente. |
+| Comercial | Reportes | `/reports` | Reportes del partner *(org_admin / sales_user)*. |
+| Cartera | Clientes | `/clients` | Lista y gestión de clientes. |
+| Cartera | Proyectos | `/projects` | Lista y gestión de proyectos. |
+| Cartera | Diseño | `/engineering` | Solicitudes de diseño / ingeniería. |
+| Operación | Inventario | `/inventory` | Stock del partner. |
+| Recursos | Documentos | `/documents` | Biblioteca de documentos. |
+| Recursos | Capacitación | `/training` | Programas de capacitación. |
+| Configuración | Resumen, equipo, bodegas, flete, impuestos, actividad | `/settings` y subrutas | Solo `org_admin`. El perfil está en el footer, no en este grupo. |
 
-**Nota:** La opción **Ventas** puede estar restringida por rol. Si no la ves, consultá con el administrador de la plataforma.
+**Nota:** Ventas y Reportes no aparecen para viewer ni técnico. Si no los ves, consultá con el administrador de la organización.
 
 ---
 
@@ -96,56 +99,48 @@ En el menú lateral (sidebar) tenés acceso a:
 
 ## 4. Cotizaciones
 
-### 4.1 Crear un borrador rápido (solo proyecto)
+El camino canónico para cotizar es el **asistente de 5 pasos** en `/quotes/wizard`. Las rutas viejas `/quotes/new` y `/quotes/create` redirigen ahí.
 
-1. Ir a **Cotizaciones** (`/quotes`).
-2. Clic en **Nueva cotización** (enlace a `/quotes/create`).
-3. Seleccionar el **proyecto** para la cotización en el desplegable. Si llegaste desde el detalle de un proyecto, el proyecto ya viene preseleccionado.
-4. Clic en **Crear borrador**. La cotización se crea en estado borrador y te redirige al detalle (`/quotes/[id]`); desde ahí podés editarla o completar datos. Para una cotización completa con partidas y costos, usá el wizard (sección 4.2) desde **Dashboard** → **Nueva cotización** (`/quotes/new`) o el enlace correspondiente.
+Unidad comercial: **m² → kit** (unidades iguales del mismo despiece) **→ contenedor**. Los sistemas se muestran como **VBT 80 / 150 / 200 mm** (códigos internos S80 / S150 / S200).
 
-### 4.2 Crear cotización completa con el wizard
+### 4.1 Abrir el asistente
 
-Ruta: **Cotizaciones** → **Nueva cotización** → wizard en `/quotes/new`.
+1. Clic en **Nueva cotización** en el sidebar, o en el Dashboard, o en **Cotizaciones**.
+2. Se abre `/quotes/wizard`. Si venís de un proyecto, el `projectId` puede venir en la URL.
 
-#### Paso 1: Proyecto y método de costo
+### 4.2 Pasos del wizard
+
+#### Paso 1: Proyecto y método
 
 1. Seleccionar el **proyecto**.
 2. Elegir el **método de costo**:
-   - **CSV (desde Revit):** para importar un archivo CSV generado desde Revit con partidas/líneas.
-   - **M² por sistema:** para cargar metros cuadrados aproximados por sistema (S80, S150, S200) cuando no tenés CSV.
-3. Elegir unidad de medida (m o ft) y depósito si aplica.
+   - **CSV (desde Revit):** importar un CSV con partidas/líneas.
+   - **m² por sistema:** cargar metros cuadrados por VBT 80 / 150 / 200 cuando no hay CSV.
+3. Si hay un diseño entregado para ese proyecto, se puede vincular. Si no, hay un enlace a **Nueva solicitud de diseño**.
 4. Clic en **Siguiente**.
 
-#### Paso 2: Datos de costo
+#### Paso 2: Importación CSV *(solo si elegiste CSV)*
 
-- **Si elegiste CSV:** subir o pegar el archivo CSV, revisar el mapeo de columnas y asignar piezas del catálogo si hace falta. Ajustar cantidades/áreas si es necesario.
-- **Si elegiste M² por sistema:** cargar los m² para S80, S150 y S200 según corresponda.
-5. Clic en **Siguiente**.
+1. Subir o pegar el CSV, revisar el mapeo de columnas y asignar piezas del catálogo.
+2. Ajustar cantidades/áreas si hace falta.
+3. Clic en **Siguiente**. Con el método m² este paso se omite.
 
-#### Paso 3: Material y costos
+#### Paso 3: Material y precio
 
-1. Revisar el resumen de material, peso, volumen y costos que calcula la plataforma.
-2. Ajustar si hay opciones editables.
+1. Revisar material, peso, volumen y el **precio base VL** (el partner no ve EXW de fábrica).
+2. Cargar el **precio al cliente** / markup del partner.
 3. Clic en **Siguiente**.
 
-#### Paso 4: Comisión del partner
+#### Paso 4: Destino y flete
 
-1. Definir la **comisión del partner** para esta cotización:
-   - **Commission %:** porcentaje sobre la base (máximo 20% según política).
-   - **Commission fixed (opcional):** monto fijo en USD si aplica.
-2. La base sobre la que se aplica la comisión es la que define la plataforma (precio base para el partner). El partner no ve ni modifica costos de fábrica ni comisión Vision Latam.
+1. País de destino (solo países del territorio del partner).
+2. Perfil de flete y contenedores. El landed se calcula **después del flete**.
 3. Clic en **Siguiente**.
 
-#### Paso 5: Destino y flete
+#### Paso 5: Vista previa y crear
 
-1. Seleccionar **país de destino** y **regla de flete** si aplica.
-2. Indicar contenedores, kits por contenedor, etc., si los campos están disponibles.
-3. Clic en **Siguiente**.
-
-#### Paso 6: Vista previa y crear
-
-1. Revisar el resumen de la cotización (totales, FOB, CIF, impuestos, landed, etc.).
-2. Si todo es correcto, clic en **Crear cotización** (o **Guardar**). La cotización se guarda y podés verla en la lista y en su detalle.
+1. Revisar totales, flete, impuestos del país y precio landed.
+2. Clic en **Crear cotización**. Queda en borrador y se abre `/quotes/[id]`.
 
 ### 4.3 Cambiar estado de una cotización
 
@@ -252,10 +247,10 @@ Usá esta lista para comprobar que cada flujo funciona correctamente en tu entor
 
 ### Cotizaciones
 
-- [ ] Desde `/quotes/create`, crear un borrador eligiendo solo el proyecto.
-- [ ] Desde `/quotes/new`, completar el wizard con método **CSV**: subir/pegar CSV, completar pasos 3–6 y crear la cotización.
-- [ ] Desde `/quotes/new`, completar el wizard con método **M² por sistema**: cargar m² S80/S150/S200, completar pasos 3–6 y crear la cotización.
-- [ ] En el paso 4 del wizard, setear comisión % (y opcional fija) y ver que se refleje en la vista previa.
+- [ ] Desde el CTA **Nueva cotización**, abrir `/quotes/wizard`.
+- [ ] Completar el wizard con método **CSV**: subir/pegar CSV, completar los pasos y crear la cotización.
+- [ ] Completar el wizard con método **m² por sistema**: cargar m² VBT 80/150/200, completar los pasos y crear la cotización.
+- [ ] En el paso de precio, setear el markup / precio al cliente y ver que se refleje en la vista previa.
 - [ ] En el detalle de una cotización, cambiar el estado (p. ej. Borrador → Enviada) y guardar.
 - [ ] En el detalle de una cotización, abrir el diálogo PDF, elegir opciones y descargar el PDF.
 - [ ] En el detalle de una cotización, enviar por email (si está disponible).

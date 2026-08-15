@@ -13,13 +13,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    if (user.isPlatformSuperadmin) {
+    const activeOrgId = await getEffectiveActiveOrgId(user);
+    if (user.isPlatformSuperadmin && !activeOrgId) {
       const list = await prisma.country.findMany({
         orderBy: [{ name: "asc" }],
       });
       return NextResponse.json(list);
     }
-    const activeOrgId = await getEffectiveActiveOrgId(user);
     if (!activeOrgId) {
       return NextResponse.json([]);
     }

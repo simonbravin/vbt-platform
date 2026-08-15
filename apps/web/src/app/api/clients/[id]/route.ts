@@ -2,10 +2,16 @@
  * @deprecated Legacy client-by-id API. CANONICAL: TBD (`/api/saas/clients/[id]`).
  */
 import { NextResponse } from "next/server";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
+import type { SessionUser } from "@/lib/auth";
 import { z } from "zod";
+
+async function actingOrganizationId(user: SessionUser): Promise<string | null> {
+  if (user.isPlatformSuperadmin) return getEffectiveActiveOrgId(user);
+  return getEffectiveOrganizationId(user);
+}
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -26,8 +32,8 @@ export async function GET(
 ) {
   const auth = await requireModuleRouteAuth("clients");
   if (!auth.ok) return auth.response;
-  const user = auth.user as { activeOrgId?: string; orgId?: string };
-  const organizationId = getEffectiveOrganizationId(user);
+  const user = auth.user as SessionUser;
+  const organizationId = await actingOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({
@@ -47,11 +53,11 @@ export async function PATCH(
 ) {
   const auth = await requireModuleRouteAuth("clients");
   if (!auth.ok) return auth.response;
-  const user = auth.user as { activeOrgId?: string; orgId?: string; role?: string };
+  const user = auth.user as SessionUser;
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = getEffectiveOrganizationId(user);
+  const organizationId = await actingOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const existing = await prisma.client.findFirst({
@@ -85,11 +91,11 @@ export async function DELETE(
 ) {
   const auth = await requireModuleRouteAuth("clients");
   if (!auth.ok) return auth.response;
-  const user = auth.user as { activeOrgId?: string; orgId?: string; role?: string };
+  const user = auth.user as SessionUser;
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = getEffectiveOrganizationId(user);
+  const organizationId = await actingOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const client = await prisma.client.findFirst({

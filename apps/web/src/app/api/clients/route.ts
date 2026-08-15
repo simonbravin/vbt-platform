@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import type { SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
-import { getEffectiveOrganizationId } from "@/lib/tenant";
+import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
 
@@ -28,8 +28,10 @@ export async function GET(req: Request) {
   const user = auth.user as SessionUser;
   const url = new URL(req.url);
   const paramOrg = url.searchParams.get("organizationId")?.trim();
-  const organizationId =
-    user.isPlatformSuperadmin && paramOrg ? paramOrg : getEffectiveOrganizationId(user);
+  const actingOrgId = await getEffectiveActiveOrgId(user);
+  const organizationId = user.isPlatformSuperadmin
+    ? paramOrg || actingOrgId
+    : getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ clients: [], total: 0, page: 1, limit: 50 });
 
   const page = parseInt(url.searchParams.get("page") ?? "1");
@@ -68,11 +70,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await requireModuleRouteAuth("clients");
   if (!auth.ok) return auth.response;
-  const user = auth.user as { activeOrgId?: string; orgId?: string; role?: string };
+  const user = auth.user as SessionUser;
   if (["VIEWER", "viewer"].includes(user.role ?? "")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const organizationId = getEffectiveOrganizationId(user);
+  const organizationId = user.isPlatformSuperadmin
+    ? await getEffectiveActiveOrgId(user)
+    : getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const body = await req.json();

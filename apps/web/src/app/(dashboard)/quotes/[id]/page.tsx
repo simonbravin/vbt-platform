@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Mail, Archive, Trash2, ChevronDown, ChevronRight, Pencil, Activity, ShoppingCart, Copy } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useLanguage, useT } from "@/lib/i18n/context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { normalizeQuoteStatus } from "@vbt/core";
 import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
+import { StatusBadge, quoteStatusTone } from "@/components/ui/status-badge";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -38,6 +40,13 @@ function paramId(params: { id?: string | string[] }): string | undefined {
 export default function QuoteDetailPage() {
   const t = useT();
   const { locale } = useLanguage();
+  const { data: session } = useSession();
+  const sessionUser = session?.user as { role?: string; isPlatformSuperadmin?: boolean } | undefined;
+  const sessionRole = sessionUser?.role;
+  const canCreateSale =
+    sessionUser?.isPlatformSuperadmin === true ||
+    sessionRole === "org_admin" ||
+    sessionRole === "sales_user";
   const params = useParams();
   const quoteId = paramId(params as { id?: string | string[] });
   const router = useRouter();
@@ -289,20 +298,12 @@ export default function QuoteDetailPage() {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums">
                 {quote.quoteNumber ?? quote.id.slice(0, 8).toUpperCase()}
               </h1>
-              <span
-                className={`px-2 py-0.5 text-[11px] rounded-lg font-semibold uppercase tracking-wider border ${
-                  (() => {
-                    const s = String(quote.status ?? "").toLowerCase();
-                    if (s === "sent" || s === "accepted")
-                      return "border-primary/35 bg-primary/10 text-primary";
-                    if (s === "draft")
-                      return "border border-alert-warningBorder bg-alert-warning text-foreground";
-                    return "border-border bg-muted text-muted-foreground";
-                  })()
-                }`}
+              <StatusBadge
+                tone={quoteStatusTone(quote.status)}
+                className="text-[11px] font-semibold uppercase tracking-wider"
               >
                 {t(statusTranslationKey(quote.status))}
-              </span>
+              </StatusBadge>
             </div>
             <p className="text-muted-foreground text-sm mt-2 font-medium leading-relaxed">
               {(quote.project as { projectName?: string; name?: string } | undefined)?.projectName ??
@@ -323,7 +324,7 @@ export default function QuoteDetailPage() {
           >
             <Copy className="w-4 h-4 shrink-0" /> {duplicating ? t("quotes.duplicating") : t("quotes.duplicate")}
           </button>
-          {quote.projectId && (
+          {quote.projectId && canCreateSale && (
             <Link
               href={`/sales/new?quoteId=${quote.id}&projectId=${quote.projectId}&clientId=${(quote.project as any)?.clientId ?? ""}`}
               className="inline-flex items-center gap-2 rounded-full border border-transparent bg-primary px-5 py-2.5 text-[17px] font-normal text-primary-foreground hover:opacity-[0.88]"
@@ -371,6 +372,56 @@ export default function QuoteDetailPage() {
           {t("quotes.createSaleDraftWarning")}
         </div>
       )}
+
+      {(() => {
+        const st = normalizeQuoteStatus(quote.status);
+        const saleHref = quote.projectId
+          ? `/sales/new?quoteId=${quote.id}&projectId=${quote.projectId}&clientId=${(quote.project as { clientId?: string } | undefined)?.clientId ?? ""}`
+          : null;
+        const copy =
+          st === "draft"
+            ? t("quotes.nextStepsDraft")
+            : st === "sent"
+              ? t("quotes.nextStepsSent")
+              : st === "accepted"
+                ? t("quotes.nextStepsAccepted")
+                : t("quotes.nextStepsClosed");
+        return (
+          <div className="rounded-lg border border-border/80 bg-card p-4 space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t("quotes.nextSteps")}</p>
+            <p className="text-sm text-muted-foreground">{copy}</p>
+            <div className="flex flex-wrap gap-2">
+              {st === "draft" ? (
+                <button
+                  type="button"
+                  onClick={() => setEmailDialog(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90"
+                >
+                  <Mail className="w-4 h-4" /> {t("quotes.sendToClient")}
+                </button>
+              ) : null}
+              {(st === "sent" || st === "accepted") && canCreateSale && saleHref ? (
+                <Link
+                  href={saleHref}
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90"
+                >
+                  <ShoppingCart className="w-4 h-4" /> {t("quotes.createSale")}
+                </Link>
+              ) : null}
+              {st === "rejected" || st === "expired" || st === "archived" ? (
+                <button
+                  type="button"
+                  onClick={() => void duplicateQuote()}
+                  disabled={duplicating}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50"
+                >
+                  <Copy className="w-4 h-4" /> {t("quotes.duplicate")}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        );
+      })()}
 
       {duplicateError && (
         <div className="p-3 rounded-lg text-sm bg-destructive/10 text-destructive border border-destructive/30 font-medium">

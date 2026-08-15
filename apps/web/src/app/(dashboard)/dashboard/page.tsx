@@ -5,6 +5,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { FileText, FolderOpen, Package, TrendingUp, Plus, DollarSign, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge, quoteStatusTone } from "@/components/ui/status-badge";
 import { SaleOrderStatus } from "@vbt/db";
 import { GoalKpiCard } from "@/components/dashboard/GoalKpiCard";
 import { RefreshPageButton } from "@/components/dashboard/RefreshPageButton";
@@ -76,7 +79,6 @@ export default async function DashboardPage(props: PageProps) {
   let quotesSentYtd = 0;
   let recentQuotes: Awaited<ReturnType<typeof prisma.quote.findMany<{ select: typeof recentQuoteSelect }>>> = [];
   let recentProjects: Awaited<ReturnType<typeof prisma.project.findMany<{ select: typeof recentProjectSelect }>>> = [];
-  let pendingUsers = 0;
   const fallbackDisplayName = locale === "es" ? "Usuario" : "User";
   let displayName: string | null = null;
   const sessionUserId = (user as { userId?: string; id?: string }).userId ?? (user as { id?: string }).id;
@@ -169,51 +171,32 @@ export default async function DashboardPage(props: PageProps) {
           />
         </div>
       )}
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {t("dashboard.welcome")}, {displayName ?? fallbackDisplayName}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/projects/new"
-            className="inline-flex items-center gap-2 rounded-full border border-transparent bg-primary px-5 py-2.5 text-[17px] font-normal text-primary-foreground transition-opacity hover:opacity-[0.88]"
-          >
-            <Plus className="w-4 h-4" />
-            {t("dashboard.newProject")}
-          </Link>
-          <Link
-            href="/quotes/wizard"
-            className="inline-flex items-center gap-2 rounded-full border border-transparent bg-primary px-5 py-2.5 text-[17px] font-normal text-primary-foreground hover:opacity-[0.88]"
-          >
-            <Plus className="w-4 h-4" />
-            {t("dashboard.newQuote")}
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title={t("dashboard.title")}
+        description={`${t("dashboard.welcome")}, ${displayName ?? fallbackDisplayName}`}
+        actions={
+          <>
+            <Button asChild className="gap-2 border border-primary/20">
+              <Link href="/quotes/wizard">
+                <Plus className="h-4 w-4 shrink-0" />
+                {t("dashboard.newQuote")}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-2">
+              <Link href="/projects/new">
+                <Plus className="h-4 w-4 shrink-0" />
+                {t("dashboard.newProject")}
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-      {/* Pending users alert: only superadmin can see and access admin approval (partners never see this) */}
-      {(user as { isPlatformSuperadmin?: boolean }).isPlatformSuperadmin && pendingUsers > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-alert-warningBorder bg-alert-warning p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-              <span className="text-foreground font-bold text-sm">{pendingUsers}</span>
-            </div>
-            <div>
-              <p className="font-medium text-foreground">
-                {t("dashboard.pendingUsersText", { count: pendingUsers })}
-              </p>
-              <p className="text-muted-foreground text-sm">{t("dashboard.pendingReview")}</p>
-            </div>
-          </div>
-          <Link
-            href="/superadmin/admin/users"
-            className="text-primary hover:opacity-90 text-sm font-medium underline"
-          >
-            {t("dashboard.review")}
+      {draftCount > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 bg-card px-4 py-3">
+          <p className="text-sm text-foreground">{t("dashboard.pendingDrafts", { count: draftCount })}</p>
+          <Link href="/quotes?status=draft" className="text-sm font-medium text-primary hover:underline">
+            {t("dashboard.pendingDraftsCta")}
           </Link>
         </div>
       )}
@@ -314,9 +297,9 @@ export default async function DashboardPage(props: PageProps) {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-foreground">{formatCurrency(quote.totalPrice)}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
+                    <StatusBadge tone={quoteStatusTone(quote.status)}>
                       {t(quoteStatusTranslationKey(quote.status) as "quotes.draft")}
-                    </span>
+                    </StatusBadge>
                   </div>
                 </Link>
               ))

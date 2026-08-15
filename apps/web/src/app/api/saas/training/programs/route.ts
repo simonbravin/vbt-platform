@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import {
   createTrainingProgram,
   listTrainingProgramsAdmin,
@@ -22,7 +22,7 @@ async function getHandler(req: Request) {
     url.searchParams.get("includeSessions") === "1" ||
     url.searchParams.get("includeSessions") === "true";
 
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     const programs = await listTrainingProgramsAdmin(prisma, { status });
     if (!includeSessions) return NextResponse.json(programs);
     const programIds = programs.map((p) => p.id);

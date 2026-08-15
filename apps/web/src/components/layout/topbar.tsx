@@ -74,8 +74,10 @@ function NotificationBellStructuredDetail({
 }
 
 interface TopBarProps {
-  /** When true, show context switcher (Platform vs Partner). Only set in superadmin layout. */
+  /** When true, show context switcher (Platform vs Partner). Superadmin only. */
   showContextSwitcher?: boolean;
+  /** Portal badge. Independent of the switcher so VL-as-partner still reads “partner”. */
+  portal?: "partner" | "platform";
   /** Current organization name (partner context). Shown next to title when set. */
   activeOrgName?: string | null;
 }
@@ -99,7 +101,8 @@ function setLastReadAt() {
 
 type PartnerOption = { id: string; name: string };
 
-export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
+export function TopBar({ showContextSwitcher, portal, activeOrgName }: TopBarProps) {
+  const portalKind = portal ?? (showContextSwitcher ? "platform" : "partner");
   const { locale, setLocale, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
@@ -197,6 +200,9 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
         <div className="min-w-0 shrink">
           <ShellBreadcrumb />
         </div>
+        <span className="hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground sm:inline">
+          {portalKind === "platform" ? t("shell.portal.platform") : t("shell.portal.partner")}
+        </span>
         {showContextSwitcher ? (
           <>
             <Separator className="hidden h-4 data-[orientation=vertical]:self-center sm:flex" orientation="vertical" />
@@ -220,7 +226,7 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
                       onClick={() => setActiveOrg(null)}
                       className="w-full px-4 py-2.5 text-left text-[15px] text-popover-foreground hover:bg-muted"
                     >
-                      Platform (all)
+                      {t("topbar.platformAll")}
                     </button>
                     {partners.map((p) => (
                       <button
@@ -253,8 +259,8 @@ export function TopBar({ showContextSwitcher, activeOrgName }: TopBarProps) {
           type="button"
           onClick={toggleTheme}
           className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          title={theme === "dark" ? "Light mode" : "Dark mode"}
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={theme === "dark" ? t("topbar.themeToLight") : t("topbar.themeToDark")}
+          aria-label={theme === "dark" ? t("topbar.themeToLight") : t("topbar.themeToDark")}
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>

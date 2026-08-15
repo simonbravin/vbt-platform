@@ -13,6 +13,7 @@ import {
   UserPlus,
   Target,
   Phone,
+  Check,
 } from "lucide-react";
 import { PartnerTerritoriesSection, type PartnerTerritoryRow } from "./PartnerTerritoriesSection";
 import { useT, useLanguage } from "@/lib/i18n/context";
@@ -133,10 +134,12 @@ export function PartnerDetailClient({
   partnerId,
   initialPartner,
   inviteSent,
+  setupIncomplete,
 }: {
   partnerId: string;
   initialPartner: Partner;
   inviteSent?: string;
+  setupIncomplete?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
@@ -211,6 +214,11 @@ export function PartnerDetailClient({
         </nav>
       </div>
 
+      {setupIncomplete ? (
+        <div className="rounded-lg border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
+          {t("superadmin.partners.setupIncomplete")}
+        </div>
+      ) : null}
       {inviteSent && !dismissInviteBanner && (
         <div className="rounded-lg border border-alert-successBorder bg-alert-success px-4 py-3 text-sm text-foreground flex items-center justify-between">
           <span>
@@ -311,22 +319,52 @@ export function PartnerDetailClient({
             <h3 className="text-sm font-semibold text-foreground">{t("superadmin.partner.summaryCommercialTitle")}</h3>
             <div>
               <p className="text-xs font-medium text-muted-foreground">{t("superadmin.partner.detail.onboardingState")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.partner.onboardingHelp")}</p>
-              <div className="mt-2">
-                <FilterSelect
-                  value={onboardingState}
-                  onValueChange={handleUpdateOnboarding}
-                  emptyOptionLabel={t("superadmin.partner.onboardingNotSet")}
-                  options={ONBOARDING_STATES.map((s) => ({
-                    value: s,
-                    label: onboardingStateLabel(t, s),
-                  }))}
-                  disabled={saving}
-                  aria-label={t("superadmin.partner.detail.onboardingState")}
-                  triggerClassName="h-10 max-w-xs min-w-0 text-sm"
-                />
-                {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
-              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{t("superadmin.partner.onboardingChecklistHelp")}</p>
+              <ol className="mt-3 space-y-2" aria-label={t("superadmin.partner.detail.onboardingState")}>
+                {ONBOARDING_STATES.map((s, i) => {
+                  const currentIdx = ONBOARDING_STATES.indexOf(
+                    onboardingState as (typeof ONBOARDING_STATES)[number]
+                  );
+                  const done = currentIdx >= 0 && i < currentIdx;
+                  const current = onboardingState === s;
+                  return (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => handleUpdateOnboarding(s)}
+                        className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:opacity-50 ${
+                          current
+                            ? "border-primary/40 bg-primary/10 text-foreground"
+                            : done
+                              ? "border-border/60 bg-muted/30 text-foreground"
+                              : "border-border/50 bg-background text-muted-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${
+                            done || current
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background"
+                          }`}
+                          aria-hidden
+                        >
+                          {done ? <Check className="h-3 w-3" /> : i + 1}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block font-medium">{onboardingStateLabel(t, s)}</span>
+                          {current ? (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {t("superadmin.partner.onboardingCurrentStep")}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+              {saving && <p className="mt-2 text-sm text-muted-foreground">{t("superadmin.partner.detail.saving")}</p>}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>

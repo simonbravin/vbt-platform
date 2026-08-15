@@ -15,7 +15,7 @@ export async function GET() {
   const isSuperadmin = !!user.isPlatformSuperadmin;
   const activeOrgId = await getEffectiveActiveOrgId(user as import("@/lib/auth").SessionUser);
 
-  if (isSuperadmin) {
+  if (isSuperadmin && !activeOrgId) {
     const list = await prisma.freightProfile.findMany({
       include: { country: true, organization: { select: { id: true, name: true } } },
       orderBy: [{ country: { name: "asc" } }, { name: "asc" }],
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     let organizationId: string | null = body?.organizationId != null ? String(body.organizationId).trim() || null : null;
 
-    if (isSuperadmin) {
+    if (isSuperadmin && !activeOrgId) {
       if (organizationId === "") organizationId = null;
     } else {
       if (!activeOrgId) return NextResponse.json({ error: "No active organization" }, { status: 403 });

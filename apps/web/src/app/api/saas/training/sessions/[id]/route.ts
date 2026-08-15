@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requirePlatformSuperadmin } from "@/lib/tenant";
+import { getTenantContext, isPlatformOperatorContext, requirePlatformSuperadmin } from "@/lib/tenant";
 import {
   getLiveSessionById,
   updateLiveSession,
@@ -16,7 +16,7 @@ export async function GET(
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (ctx.isPlatformSuperadmin) {
+  if (isPlatformOperatorContext(ctx)) {
     const s = await getLiveSessionById(prisma, params.id);
     if (!s) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(s);

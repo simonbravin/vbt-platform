@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantContext, requireActiveOrg } from "@/lib/tenant";
+import { getTenantContext, requireActiveOrg, shouldMaskFactoryExw } from "@/lib/tenant";
 import { TenantError } from "@/lib/tenant";
 import {
   listQuotes,
@@ -59,7 +59,7 @@ async function getHandler(req: Request) {
     });
     // Soft snapshot formatting: one bad row must not empty the whole list (search/sales pickers).
     const quotes = result.quotes.map((q) =>
-      formatQuoteForSaaSApiListRow(q, { maskFactoryExw: !ctx.isPlatformSuperadmin })
+      formatQuoteForSaaSApiListRow(q, { maskFactoryExw: shouldMaskFactoryExw(ctx) })
     );
     return NextResponse.json({ quotes, total: result.total });
   } catch (e) {
@@ -180,7 +180,7 @@ async function postHandler(req: Request) {
     entityId: quote.id,
     metadata: { quoteNumber, projectId: data.projectId },
   });
-  return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: !user.isPlatformSuperadmin }), {
+  return NextResponse.json(formatQuoteForSaaSApiWithSnapshot(quote, { maskFactoryExw: shouldMaskFactoryExw(user) }), {
     status: 201,
   });
 }

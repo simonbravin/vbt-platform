@@ -5,7 +5,9 @@ export default async function SalesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireModuleLayoutAccess("sales");
+  await requireModuleLayoutAccess("sales", {
+    allowRoles: ["org_admin", "sales_user"],
+  });
   return <>{children}</>;
 }
 
