@@ -192,15 +192,6 @@ export default async function DashboardPage(props: PageProps) {
         }
       />
 
-      {draftCount > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 bg-card px-4 py-3">
-          <p className="text-sm text-foreground">{t("dashboard.pendingDrafts", { count: draftCount })}</p>
-          <Link href="/quotes?status=draft" className="text-sm font-medium text-primary hover:underline">
-            {t("dashboard.pendingDraftsCta")}
-          </Link>
-        </div>
-      )}
-
       {/* Goal KPI (partner sales target progress) */}
       <GoalKpiCard />
 
