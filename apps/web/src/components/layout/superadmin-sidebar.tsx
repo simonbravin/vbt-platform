@@ -141,7 +141,7 @@ export function SuperadminSidebar({ userDisplayName, hasAvatar, profileHref }: S
       </div>
       <SidebarPortalBadge label={t("shell.portal.platform")} />
 
-      <SidebarContent>
+      <SidebarContent className="gap-0.5">
         <SidebarNavSections groups={superadminNavigation} pathname={pathname} t={t} isItemVisible={() => true} />
       </SidebarContent>
 

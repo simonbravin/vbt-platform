@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   FolderOpen,
   FileText,
-  FilePlus,
   Package,
   Building2,
   Users,
@@ -28,7 +27,6 @@ import { SidebarUserFooter } from "@/components/layout/sidebar-user-footer";
 import { SidebarPortalBadge } from "@/components/layout/sidebar-portal-badge";
 import {
   SidebarNavSections,
-  isNavHrefActive,
   type SidebarNavGroup,
   type SidebarNavItem,
 } from "@/components/layout/sidebar-nav-sections";
@@ -36,10 +34,6 @@ import {
   Sidebar as SidebarRoot,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
 const navigation: SidebarNavGroup[] = [
@@ -138,7 +132,6 @@ function isModuleVisible(moduleVisibility: SidebarProps["moduleVisibility"], hre
 export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleVisibility }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
-  const quotesVisible = isModuleVisible(moduleVisibility, "/quotes/wizard");
 
   const canSee = (item: SidebarNavItem) => {
     if (item.roles && !item.roles.includes(role)) return false;
@@ -166,27 +159,7 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
       </div>
       <SidebarPortalBadge label={t("shell.portal.partner")} />
 
-      <SidebarContent>
-        {quotesVisible ? (
-          <SidebarGroup>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isNavHrefActive(pathname, "/quotes/wizard")}
-                  tooltip={t("nav.quotes.new")}
-                  className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
-                >
-                  <Link href="/quotes/wizard">
-                    <FilePlus className="shrink-0" />
-                    <span>{t("nav.quotes.new")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        ) : null}
-
+      <SidebarContent className="gap-0.5">
         <SidebarNavSections groups={navigation} pathname={pathname} t={t} isItemVisible={canSee} />
       </SidebarContent>
 
