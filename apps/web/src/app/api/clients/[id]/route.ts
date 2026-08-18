@@ -100,7 +100,7 @@ export async function DELETE(
 
   const client = await prisma.client.findFirst({
     where: { id: params.id, organizationId },
-    include: { _count: { select: { projects: true } } },
+    include: { _count: { select: { projects: true, sales: true } } },
   });
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   if (client._count.projects > 0) {
@@ -109,7 +109,21 @@ export async function DELETE(
       { status: 400 }
     );
   }
+  if (client._count.sales > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete client with linked sales. Unlink sales first." },
+      { status: 400 }
+    );
+  }
 
-  await prisma.client.delete({ where: { id: params.id } });
+  try {
+    await prisma.client.delete({ where: { id: params.id } });
+  } catch (e) {
+    console.error("[api/clients DELETE]", e);
+    return NextResponse.json(
+      { error: "Cannot delete this client because it is still referenced." },
+      { status: 409 }
+    );
+  }
   return NextResponse.json({ success: true });
 }

@@ -2,12 +2,19 @@
  * @deprecated Legacy clients API. There is no `/api/saas/clients` yet — do not remove until canonical clients API exists.
  */
 import { NextResponse } from "next/server";
+import type { Prisma } from "@vbt/db";
 import type { SessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireModuleRouteAuth } from "@/lib/module-route-auth";
 import { getEffectiveActiveOrgId, getEffectiveOrganizationId } from "@/lib/tenant";
 import { createActivityLog } from "@/lib/audit";
 import { z } from "zod";
+
+function parsePositiveInt(raw: string | null, fallback: number, max?: number): number {
+  const n = parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return max != null ? Math.min(n, max) : n;
+}
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -34,16 +41,25 @@ export async function GET(req: Request) {
     : getEffectiveOrganizationId(user);
   if (!organizationId) return NextResponse.json({ clients: [], total: 0, page: 1, limit: 50 });
 
-  const page = parseInt(url.searchParams.get("page") ?? "1");
-  const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 100);
+  const page = parsePositiveInt(url.searchParams.get("page"), 1);
+  const limit = parsePositiveInt(url.searchParams.get("limit"), 50, 100);
   const search = url.searchParams.get("search") ?? "";
   const countryCode = url.searchParams.get("countryCode") ?? url.searchParams.get("countryId") ?? "";
+  const sortRaw = url.searchParams.get("sort") ?? "name";
+  const sort = sortRaw === "projects" || sortRaw === "sales" ? sortRaw : "name";
+  const dir: Prisma.SortOrder = url.searchParams.get("dir") === "desc" ? "desc" : "asc";
+  const orderBy: Prisma.ClientOrderByWithRelationInput[] =
+    sort === "projects"
+      ? [{ projects: { _count: dir } }, { name: "asc" }]
+      : sort === "sales"
+        ? [{ sales: { _count: dir } }, { name: "asc" }]
+        : [{ name: dir }];
 
-  const where: Record<string, unknown> = { organizationId };
-  if (countryCode) (where as any).countryCode = countryCode;
+  const where: Prisma.ClientWhereInput = { organizationId };
+  if (countryCode) where.countryCode = countryCode;
   if (search.trim()) {
     const q = search.trim();
-    (where as any).OR = [
+    where.OR = [
       { name: { contains: q, mode: "insensitive" } },
       { legalName: { contains: q, mode: "insensitive" } },
       { taxId: { contains: q, mode: "insensitive" } },
@@ -51,20 +67,25 @@ export async function GET(req: Request) {
     ];
   }
 
-  const [clients, total] = await Promise.all([
-    prisma.client.findMany({
-      where,
-      include: {
-        _count: { select: { projects: true } },
-      },
-      orderBy: { name: "asc" },
-      take: limit,
-      skip: (page - 1) * limit,
-    }),
-    prisma.client.count({ where }),
-  ]);
+  try {
+    const [clients, total] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        include: {
+          _count: { select: { projects: true, sales: true } },
+        },
+        orderBy,
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      prisma.client.count({ where }),
+    ]);
 
-  return NextResponse.json({ clients, total, page, limit });
+    return NextResponse.json({ clients, total, page, limit });
+  } catch (e) {
+    console.error("[api/clients GET]", e);
+    return NextResponse.json({ error: "Failed to load clients" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

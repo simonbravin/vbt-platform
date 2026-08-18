@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { SidebarUserFooter } from "@/components/layout/sidebar-user-footer";
-import { SidebarPortalBadge } from "@/components/layout/sidebar-portal-badge";
 import {
   SidebarNavSections,
   type SidebarNavGroup,
@@ -40,6 +39,14 @@ const navigation: SidebarNavGroup[] = [
   {
     labelKey: null,
     items: [{ labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    labelKey: "nav.group.portfolio",
+    items: [
+      { labelKey: "nav.clients", href: "/clients", icon: Building2 },
+      { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
+      { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
+    ],
   },
   {
     labelKey: "nav.group.commercial",
@@ -59,14 +66,6 @@ const navigation: SidebarNavGroup[] = [
       },
       { labelKey: "nav.sales.statements", href: "/sales/statements", icon: Receipt, roles: ["org_admin", "sales_user"] },
       { labelKey: "nav.reports", href: "/reports", icon: BarChart3, roles: ["org_admin", "sales_user"] },
-    ],
-  },
-  {
-    labelKey: "nav.group.portfolio",
-    items: [
-      { labelKey: "nav.clients", href: "/clients", icon: Building2 },
-      { labelKey: "nav.projects", href: "/projects", icon: FolderOpen },
-      { labelKey: "nav.engineering", href: "/engineering", icon: Wrench },
     ],
   },
   {
@@ -157,7 +156,6 @@ export function Sidebar({ role, userDisplayName, hasAvatar, profileHref, moduleV
           />
         </Link>
       </div>
-      <SidebarPortalBadge label={t("shell.portal.partner")} />
 
       <SidebarContent className="gap-0.5">
         <SidebarNavSections groups={navigation} pathname={pathname} t={t} isItemVisible={canSee} />

@@ -11,6 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
 
+async function readResponseJson(res: Response): Promise<unknown> {
+  try {
+    const text = await res.text();
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {};
+  }
+}
+
 type Country = { id: string; name: string; code: string };
 type Client = {
   id: string;
@@ -82,29 +91,34 @@ export function ClientDetailActions({
     setSaving(true);
     setError("");
     const countryCode = form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : null;
-    const res = await fetch(`/api/clients/${client.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name.trim(),
-        legalName: form.legalName?.trim() || undefined,
-        taxId: form.taxId?.trim() || undefined,
-        address: form.address?.trim() || undefined,
-        city: form.city?.trim() || undefined,
-        countryCode: countryCode ?? undefined,
-        phone: form.phone?.trim() || undefined,
-        email: form.email?.trim() || undefined,
-        website: form.website?.trim() || undefined,
-        notes: form.notes?.trim() || undefined,
-      }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (res.ok) {
-      setEditOpen(false);
-      router.refresh();
-    } else {
-      setError(saasApiUserFacingMessage(data, t, t("clients.failedToUpdate")));
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          legalName: form.legalName?.trim() || undefined,
+          taxId: form.taxId?.trim() || undefined,
+          address: form.address?.trim() || undefined,
+          city: form.city?.trim() || undefined,
+          countryCode: countryCode ?? undefined,
+          phone: form.phone?.trim() || undefined,
+          email: form.email?.trim() || undefined,
+          website: form.website?.trim() || undefined,
+          notes: form.notes?.trim() || undefined,
+        }),
+      });
+      const data = await readResponseJson(res);
+      if (res.ok) {
+        setEditOpen(false);
+        router.refresh();
+      } else {
+        setError(saasApiUserFacingMessage(data, t, t("clients.failedToUpdate")));
+      }
+    } catch {
+      setError(t("clients.failedToUpdate"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -184,7 +198,7 @@ export function ClientDetailActions({
               className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg border border-border/60 bg-background p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Edit client</h2>
+              <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{t("clients.editClientTitle")}</h2>
               {modalForm}
               <div className="mt-4 flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="border-border/60">

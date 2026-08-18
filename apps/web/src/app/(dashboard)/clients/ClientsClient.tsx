@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Building2, Search, Plus, Pencil, Mail, Phone } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
 import { useT } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ViewLayoutToggle } from "@/components/ui/view-layout-toggle";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
 import { saasApiUserFacingMessage } from "@/lib/saas-api-error-message";
 
 type Country = { id: string; name: string; code: string };
@@ -25,16 +25,38 @@ type Client = {
   email: string | null;
   phone: string | null;
   website: string | null;
+  countryCode?: string | null;
   country: { id: string; name: string; code: string } | null;
-  _count: { projects: number };
+  _count: { projects: number; sales: number };
 };
 
-type Stats = {
-  topByProjects: { clientId: string; clientName: string; projectCount: number }[];
-  topBySold: { clientId: string; clientName: string | null; totalSold: number }[];
-};
+type SortKey = "name" | "projects" | "sales";
 
 const SEARCH_DEBOUNCE_MS = 350;
+
+function hydrateClients(rows: Client[], countries: Country[]): Client[] {
+  return rows.map((c) => {
+    const code = c.countryCode ?? c.country?.code ?? null;
+    const co = code ? countries.find((x) => x.code === code || x.id === code) : undefined;
+    return {
+      ...c,
+      country: c.country ?? co ?? (code ? { id: code, name: code, code } : null),
+      _count: {
+        projects: c._count?.projects ?? 0,
+        sales: c._count?.sales ?? 0,
+      },
+    };
+  });
+}
+
+async function readResponseJson(res: Response): Promise<unknown> {
+  try {
+    const text = await res.text();
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {};
+  }
+}
 
 const emptyForm = {
   name: "",
@@ -60,102 +82,92 @@ export function ClientsClient({
 }) {
   const t = useT();
   const [view, setView] = useState<"cards" | "table">("table");
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [clients, setClients] = useState<Client[]>(() => hydrateClients(initialClients, countries));
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searching, setSearching] = useState(false);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [newOpen, setNewOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  const skipInitialFetch = useRef(true);
 
-  const fetchStats = useCallback(() => {
-    fetch("/api/clients/stats?limit=5")
-      .then(async (r) => {
-        if (!r.ok) return;
-        try {
-          const text = await r.text();
-          const data = text ? JSON.parse(text) : null;
-          if (data && (data.topByProjects != null || data.topBySold != null)) setStats(data);
-        } catch {
-          // ignore
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const applyList = useCallback(
+    (rows: Client[], nextTotal: number) => {
+      setClients(hydrateClients(rows, countries));
+      setTotal(nextTotal);
+    },
+    [countries]
+  );
+
+  const fetchList = useCallback(
+    async (q: string, sort: SortKey, dir: "asc" | "desc", signal?: AbortSignal) => {
+      const params = new URLSearchParams({ limit: "50", sort, dir });
+      if (q) params.set("search", q);
+      const res = await fetch(`/api/clients?${params}`, { signal });
+      const data = (await readResponseJson(res)) as { clients?: Client[]; total?: number };
+      if (!res.ok || !Array.isArray(data.clients)) {
+        throw new Error("list_failed");
+      }
+      applyList(data.clients, typeof data.total === "number" ? data.total : 0);
+    },
+    [applyList]
+  );
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const runSearch = useCallback(() => {
-    const q = search.trim();
-    if (!q) {
-      setClients(initialClients);
-      setTotal(initialTotal);
+    setDebouncedSearch(search.trim());
+  }, [search]);
+
+  const handleSort = useCallback((key: string) => {
+    if (key !== "name" && key !== "projects" && key !== "sales") return;
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
       return;
     }
-    setSearching(true);
-    fetch(`/api/clients?search=${encodeURIComponent(q)}&limit=50`)
-      .then(async (r) => {
-        try {
-          const text = await r.text();
-          const data = text ? JSON.parse(text) : {};
-          if (r.ok && Array.isArray(data.clients)) {
-            setClients(data.clients);
-            setTotal(typeof data.total === "number" ? data.total : 0);
-          }
-        } catch {
-          // ignore
-        }
-      })
-      .finally(() => setSearching(false));
-  }, [search.trim(), initialClients, initialTotal]);
+    setSortKey(key);
+    setSortDir(key === "name" ? "asc" : "desc");
+  }, [sortKey]);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (!search.trim()) {
-        setClients(initialClients);
-        setTotal(initialTotal);
-        return;
-      }
-      setSearching(true);
-      fetch(`/api/clients?search=${encodeURIComponent(search.trim())}&limit=50`)
-        .then(async (r) => {
-          try {
-            const text = await r.text();
-            const data = text ? JSON.parse(text) : {};
-            if (r.ok && Array.isArray(data.clients)) {
-              setClients(data.clients);
-              setTotal(typeof data.total === "number" ? data.total : 0);
-            }
-          } catch {
-            // ignore
-          }
-        })
-        .finally(() => setSearching(false));
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [search, initialClients, initialTotal]);
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setSearching(true);
+    setSearchError(null);
+    fetchList(debouncedSearch, sortKey, sortDir, ac.signal)
+      .catch(() => {
+        if (!ac.signal.aborted) setSearchError(t("clients.searchFailed"));
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setSearching(false);
+      });
+    return () => ac.abort();
+  }, [debouncedSearch, sortKey, sortDir, fetchList, t]);
 
   const refreshList = useCallback(() => {
-    fetch(`/api/clients?limit=50`)
-      .then(async (r) => {
-        try {
-          const text = await r.text();
-          const data = text ? JSON.parse(text) : {};
-          if (r.ok && Array.isArray(data.clients)) {
-            setClients(data.clients);
-            setTotal(typeof data.total === "number" ? data.total : 0);
-          }
-        } catch {
-          // ignore
-        }
-      });
-    fetchStats();
-  }, [fetchStats]);
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setSearchError(null);
+    fetchList(search.trim(), sortKey, sortDir, ac.signal).catch(() => {
+      if (!ac.signal.aborted) setSearchError(t("clients.searchFailed"));
+    });
+  }, [fetchList, search, sortKey, sortDir, t]);
 
   const openNew = () => {
     setForm(emptyForm);
@@ -187,29 +199,34 @@ export function ClientsClient({
     }
     setSaving(true);
     setError("");
-    const res = await fetch("/api/clients", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name.trim(),
-        legalName: form.legalName.trim() || undefined,
-        taxId: form.taxId.trim() || undefined,
-        address: form.address.trim() || undefined,
-        city: form.city.trim() || undefined,
-        countryCode: form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : undefined,
-        phone: form.phone.trim() || undefined,
-        email: form.email.trim() || undefined,
-        website: form.website.trim() || undefined,
-        notes: form.notes.trim() || undefined,
-      }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (res.ok) {
-      setNewOpen(false);
-      refreshList();
-    } else {
-      setError(saasApiUserFacingMessage(data, t, t("clients.failedToCreate")));
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          legalName: form.legalName.trim() || undefined,
+          taxId: form.taxId.trim() || undefined,
+          address: form.address.trim() || undefined,
+          city: form.city.trim() || undefined,
+          countryCode: form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : undefined,
+          phone: form.phone.trim() || undefined,
+          email: form.email.trim() || undefined,
+          website: form.website.trim() || undefined,
+          notes: form.notes.trim() || undefined,
+        }),
+      });
+      const data = await readResponseJson(res);
+      if (res.ok) {
+        setNewOpen(false);
+        refreshList();
+      } else {
+        setError(saasApiUserFacingMessage(data, t, t("clients.failedToCreate")));
+      }
+    } catch {
+      setError(t("clients.failedToCreate"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -220,29 +237,34 @@ export function ClientsClient({
     }
     setSaving(true);
     setError("");
-    const res = await fetch(`/api/clients/${editId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.name.trim(),
-        legalName: form.legalName.trim() || undefined,
-        taxId: form.taxId.trim() || undefined,
-        address: form.address.trim() || undefined,
-        city: form.city.trim() || undefined,
-        countryCode: form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : null,
-        phone: form.phone.trim() || undefined,
-        email: form.email.trim() || undefined,
-        website: form.website.trim() || undefined,
-        notes: form.notes.trim() || undefined,
-      }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (res.ok) {
-      setEditId(null);
-      refreshList();
-    } else {
-      setError(saasApiUserFacingMessage(data, t, t("clients.failedToUpdate")));
+    try {
+      const res = await fetch(`/api/clients/${editId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          legalName: form.legalName.trim() || undefined,
+          taxId: form.taxId.trim() || undefined,
+          address: form.address.trim() || undefined,
+          city: form.city.trim() || undefined,
+          countryCode: form.countryId ? (countries.find((c) => c.id === form.countryId)?.code ?? form.countryId) : null,
+          phone: form.phone.trim() || undefined,
+          email: form.email.trim() || undefined,
+          website: form.website.trim() || undefined,
+          notes: form.notes.trim() || undefined,
+        }),
+      });
+      const data = await readResponseJson(res);
+      if (res.ok) {
+        setEditId(null);
+        refreshList();
+      } else {
+        setError(saasApiUserFacingMessage(data, t, t("clients.failedToUpdate")));
+      }
+    } catch {
+      setError(t("clients.failedToUpdate"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -343,36 +365,6 @@ export function ClientsClient({
         </Button>
       </div>
 
-      {/* KPI cards */}
-      {stats && (stats.topByProjects.length > 0 || stats.topBySold.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-lg border border-border/60 bg-card p-4">
-            <h3 className="text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("clients.kpiTopByProjects")}</h3>
-            <ul className="space-y-1 text-sm">
-              {stats.topByProjects.slice(0, 5).map((s) => (
-                <li key={s.clientId} className="flex justify-between">
-                  <Link href={`/clients/${s.clientId}`} className="text-primary hover:underline truncate mr-2">
-                    {s.clientName}
-                  </Link>
-                  <span className="font-medium text-foreground">{s.projectCount}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-lg border border-border/60 bg-card p-4">
-            <h3 className="text-[10px] font-mono font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("clients.kpiTopBySold")}</h3>
-            <ul className="space-y-1 text-sm">
-              {stats.topBySold.slice(0, 5).map((s) => (
-                <li key={s.clientId} className="flex justify-between gap-2">
-                  <span className="text-foreground truncate">{s.clientName ?? "—"}</span>
-                  <span className="font-medium text-foreground whitespace-nowrap">{formatCurrency(s.totalSold)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -386,16 +378,28 @@ export function ClientsClient({
           />
         </div>
         <Button type="button" onClick={runSearch} disabled={searching} className="border border-primary/20 shrink-0">
-          {searching ? "…" : t("common.search")}
+          {searching ? t("common.loading") : t("common.search")}
         </Button>
         <ViewLayoutToggle view={view} onViewChange={setView} />
       </div>
 
+      {searchError && (
+        <p className="text-destructive text-sm border border-destructive/25 rounded-lg px-2 py-1.5 bg-destructive/5" role="alert">
+          {searchError}
+        </p>
+      )}
+
       {clients.length === 0 ? (
         <div className="rounded-lg border border-border/60 bg-background p-12 text-center">
           <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/35" />
-          <p className="text-sm font-medium text-foreground">{t("clients.noClientsYet")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("clients.noClientsHint")}</p>
+          {debouncedSearch ? (
+            <p className="text-sm font-medium text-foreground">{t("clients.noSearchResults")}</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-foreground">{t("clients.noClientsYet")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("clients.noClientsHint")}</p>
+            </>
+          )}
         </div>
       ) : view === "cards" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -439,6 +443,8 @@ export function ClientsClient({
               <div className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                 {c._count.projects}{" "}
                 {c._count.projects === 1 ? t("clients.projectSingular") : t("clients.projectPlural")}
+                {" · "}
+                {c._count.sales} {c._count.sales === 1 ? t("clients.saleSingular") : t("clients.salePlural")}
               </div>
             </div>
           ))}
@@ -448,11 +454,32 @@ export function ClientsClient({
           <table className="list-table">
             <thead>
               <tr>
-                <th>{t("common.name")}</th>
+                <SortableTableHead
+                  label={t("common.name")}
+                  sortKey="name"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                />
                 <th>{t("clients.legalName")}</th>
                 <th>{t("clients.country")}</th>
                 <th>{t("clients.tableContact")}</th>
-                <th className="text-center">{t("projects.title")}</th>
+                <SortableTableHead
+                  label={t("projects.title")}
+                  sortKey="projects"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="center"
+                />
+                <SortableTableHead
+                  label={t("clients.tableSales")}
+                  sortKey="sales"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="center"
+                />
                 <th className="w-10" />
               </tr>
             </thead>
@@ -470,6 +497,7 @@ export function ClientsClient({
                     {[c.email, c.phone].filter(Boolean).join(" · ") || "—"}
                   </td>
                   <td className="text-center">{c._count.projects}</td>
+                  <td className="text-center">{c._count.sales}</td>
                   <td>
                     <button
                       type="button"

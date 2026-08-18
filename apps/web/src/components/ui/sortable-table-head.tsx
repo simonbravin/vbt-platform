@@ -30,6 +30,7 @@ export function SortableTableHead({
         align === "right" && "text-right",
         className
       )}
+      aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
     >
       <button
         type="button"
@@ -39,7 +40,6 @@ export function SortableTableHead({
           align === "center" && "justify-center w-full",
           align === "right" && "justify-end w-full"
         )}
-        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
       >
         <span>{label}</span>
         {active ? (

@@ -27,7 +27,7 @@ export default async function ClientsPage() {
     const [rows, totalCount] = await Promise.all([
       prisma.client.findMany({
         where: { organizationId: orgId },
-        include: { _count: { select: { projects: true } } },
+        include: { _count: { select: { projects: true, sales: true } } },
         orderBy: { name: "asc" },
         take: 50,
       }),
@@ -45,18 +45,18 @@ export default async function ClientsPage() {
   const countryByCode = new Map(countries.map((co) => [co.code, co]));
 
   const clients = clientsRows.map((c) => {
-    const row = c as typeof c & { _count?: { projects: number } };
+    const row = c as typeof c & { _count?: { projects: number; sales: number } };
     const co = row.countryCode ? countryByCode.get(row.countryCode) : undefined;
     return {
       ...row,
       country: co ?? (row.countryCode ? { id: row.countryCode, name: row.countryCode, code: row.countryCode } : null),
-      _count: row._count ?? { projects: 0 },
+      _count: row._count ?? { projects: 0, sales: 0 },
     };
   });
 
   return (
     <div className="space-y-6">
-      {dataLoadError && (clients.length > 0 || total > 0) && (
+      {dataLoadError && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-alert-warningBorder bg-alert-warning px-4 py-3 text-sm text-foreground">
           <p className="text-foreground">
             <span className="font-medium">{t("dashboard.errorLoad")}</span>
